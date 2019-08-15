@@ -10,4 +10,9 @@ class TestModel extends Model
     {
         return null;
     }
+
+    public function getKeyName()
+    {
+        return null;
+    }
 }

@@ -21,6 +21,13 @@ abstract class Model
     abstract public function getTableName();
 
     /**
+     * Get the column name(s) of the primary key
+     *
+     * @return string|array Array if the primary key is compound, string otherwise
+     */
+    abstract public function getKeyName();
+
+    /**
      * Initialize the model
      *
      * If you want to adjust the model after construction, override this method.
