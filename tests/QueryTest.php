@@ -91,4 +91,22 @@ class QueryTest extends \PHPUnit\Framework\TestCase
 
         $this->assertSame([$column], $query->getColumns());
     }
+
+    public function testLimit()
+    {
+        $limit = 25;
+        $query = (new Query())
+            ->limit($limit);
+
+        $this->assertSame($limit, $query->getLimit());
+    }
+
+    public function testOffset()
+    {
+        $offset = 25;
+        $query = (new Query())
+            ->offset($offset);
+
+        $this->assertSame($offset, $query->getOffset());
+    }
 }
