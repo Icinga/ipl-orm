@@ -14,6 +14,13 @@ abstract class Model
     }
 
     /**
+     * Get the related database table's name
+     *
+     * @return string
+     */
+    abstract public function getTableName();
+
+    /**
      * Initialize the model
      *
      * If you want to adjust the model after construction, override this method.
