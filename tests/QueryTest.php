@@ -53,4 +53,42 @@ class QueryTest extends \PHPUnit\Framework\TestCase
     {
         (new Query())->setDb('invalid');
     }
+
+    public function testGetColumnsReturnsEmptyArrayIfUnset()
+    {
+        $columns = (new Query())
+            ->getColumns();
+
+        $this->assertIsArray($columns);
+        $this->assertEmpty($columns);
+    }
+
+    public function testGetColumnsReturnsCorrectColumnsIfSet()
+    {
+        $columns = ['lorem', 'ipsum'];
+        $query = (new Query())
+            ->columns($columns);
+
+        $this->assertSame($columns, $query->getColumns());
+    }
+
+    public function testMultipleCallsToColumnsAreMerged()
+    {
+        $columns1 = ['lorem'];
+        $columns2 = ['ipsum'];
+        $query = (new Query())
+            ->columns($columns1)
+            ->columns($columns2);
+
+        $this->assertSame(array_merge($columns1, $columns2), $query->getColumns());
+    }
+
+    public function testColumnsWithStringAsParameter()
+    {
+        $column = 'lorem';
+        $query = (new Query())
+            ->columns($column);
+
+        $this->assertSame([$column], $query->getColumns());
+    }
 }
