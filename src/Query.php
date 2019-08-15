@@ -16,6 +16,9 @@ class Query
     /** @var Model Model to query */
     protected $model;
 
+    /** @var array Columns to select from the model */
+    protected $columns = [];
+
     /**
      * Get the database connection
      *
@@ -60,6 +63,32 @@ class Query
     public function setModel(Model $model)
     {
         $this->model = $model;
+
+        return $this;
+    }
+
+    /**
+     * Get the columns to select from the model
+     *
+     * @return array
+     */
+    public function getColumns()
+    {
+        return $this->columns;
+    }
+
+    /**
+     * Set columns to select from the model
+     *
+     * Multiple calls to this method will not overwrite the previous set columns but append the columns to the query.
+     *
+     * @param string|array $columns The column(s) to select
+     *
+     * @return $this
+     */
+    public function columns($columns)
+    {
+        $this->columns = array_merge($this->columns, (array) $columns);
 
         return $this;
     }
