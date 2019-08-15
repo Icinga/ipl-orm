@@ -103,9 +103,17 @@ class Query
         $model = $this->getModel();
 
         $select = (new Select())
-            ->from($model->getTableName())
-            ->columns($model->getKeyName() ?: []) // `?: []` to support null for primary key and/or columns
-            ->columns($model->getColumns() ?: []);
+            ->from($model->getTableName());
+
+        $columns = $this->getColumns();
+
+        if (! empty($columns)) {
+            $select->columns($columns);
+        } else {
+            $select
+                ->columns($model->getKeyName() ?: []) // `?: []` to support null for primary key and/or columns
+                ->columns($model->getColumns() ?: []);
+        }
 
         return $select;
     }
