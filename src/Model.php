@@ -2,6 +2,8 @@
 
 namespace ipl\Orm;
 
+use ipl\Sql\Connection;
+
 /**
  * Models represent single database tables or parts of it.
  * They are also used to interact with the tables, i.e. in order to query for data.
@@ -33,6 +35,20 @@ abstract class Model
      * @return array
      */
     abstract public function getColumns();
+
+    /**
+     * Get a query which is tied to this model and the given database connection
+     *
+     * @param Connection $db
+     *
+     * @return Query
+     */
+    public static function on(Connection $db)
+    {
+        return (new Query())
+            ->setDb($db)
+            ->setModel(new static());
+    }
 
     /**
      * Initialize the model
