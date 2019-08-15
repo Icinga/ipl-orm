@@ -78,6 +78,49 @@ class SqlTest extends \PHPUnit\Framework\TestCase
         );
     }
 
+    public function testSelectFromModelWithLimit()
+    {
+        $model = new TestModel();
+        $query = (new Query())
+            ->setModel($model)
+            ->columns('*')
+            ->limit(25);
+
+        $this->assertSql(
+            'SELECT * FROM test LIMIT 25',
+            $query->assembleSelect()
+        );
+    }
+
+    public function testSelectFromModelWithOffset()
+    {
+        $model = new TestModel();
+        $query = (new Query())
+            ->setModel($model)
+            ->columns('*')
+            ->offset(25);
+
+        $this->assertSql(
+            'SELECT * FROM test OFFSET 25',
+            $query->assembleSelect()
+        );
+    }
+
+    public function testSelectFromModelWithLimitAndOffset()
+    {
+        $model = new TestModel();
+        $query = (new Query())
+            ->setModel($model)
+            ->columns('*')
+            ->limit(25)
+            ->offset(25);
+
+        $this->assertSql(
+            'SELECT * FROM test LIMIT 25 OFFSET 25',
+            $query->assembleSelect()
+        );
+    }
+
     public function setUp()
     {
         $this->queryBuilder = new QueryBuilder(new TestAdapter());
