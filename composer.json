@@ -11,6 +11,7 @@
   "homepage": "https://github.com/Icinga/ipl-orm",
   "require": {
     "php": ">=5.6.0",
+    "ipl/sql": "dev-master",
     "ext-pdo": "*"
   },
   "autoload": {
