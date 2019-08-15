@@ -28,6 +28,13 @@ abstract class Model
     abstract public function getKeyName();
 
     /**
+     * Get the model's queryable columns
+     *
+     * @return array
+     */
+    abstract public function getColumns();
+
+    /**
      * Initialize the model
      *
      * If you want to adjust the model after construction, override this method.

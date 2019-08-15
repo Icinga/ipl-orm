@@ -15,4 +15,9 @@ class TestModel extends Model
     {
         return null;
     }
+
+    public function getColumns()
+    {
+        return null;
+    }
 }
