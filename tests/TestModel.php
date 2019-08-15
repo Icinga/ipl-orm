@@ -8,7 +8,7 @@ class TestModel extends Model
 {
     public function getTableName()
     {
-        return null;
+        return 'test';
     }
 
     public function getKeyName()
