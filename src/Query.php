@@ -119,6 +119,9 @@ class Query implements LimitOffsetInterface
                 ->columns($model->getColumns() ?: []);
         }
 
+        $select->limit($this->getLimit());
+        $select->offset($this->getOffset());
+
         return $select;
     }
 }
