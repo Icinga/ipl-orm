@@ -1,0 +1,9 @@
+# Exclude all hidden files
+.*
+
+# Except those related to Git
+!.git*
+
+# Exclude files from composer install
+vendor/
+composer.lock
