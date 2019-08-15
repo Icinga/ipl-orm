@@ -3,13 +3,17 @@
 namespace ipl\Orm;
 
 use ipl\Sql\Connection;
+use ipl\Sql\LimitOffset;
+use ipl\Sql\LimitOffsetInterface;
 use ipl\Sql\Select;
 
 /**
  * Represents a database query which is associated to a model and a database connection.
  */
-class Query
+class Query implements LimitOffsetInterface
 {
+    use LimitOffset;
+
     /** @var Connection Database connection */
     protected $db;
 
