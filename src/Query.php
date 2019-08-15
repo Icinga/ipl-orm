@@ -2,13 +2,42 @@
 
 namespace ipl\Orm;
 
+use ipl\Sql\Connection;
+
 /**
  * Represents a database query which is associated to a model and a database connection.
  */
 class Query
 {
+    /** @var Connection Database connection */
+    protected $db;
+
     /** @var Model Model to query */
     protected $model;
+
+    /**
+     * Get the database connection
+     *
+     * @return Connection
+     */
+    public function getDb()
+    {
+        return $this->db;
+    }
+
+    /**
+     * Set the database connection
+     *
+     * @param Connection $db
+     *
+     * @return $this
+     */
+    public function setDb(Connection $db)
+    {
+        $this->db = $db;
+
+        return $this;
+    }
 
     /**
      * Get the model to query
