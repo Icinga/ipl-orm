@@ -3,6 +3,7 @@
 namespace ipl\Orm;
 
 use ipl\Sql\Connection;
+use ipl\Sql\Select;
 
 /**
  * Represents a database query which is associated to a model and a database connection.
@@ -61,5 +62,22 @@ class Query
         $this->model = $model;
 
         return $this;
+    }
+
+    /**
+     * Assemble and return the SELECT query
+     *
+     * @return Select
+     */
+    public function assembleSelect()
+    {
+        $model = $this->getModel();
+
+        $select = (new Select())
+            ->from($model->getTableName())
+            ->columns($model->getKeyName() ?: []) // `?: []` to support null for primary key and/or columns
+            ->columns($model->getColumns() ?: []);
+
+        return $select;
     }
 }
