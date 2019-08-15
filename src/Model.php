@@ -8,4 +8,17 @@ namespace ipl\Orm;
  */
 abstract class Model
 {
+    public function __construct()
+    {
+        $this->init();
+    }
+
+    /**
+     * Initialize the model
+     *
+     * If you want to adjust the model after construction, override this method.
+     */
+    protected function init()
+    {
+    }
 }
