@@ -65,6 +65,19 @@ class SqlTest extends \PHPUnit\Framework\TestCase
         );
     }
 
+    public function testSelectFromModelWithExplicitColumns()
+    {
+        $model = new TestModelWithColumns();
+        $query = (new Query())
+            ->setModel($model)
+            ->columns(['lorem']);
+
+        $this->assertSql(
+            'SELECT lorem FROM test',
+            $query->assembleSelect()
+        );
+    }
+
     public function setUp()
     {
         $this->queryBuilder = new QueryBuilder(new TestAdapter());
