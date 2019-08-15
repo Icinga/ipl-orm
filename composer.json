@@ -1,0 +1,26 @@
+{
+  "name": "ipl/orm",
+  "type": "library",
+  "description": "Icinga PHP Library - ORM",
+  "license": "MIT",
+  "keywords": [
+    "sql",
+    "database",
+    "orm"
+  ],
+  "homepage": "https://github.com/Icinga/ipl-orm",
+  "require": {
+    "php": ">=5.6.0",
+    "ext-pdo": "*"
+  },
+  "autoload": {
+    "psr-4": {
+      "ipl\\Orm\\": "src"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "ipl\\Tests\\Orm\\": "tests"
+    }
+  }
+}
