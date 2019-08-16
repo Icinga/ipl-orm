@@ -19,4 +19,27 @@ class RelationTest extends \PHPUnit\Framework\TestCase
 
         $this->assertSame($name, $relation->getName());
     }
+
+    public function testGetForeignKeyReturnsNullIfUnset()
+    {
+        $this->assertNull((new Relation())->getForeignKey());
+    }
+
+    public function testGetForeignKeyReturnsCorrectArrayIfArrayHasBeenSet()
+    {
+        $foreignKey = ['foreign', 'key'];
+        $relation = (new Relation())
+            ->setForeignKey($foreignKey);
+
+        $this->assertSame($foreignKey, $relation->getForeignKey());
+    }
+
+    public function testGetForeignKeyReturnsCorrectStringIfStringHasBeenSet()
+    {
+        $foreignKey = 'foreign_key';
+        $relation = (new Relation())
+            ->setForeignKey($foreignKey);
+
+        $this->assertSame($foreignKey, $relation->getForeignKey());
+    }
 }
