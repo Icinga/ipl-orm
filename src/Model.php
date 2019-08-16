@@ -51,6 +51,15 @@ abstract class Model
     }
 
     /**
+     * Create the model's relations
+     *
+     * If your model should be associated to other models, override this method and create the model's relations.
+     */
+    public function createRelations(Relations $relations)
+    {
+    }
+
+    /**
      * Initialize the model
      *
      * If you want to adjust the model after construction, override this method.
