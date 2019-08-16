@@ -23,6 +23,9 @@ class Query implements LimitOffsetInterface
     /** @var array Columns to select from the model */
     protected $columns = [];
 
+    /** @var Relations Model's relations */
+    protected $relations;
+
     /**
      * Get the database connection
      *
@@ -123,5 +126,21 @@ class Query implements LimitOffsetInterface
         $select->offset($this->getOffset());
 
         return $select;
+    }
+
+    /**
+     * Ensure that the model's relations have been created
+     *
+     * @return $this
+     */
+    public function ensureRelationsCreated()
+    {
+        if ($this->relations === null) {
+            $relations = new Relations();
+            $this->getModel()->createRelations($relations);
+            $this->relations = $relations;
+        }
+
+        return $this;
     }
 }
