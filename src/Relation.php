@@ -11,6 +11,9 @@ class Relation
     /** @var string Name of the relation */
     protected $name;
 
+    /** @var string|array Column name(s) of the foreign key found in the target table */
+    protected $foreignKey;
+
     /**
      * Get the name of the relation
      *
@@ -31,6 +34,30 @@ class Relation
     public function setName($name)
     {
         $this->name = $name;
+
+        return $this;
+    }
+
+    /**
+     * Get the column name(s) of the foreign key found in the target table
+     *
+     * @return string|array Array if the foreign key is compound, string otherwise
+     */
+    public function getForeignKey()
+    {
+        return $this->foreignKey;
+    }
+
+    /**
+     * Set the column name(s) of the foreign key found in the target table
+     *
+     * @param string|array $foreignKey Array if the foreign key is compound, string otherwise
+     *
+     * @return $this
+     */
+    public function setForeignKey($foreignKey)
+    {
+        $this->foreignKey = $foreignKey;
 
         return $this;
     }
