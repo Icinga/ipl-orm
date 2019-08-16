@@ -2,6 +2,8 @@
 
 namespace ipl\Orm;
 
+use function ipl\Stdlib\get_php_type;
+
 /**
  * Relations represent the connection between models, i.e. the association between rows in one or more tables
  * on the basis of matching key columns. The relationships are defined using candidate key-foreign key constructs.
@@ -16,6 +18,9 @@ class Relation
 
     /** @var string|array Column name(s) of the candidate key in the source table which references the foreign key */
     protected $candidateKey;
+
+    /** @var string Target model class */
+    protected $targetClass;
 
     /**
      * Get the name of the relation
@@ -85,6 +90,42 @@ class Relation
     public function setCandidateKey($candidateKey)
     {
         $this->candidateKey = $candidateKey;
+
+        return $this;
+    }
+
+    /**
+     * Get the target model class
+     *
+     * @return string
+     */
+    public function getTargetClass()
+    {
+        return $this->targetClass;
+    }
+
+    /**
+     * Set the target model class
+     *
+     * @param string $targetClass
+     *
+     * @return $this
+     *
+     * @throws \InvalidArgumentException If the target model class is not of type string
+     */
+    public function setTargetClass($targetClass)
+    {
+        if (! is_string($targetClass)) {
+            // Require a class name here instead of a concrete model in oder to prevent circular references when
+            // constructing relations
+            throw new \InvalidArgumentException(sprintf(
+                '%s() expects parameter 1 to be string, %s given',
+                __METHOD__,
+                get_php_type($targetClass)
+            ));
+        }
+
+        $this->targetClass = $targetClass;
 
         return $this;
     }
