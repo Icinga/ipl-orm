@@ -8,4 +8,30 @@ namespace ipl\Orm;
  */
 class Relation
 {
+    /** @var string Name of the relation */
+    protected $name;
+
+    /**
+     * Get the name of the relation
+     *
+     * @return string
+     */
+    public function getName()
+    {
+        return $this->name;
+    }
+
+    /**
+     * Set the name of the relation
+     *
+     * @param string $name
+     *
+     * @return $this
+     */
+    public function setName($name)
+    {
+        $this->name = $name;
+
+        return $this;
+    }
 }
