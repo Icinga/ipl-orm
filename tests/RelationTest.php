@@ -65,4 +65,24 @@ class RelationTest extends \PHPUnit\Framework\TestCase
 
         $this->assertSame($candidateKey, $relation->getCandidateKey());
     }
+
+    public function testGetTargetClassReturnsNullIfUnset()
+    {
+        $this->assertNull((new Relation())->getTargetClass());
+    }
+
+    public function testGetTargetClassReturnsCorrectTargetClassIfSet()
+    {
+        $targetClass = TestModel::class;
+        $relation = (new Relation())
+            ->setTargetClass($targetClass);
+
+        $this->assertSame($targetClass, $relation->getTargetClass());
+    }
+
+    /** @expectedException \InvalidArgumentException */
+    public function testSetTargetClassThrowsInvalidArgumentExceptionIfNotString()
+    {
+        (new Relation())->setTargetClass(new TestModel());
+    }
 }
