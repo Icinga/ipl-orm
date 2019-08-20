@@ -31,4 +31,12 @@ class RelationsTest extends \PHPUnit\Framework\TestCase
 
         $this->assertFalse($relations->has('test'));
     }
+
+    /** @expectedException \InvalidArgumentException */
+    public function testCreateThrowsInvalidArgumentExceptionIfRelationWithTheSameNameAlreadyExists()
+    {
+        $relations = new Relations();
+        $relations->create('test', TestModel::class);
+        $relations->create('test', TestModel::class);
+    }
 }

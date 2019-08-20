@@ -30,10 +30,13 @@ class Relations
      *
      * @return Relation
      *
+     * @throws \InvalidArgumentException If a relation with the given name already exists
      * @throws \InvalidArgumentException If the target model class is not of type string
      */
     public function create($name, $targetClass)
     {
+        $this->assertRelationDoesNotYetExist($name);
+
         $relation = (new Relation())
             ->setName($name)
             ->setTargetClass($targetClass);
@@ -41,5 +44,17 @@ class Relations
         $this->relations[$name] = $relation;
 
         return $relation;
+    }
+
+    /**
+     * Throw exception if a relation with the given name already exists
+     *
+     * @param string $name
+     */
+    protected function assertRelationDoesNotYetExist($name)
+    {
+        if ($this->has($name)) {
+            throw new \InvalidArgumentException("Relation '$name' already exists");
+        }
     }
 }
