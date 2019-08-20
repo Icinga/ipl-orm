@@ -11,6 +11,18 @@ class Relations
     protected $relations = [];
 
     /**
+     * Get whether a relation with the given name exists
+     *
+     * @param string $name
+     *
+     * @return bool
+     */
+    public function has($name)
+    {
+        return isset($this->relations[$name]);
+    }
+
+    /**
      * Create and add a new relation with the given name and target model class
      *
      * @param string $name        Name of the relation
