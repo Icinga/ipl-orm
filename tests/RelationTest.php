@@ -107,4 +107,26 @@ class RelationTest extends \PHPUnit\Framework\TestCase
 
         $this->assertSame(['i', 'd'], $candidateKey);
     }
+
+    public function testGetDefaultForeignKeyReturnsEmptyArrayIfSourceModelsPrimaryKeyIsUnset()
+    {
+        $foreignKey = Relation::getDefaultForeignKey(new TestModel());
+
+        $this->assertIsArray($foreignKey);
+        $this->assertEmpty($foreignKey);
+    }
+
+    public function testGetDefaultForeignKeyReturnsCorrectArrayIfSourceModelsPrimaryKeyIsAString()
+    {
+        $foreignKey = Relation::getDefaultForeignKey(new TestModelWithPrimaryKey());
+
+        $this->assertSame(['test_id'], $foreignKey);
+    }
+
+    public function testGetDefaultForeignKeyReturnsCorrectArrayIfSourceModelsPrimaryKeyIsCompound()
+    {
+        $foreignKey = Relation::getDefaultForeignKey(new TestModelWithCompoundPrimaryKey());
+
+        $this->assertSame(['test_i', 'test_d'], $foreignKey);
+    }
 }
