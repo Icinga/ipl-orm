@@ -23,6 +23,20 @@ class Relation
     protected $targetClass;
 
     /**
+     * Get the default column name(s) in the source table used to match the foreign key
+     *
+     * The default candidate key is the primary key column name(s) of the given model.
+     *
+     * @param Model $source
+     *
+     * @return array
+     */
+    public static function getDefaultCandidateKey(Model $source)
+    {
+        return (array) $source->getKeyName();
+    }
+
+    /**
      * Get the name of the relation
      *
      * @return string
