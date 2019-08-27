@@ -164,4 +164,50 @@ class Relation
 
         return $this;
     }
+
+    /**
+     * Determine the candidate key-foreign key construct of the relation
+     *
+     * @param Model $source
+     *
+     * @return array Candidate key-foreign key column name pairs
+     *
+     * @throws \UnexpectedValueException If there's no candidate key to be found
+     *                                   or the foreign key count does not match the candidate key count
+     */
+    public function determineKeys(Model $source)
+    {
+        $candidateKey = (array) $this->getCandidateKey();
+
+        if (empty($candidateKey)) {
+            $candidateKey = static::getDefaultCandidateKey($source);
+        }
+
+        if (empty($candidateKey)) {
+            throw new \UnexpectedValueException(sprintf(
+                "Can't join relation '%s' in model '%s'. No candidate key found.",
+                $this->getName(),
+                get_class($source)
+            ));
+        }
+
+        $foreignKey = (array) $this->getForeignKey();
+
+        if (empty($foreignKey)) {
+            $foreignKey = static::getDefaultForeignKey($source);
+        }
+
+        if (count($foreignKey) !== count($candidateKey)) {
+            throw new \UnexpectedValueException(sprintf(
+                "Can't join relation '%s' in model '%s'."
+                . " Foreign key count (%s) does not match candidate key count (%s).",
+                $this->getName(),
+                get_class($source),
+                implode(', ', $foreignKey),
+                implode(', ', $candidateKey)
+            ));
+        }
+
+        return array_combine($foreignKey, $candidateKey);
+    }
 }
