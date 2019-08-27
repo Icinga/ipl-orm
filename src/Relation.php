@@ -37,6 +37,27 @@ class Relation
     }
 
     /**
+     * Get the default column name(s) of the foreign key found in the target table
+     *
+     * The default foreign key is the given model's primary key column name(s) prefixed with its table name.
+     *
+     * @param Model $source
+     *
+     * @return array
+     */
+    public static function getDefaultForeignKey(Model $source)
+    {
+        $tableName = $source->getTableName();
+
+        return array_map(
+            function ($key) use ($tableName) {
+                return "{$tableName}_{$key}";
+            },
+            (array) $source->getKeyName()
+        );
+    }
+
+    /**
      * Get the name of the relation
      *
      * @return string
