@@ -85,4 +85,26 @@ class RelationTest extends \PHPUnit\Framework\TestCase
     {
         (new Relation())->setTargetClass(new TestModel());
     }
+
+    public function testGetDefaultCandidateKeyReturnsEmptyArrayIfSourceModelsPrimaryKeyIsUnset()
+    {
+        $candidateKey = Relation::getDefaultCandidateKey(new TestModel());
+
+        $this->assertIsArray($candidateKey);
+        $this->assertEmpty($candidateKey);
+    }
+
+    public function testGetDefaultCandidateKeyReturnsCorrectArrayIfSourceModelsPrimaryKeyIsAString()
+    {
+        $candidateKey = Relation::getDefaultCandidateKey(new TestModelWithPrimaryKey());
+
+        $this->assertSame(['id'], $candidateKey);
+    }
+
+    public function testGetDefaultCandidateKeyReturnsCorrectArrayIfSourceModelsPrimaryKeyIsCompound()
+    {
+        $candidateKey = Relation::getDefaultCandidateKey(new TestModelWithCompoundPrimaryKey());
+
+        $this->assertSame(['i', 'd'], $candidateKey);
+    }
 }
