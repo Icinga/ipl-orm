@@ -26,6 +26,9 @@ class Query implements LimitOffsetInterface
     /** @var Relations Model's relations */
     protected $relations;
 
+    /** @var Relation[] Relations to eager load */
+    protected $with = [];
+
     /**
      * Get the database connection
      *
@@ -96,6 +99,32 @@ class Query implements LimitOffsetInterface
     public function columns($columns)
     {
         $this->columns = array_merge($this->columns, (array) $columns);
+
+        return $this;
+    }
+
+    /**
+     * Add a relation to eager load
+     *
+     * @param string $relation
+     *
+     * @return $this
+     */
+    public function with($relation)
+    {
+        $this->ensureRelationsCreated();
+
+        if (! $this->relations->has($relation)) {
+            $model = $this->getModel();
+
+            throw new \InvalidArgumentException(sprintf(
+                "Can't join relation '%s' in model '%s'. Relation not found.",
+                $relation,
+                get_class($model)
+            ));
+        }
+
+        $this->with[$relation] = $this->relations->get($relation);
 
         return $this;
     }
