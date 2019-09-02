@@ -158,9 +158,10 @@ class Query implements LimitOffsetInterface
     public function assembleSelect()
     {
         $model = $this->getModel();
+        $tableName = $model->getTableName();
 
         $select = (new Select())
-            ->from($model->getTableName());
+            ->from($tableName);
 
         $columns = $this->getColumns();
 
@@ -170,6 +171,28 @@ class Query implements LimitOffsetInterface
             $select
                 ->columns($model->getKeyName() ?: []) // `?: []` to support null for primary key and/or columns
                 ->columns($model->getColumns() ?: []);
+        }
+
+        foreach ($this->with as $relation) {
+            $targetClass = $relation->getTargetClass();
+            /** @var Model $target */
+            $target = new $targetClass();
+            $targetTableName = $target->getTableName();
+            $targetTableAlias = $relation->getName();
+            $conditions = [];
+
+            foreach ($relation->determineKeys($model) as $fk => $ck) {
+                // Qualify keys
+                $conditions[] = sprintf('%s.%s = %s.%s', $targetTableAlias, $fk, $tableName, $ck);
+            }
+
+            $select->join([$targetTableAlias => $targetTableName], $conditions);
+
+            if (empty($columns)) {
+                $select
+                    ->columns(static::qualifyColumns((array) $target->getKeyName() ?: [], $targetTableAlias))
+                    ->columns(static::qualifyColumns($target->getColumns() ?: [], $targetTableAlias));
+            }
         }
 
         $select->limit($this->getLimit());
