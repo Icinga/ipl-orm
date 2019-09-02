@@ -30,6 +30,27 @@ class Query implements LimitOffsetInterface
     protected $with = [];
 
     /**
+     * Qualify the given columns by the given table name
+     *
+     * @param array  $columns
+     * @param string $tableName
+     *
+     * @return array
+     */
+    public static function qualifyColumns(array $columns, $tableName)
+    {
+        $qualified = [];
+
+        foreach ($columns as $column) {
+            $alias = $tableName . '_' . $column;
+            $column = $tableName . '.' . $column;
+            $qualified[$alias] = $column;
+        }
+
+        return $qualified;
+    }
+
+    /**
      * Get the database connection
      *
      * @return Connection
