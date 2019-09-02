@@ -39,4 +39,18 @@ class RelationsTest extends \PHPUnit\Framework\TestCase
         $relations->create('test', TestModel::class);
         $relations->create('test', TestModel::class);
     }
+
+    public function testGetReturnsCorrectRelationIfRelationExists()
+    {
+        $relations = new Relations();
+        $relation = $relations->create('test', TestModel::class);
+
+        $this->assertSame($relation, $relations->get('test'));
+    }
+
+    /** @expectedException \InvalidArgumentException */
+    public function testGetThrowsInvalidArgumentExceptionIfRelationDoesNotExist()
+    {
+        (new Relations())->get('test');
+    }
 }
