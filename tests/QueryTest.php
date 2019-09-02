@@ -131,4 +131,21 @@ class QueryTest extends \PHPUnit\Framework\TestCase
 
         $this->assertSame(1, $model->relationsCreatedCount);
     }
+
+    public function testQualifyColumnsReturnsTheColumnsAndAliasesPrefixedWithTheGivenTableName()
+    {
+        $tableName = 'profile';
+        $columns = [
+            'user_id',
+            'given_name',
+            'surname'
+        ];
+        $qualified = [
+            'profile_user_id'    => 'profile.user_id',
+            'profile_given_name' => 'profile.given_name',
+            'profile_surname'    => 'profile.surname'
+        ];
+
+        $this->assertSame($qualified, Query::qualifyColumns($columns, $tableName));
+    }
 }
