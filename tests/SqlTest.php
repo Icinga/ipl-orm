@@ -121,6 +121,44 @@ class SqlTest extends \PHPUnit\Framework\TestCase
         );
     }
 
+    public function testSelectFromModelWithEagerLoadingOfASingleRelation()
+    {
+        $user = new User();
+        $query = (new Query())
+            ->setModel($user)
+            ->with('profile');
+
+        $sql = <<<'SQL'
+SELECT
+    user.id AS user_id, user.username AS user_username, user.password AS user_password,
+    profile.id AS profile_id, profile.user_id AS profile_user_id, profile.given_name AS profile_given_name,
+    profile.surname AS profile_surname
+FROM
+    user
+INNER JOIN
+    profile profile ON profile.user_id = user.id
+SQL;
+
+        $this->assertSql(
+            $sql,
+            $query->assembleSelect()
+        );
+    }
+
+    public function testSelectFromModelWithEagerLoadingOfASingleRelationAndExplicitColumnsToSelect()
+    {
+        $user = new User();
+        $query = (new Query())
+            ->setModel($user)
+            ->columns('*')
+            ->with('profile');
+
+        $this->assertSql(
+            'SELECT * FROM user INNER JOIN profile profile ON profile.user_id = user.id',
+            $query->assembleSelect()
+        );
+    }
+
     public function setUp()
     {
         $this->queryBuilder = new QueryBuilder(new TestAdapter());
