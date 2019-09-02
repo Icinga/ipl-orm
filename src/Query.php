@@ -167,10 +167,16 @@ class Query implements LimitOffsetInterface
 
         if (! empty($columns)) {
             $select->columns($columns);
+        } elseif (empty($this->with)) {
+            // Don't qualify columns if we don't have any relation to load
+            $select
+                ->columns($model->getKeyName() ?: [])
+                ->columns($model->getColumns() ?: []);
+                // `?: []` to support null for primary key and/or columns
         } else {
             $select
-                ->columns($model->getKeyName() ?: []) // `?: []` to support null for primary key and/or columns
-                ->columns($model->getColumns() ?: []);
+                ->columns(static::qualifyColumns((array) $model->getKeyName() ?: [], $tableName))
+                ->columns(static::qualifyColumns($model->getColumns() ?: [], $tableName));
         }
 
         foreach ($this->with as $relation) {
