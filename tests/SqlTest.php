@@ -128,6 +128,9 @@ class SqlTest extends \PHPUnit\Framework\TestCase
 
     public function assertSql($sql, $query, $values = null)
     {
+        // Reduce whitespaces to just one space
+        $sql = preg_replace('/\s+/', ' ', trim($sql));
+
         list($stmt, $bind) = $this->queryBuilder->assemble($query);
 
         $this->assertSame($sql, $stmt);
