@@ -148,4 +148,51 @@ class QueryTest extends \PHPUnit\Framework\TestCase
 
         $this->assertSame($qualified, Query::qualifyColumns($columns, $tableName));
     }
+
+    public function testCollectColumnsReturnsEmptyArrayIfPrimaryKeyAndColumnsAreEmpty()
+    {
+        $model = new TestModel();
+        $columns = Query::collectColumns($model);
+
+        $this->assertIsArray($columns);
+        $this->assertEmpty($columns);
+    }
+
+
+    public function testCollectColumnsOnlyReturnsThePrimaryKeyAsArrayIfThereIsOnlyThePrimaryKeyAndItIsAString()
+    {
+        $model = new TestModelWithPrimaryKey();
+
+        $this->assertSame((array) $model->getKeyName(), Query::collectColumns($model));
+    }
+
+    public function testCollectColumnsOnlyReturnsTheCompoundPrimaryKeyAsArrayIfThereIsOnlyThePrimaryKeyAndItIsCompound()
+    {
+        $model = new TestModelWithCompoundPrimaryKey();
+
+        $this->assertSame($model->getKeyName(), Query::collectColumns($model));
+    }
+
+    public function testCollectColumnsOnlyReturnsTheColumnsIfThereIsNoPrimaryKey()
+    {
+        $model = new TestModelWithColumns();
+
+        $this->assertSame($model->getColumns(), Query::collectColumns($model));
+    }
+
+    public function testCollectColumnsReturnsPrimaryKeyPlusColumnsInThatOrder()
+    {
+        $model = new TestModelWithPrimaryKeyAndColumns();
+
+        $this->assertSame(
+            array_merge((array) $model->getKeyName(), $model->getColumns()), Query::collectColumns($model))
+        ;
+    }
+
+    public function testCollectColumnsReturnsCompoundPrimaryKeyPlusColumnsInThatOrder()
+    {
+        $model = new TestModelWithCompoundPrimaryKeyAndColumns();
+
+        $this->assertSame(array_merge($model->getKeyName(), $model->getColumns()), Query::collectColumns($model));
+    }
 }
