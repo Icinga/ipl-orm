@@ -22,6 +22,9 @@ class Relation
     /** @var string Target model class */
     protected $targetClass;
 
+    /** @var Model Target model */
+    protected $target;
+
     /**
      * Get the default column name(s) in the source table used to match the foreign key
      *
@@ -163,6 +166,23 @@ class Relation
         $this->targetClass = $targetClass;
 
         return $this;
+    }
+
+    /**
+     * Get an instance of the target model
+     *
+     * Note that multiple calls to this method always returns the very same model instance.
+     *
+     * @return Model
+     */
+    public function getTarget()
+    {
+        if ($this->target === null) {
+            $targetClass = $this->getTargetClass();
+            $this->target = new $targetClass();
+        }
+
+        return $this->target;
     }
 
     /**
