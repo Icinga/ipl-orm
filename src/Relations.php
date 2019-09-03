@@ -39,25 +39,40 @@ class Relations
     }
 
     /**
-     * Create and add a new relation with the given name and target model class
+     * Add the given relation to the collection
+     *
+     * @param Relation $relation
+     *
+     * @return $this
+     *
+     * @throws \InvalidArgumentException If a relation with the given name already exists
+     */
+    public function add(Relation $relation)
+    {
+        $name = $relation->getName();
+
+        $this->assertRelationDoesNotYetExist($name);
+
+        $this->relations[$name] = $relation;
+
+        return $this;
+    }
+
+    /**
+     * Create a new relation from the given name and target model class
      *
      * @param string $name        Name of the relation
      * @param string $targetClass Target model class
      *
      * @return Relation
      *
-     * @throws \InvalidArgumentException If a relation with the given name already exists
      * @throws \InvalidArgumentException If the target model class is not of type string
      */
     public function create($name, $targetClass)
     {
-        $this->assertRelationDoesNotYetExist($name);
-
         $relation = (new Relation())
             ->setName($name)
             ->setTargetClass($targetClass);
-
-        $this->relations[$name] = $relation;
 
         return $relation;
     }

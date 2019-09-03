@@ -27,6 +27,8 @@ class User extends Model
 
     public function createRelations(Relations $relations)
     {
-        $relations->create('profile', Profile::class);
+        $relations->add(
+            $relations->create('profile', Profile::class)
+        );
     }
 }

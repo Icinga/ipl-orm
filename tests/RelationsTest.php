@@ -20,7 +20,9 @@ class RelationsTest extends \PHPUnit\Framework\TestCase
     public function testHasReturnsTrueIfRelationExists()
     {
         $relations = new Relations();
-        $relations->create('test', TestModel::class);
+        $relations->add(
+            $relations->create('test', TestModel::class)
+        );
 
         $this->assertTrue($relations->has('test'));
     }
@@ -33,17 +35,19 @@ class RelationsTest extends \PHPUnit\Framework\TestCase
     }
 
     /** @expectedException \InvalidArgumentException */
-    public function testCreateThrowsInvalidArgumentExceptionIfRelationWithTheSameNameAlreadyExists()
+    public function testAddThrowsInvalidArgumentExceptionIfRelationWithTheSameNameAlreadyExists()
     {
         $relations = new Relations();
-        $relations->create('test', TestModel::class);
-        $relations->create('test', TestModel::class);
+        $relation = $relations->create('test', TestModel::class);
+        $relations->add($relation);
+        $relations->add($relation);
     }
 
     public function testGetReturnsCorrectRelationIfRelationExists()
     {
         $relations = new Relations();
         $relation = $relations->create('test', TestModel::class);
+        $relations->add($relation);
 
         $this->assertSame($relation, $relations->get('test'));
     }
