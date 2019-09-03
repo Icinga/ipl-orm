@@ -172,8 +172,9 @@ class Relation
     }
 
     /**
-     * Get an instance of the target model
+     * Get the target model
      *
+     * Returns the model from {@link setTarget()} or an instance of {@link getTargetClass()}.
      * Note that multiple calls to this method always returns the very same model instance.
      *
      * @return Model
@@ -186,6 +187,20 @@ class Relation
         }
 
         return $this->target;
+    }
+
+    /**
+     * Set the the target model
+     *
+     * @param Model $target
+     *
+     * @return $this
+     */
+    public function setTarget(Model $target)
+    {
+        $this->target = $target;
+
+        return $this;
     }
 
     /**
