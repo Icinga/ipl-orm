@@ -30,6 +30,18 @@ class Query implements LimitOffsetInterface
     protected $with = [];
 
     /**
+     * Collect all selectable columns from the given model
+     *
+     * @param Model $source
+     *
+     * @return array
+     */
+    public static function collectColumns(Model $source)
+    {
+        return array_merge((array) $source->getKeyName(), (array) $source->getColumns());
+    }
+
+    /**
      * Qualify the given columns by the given table name
      *
      * @param array  $columns
