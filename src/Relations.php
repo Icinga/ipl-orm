@@ -3,6 +3,7 @@
 namespace ipl\Orm;
 
 use ipl\Orm\Relation\BelongsTo;
+use ipl\Orm\Relation\BelongsToMany;
 use ipl\Orm\Relation\HasMany;
 use ipl\Orm\Relation\HasOne;
 use function ipl\Stdlib\get_php_type;
@@ -140,6 +141,23 @@ class Relations
     public function belongsTo($name, $targetClass)
     {
         $relation = $this->create(BelongsTo::class, $name, $targetClass);
+
+        $this->add($relation);
+
+        return $relation;
+    }
+
+    /**
+     * Define a many-to-many relationship
+     *
+     * @param string $name        Name of the relation
+     * @param string $targetClass Target model class
+     *
+     * @return Relation
+     */
+    public function belongsToMany($name, $targetClass)
+    {
+        $relation = $this->create(BelongsToMany::class, $name, $targetClass);
 
         $this->add($relation);
 
