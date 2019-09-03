@@ -25,6 +25,9 @@ class Relation
     /** @var Model Target model */
     protected $target;
 
+    /** @var bool Whether this is the inverse of a relationship */
+    protected $inverse;
+
     /**
      * Get the default column name(s) in the source table used to match the foreign key
      *
@@ -200,7 +203,9 @@ class Relation
         $candidateKey = (array) $this->getCandidateKey();
 
         if (empty($candidateKey)) {
-            $candidateKey = static::getDefaultCandidateKey($source);
+            $candidateKey = $this->inverse
+                ? static::getDefaultForeignKey($this->getTarget())
+                : static::getDefaultCandidateKey($source);
         }
 
         if (empty($candidateKey)) {
@@ -214,7 +219,9 @@ class Relation
         $foreignKey = (array) $this->getForeignKey();
 
         if (empty($foreignKey)) {
-            $foreignKey = static::getDefaultForeignKey($source);
+            $foreignKey = $this->inverse
+                ? static::getDefaultCandidateKey($this->getTarget())
+                : static::getDefaultForeignKey($source);
         }
 
         if (count($foreignKey) !== count($candidateKey)) {
