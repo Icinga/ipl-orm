@@ -181,14 +181,9 @@ class Query implements LimitOffsetInterface
             $select->columns($columns);
         } elseif (empty($this->with)) {
             // Don't qualify columns if we don't have any relation to load
-            $select
-                ->columns($model->getKeyName() ?: [])
-                ->columns($model->getColumns() ?: []);
-                // `?: []` to support null for primary key and/or columns
+            $select->columns(static::collectColumns($model));
         } else {
-            $select
-                ->columns(static::qualifyColumns((array) $model->getKeyName() ?: [], $tableName))
-                ->columns(static::qualifyColumns($model->getColumns() ?: [], $tableName));
+            $select->columns(static::qualifyColumns(static::collectColumns($model), $tableName));
         }
 
         foreach ($this->with as $relation) {
@@ -207,9 +202,7 @@ class Query implements LimitOffsetInterface
             $select->join([$targetTableAlias => $targetTableName], $conditions);
 
             if (empty($columns)) {
-                $select
-                    ->columns(static::qualifyColumns((array) $target->getKeyName() ?: [], $targetTableAlias))
-                    ->columns(static::qualifyColumns($target->getColumns() ?: [], $targetTableAlias));
+                $select->columns(static::qualifyColumns(static::collectColumns($target), $targetTableAlias));
             }
         }
 
