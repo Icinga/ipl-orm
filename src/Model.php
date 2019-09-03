@@ -8,10 +8,16 @@ use ipl\Sql\Connection;
  * Models represent single database tables or parts of it.
  * They are also used to interact with the tables, i.e. in order to query for data.
  */
-abstract class Model
+abstract class Model implements \ArrayAccess
 {
-    public final function __construct()
+    use Properties;
+
+    public final function __construct(array $properties = null)
     {
+        if (! empty($this->properties)) {
+            $this->setProperties($properties);
+        }
+
         $this->init();
     }
 
