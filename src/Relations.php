@@ -2,6 +2,8 @@
 
 namespace ipl\Orm;
 
+use function ipl\Stdlib\get_php_type;
+
 /**
  * Collection of a model's relations.
  */
@@ -59,8 +61,9 @@ class Relations
     }
 
     /**
-     * Create a new relation from the given name and target model class
+     * Create a new relation from the given class, name and target model class
      *
+     * @param string $class       Class of the relation to create
      * @param string $name        Name of the relation
      * @param string $targetClass Target model class
      *
@@ -68,9 +71,21 @@ class Relations
      *
      * @throws \InvalidArgumentException If the target model class is not of type string
      */
-    public function create($name, $targetClass)
+    public function create($class, $name, $targetClass)
     {
-        $relation = (new Relation())
+        $relation = new $class();
+
+        if (! $relation instanceof Relation) {
+            throw new \InvalidArgumentException(sprintf(
+                '%s() expects parameter 1 to be a subclass of %s, %s given',
+                __METHOD__,
+                Relation::class,
+                get_php_type($targetClass)
+            ));
+        }
+
+        /** @var Relation $relation */
+        $relation
             ->setName($name)
             ->setTargetClass($targetClass);
 
