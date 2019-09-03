@@ -187,9 +187,7 @@ class Query implements LimitOffsetInterface
         }
 
         foreach ($this->with as $relation) {
-            $targetClass = $relation->getTargetClass();
-            /** @var Model $target */
-            $target = new $targetClass();
+            $target = $relation->getTarget();
             $targetTableName = $target->getTableName();
             $targetTableAlias = $relation->getName();
             $conditions = [];
