@@ -2,6 +2,7 @@
 
 namespace ipl\Orm;
 
+use ipl\Orm\Relation\HasOne;
 use function ipl\Stdlib\get_php_type;
 
 /**
@@ -88,6 +89,23 @@ class Relations
         $relation
             ->setName($name)
             ->setTargetClass($targetClass);
+
+        return $relation;
+    }
+
+    /**
+     * Define a one-to-one relationship
+     *
+     * @param string $name        Name of the relation
+     * @param string $targetClass Target model class
+     *
+     * @return Relation
+     */
+    public function hasOne($name, $targetClass)
+    {
+        $relation = $this->create(HasOne::class, $name, $targetClass);
+
+        $this->add($relation);
 
         return $relation;
     }
