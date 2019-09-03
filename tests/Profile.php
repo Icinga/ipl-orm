@@ -3,6 +3,7 @@
 namespace ipl\Tests\Orm;
 
 use ipl\Orm\Model;
+use ipl\Orm\Relations;
 
 class Profile extends Model
 {
@@ -23,5 +24,10 @@ class Profile extends Model
             'given_name',
             'surname'
         ];
+    }
+
+    public function createRelations(Relations $relations)
+    {
+        $relations->belongsTo('user', User::class);
     }
 }
