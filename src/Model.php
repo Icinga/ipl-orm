@@ -10,7 +10,7 @@ use ipl\Sql\Connection;
  */
 abstract class Model
 {
-    public function __construct()
+    public final function __construct()
     {
         $this->init();
     }
