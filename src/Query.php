@@ -178,7 +178,18 @@ class Query implements LimitOffsetInterface
         $columns = $this->getColumns();
 
         if (! empty($columns)) {
-            $select->columns($columns);
+            list($modelColumns, $foreignColumnMap) = $this->requireAndResolveColumns($columns);
+
+            if (! empty($modelColumns) && ! empty($foreignColumnMap)) {
+                // Only qualify columns if there is a relation to load
+                $modelColumns = static::qualifyColumns($modelColumns, $tableName);
+            }
+
+            $select->columns($modelColumns);
+
+            foreach ($foreignColumnMap as $relation => $foreignColumns) {
+                $select->columns(static::qualifyColumns($foreignColumns, $this->with[$relation]->getName()));
+            }
         } elseif (empty($this->with)) {
             // Don't qualify columns if we don't have any relation to load
             $select->columns(static::collectColumns($model));
@@ -218,5 +229,67 @@ class Query implements LimitOffsetInterface
         }
 
         return $this;
+    }
+
+    /**
+     * Require and resolve columns
+     *
+     * Related models will be automatically added for eager-loading.
+     *
+     * @param array $columns
+     *
+     * @return array
+     *
+     * @throws \RuntimeException If a column does not exist
+     */
+    protected function requireAndResolveColumns(array $columns)
+    {
+        $tableName = $this->getModel()->getTableName();
+        $modelColumns = [];
+        $foreignColumnMap = [];
+
+        foreach ($columns as $column) {
+            $dot = strrpos($column, '.');
+
+            switch (true) {
+                /** @noinspection PhpMissingBreakStatementInspection */
+                case $dot !== false:
+                    $relation = substr($column, 0, $dot);
+                    $column = substr($column, $dot + 1);
+
+                    if ($relation !== $tableName) {
+                        $this->with($relation);
+
+                        $target = $this->with[$relation]->getTarget();
+
+                        $resolved = &$foreignColumnMap[$relation];
+
+                        break;
+                    }
+                    // Move to default
+                default:
+                    $target = $this->getModel();
+
+                    $resolved = &$modelColumns;
+            }
+
+            $resolved[] = $column;
+
+            if ($column === '*') {
+                continue;
+            }
+
+            $columns = array_flip(static::collectColumns($target));
+
+            if (! isset($columns[$column])) {
+                throw new \RuntimeException(sprintf(
+                    "Can't require column '%s' in model '%s'. Column not found.",
+                    $column,
+                    get_class($target)
+                ));
+            }
+        }
+
+        return [$modelColumns, $foreignColumnMap];
     }
 }
