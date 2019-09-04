@@ -195,4 +195,41 @@ class QueryTest extends \PHPUnit\Framework\TestCase
 
         $this->assertSame(array_merge($model->getKeyName(), $model->getColumns()), Query::collectColumns($model));
     }
+
+    public function testGetWithReturnsEmptyArrayIfThereAreNoRelationsToEagerLoad()
+    {
+        $with = (new Query())->getWith();
+
+        $this->assertIsArray($with);
+        $this->assertEmpty($with);
+    }
+
+    public function testWithWithStringAsParamaterAddsTheCorrectRelationToEagerLoad()
+    {
+        $query = (new Query())
+            ->setModel(new User());
+
+        $query->with('profile');
+
+        $this->assertSame($query->getRelations()->get('profile'), $query->getWith()['profile']);
+    }
+
+    public function testWithWithArrayAsParamaterAddsTheCorrectRelationsToEagerLoad()
+    {
+        $query = (new Query())
+            ->setModel(new User());
+
+        $query->with(['profile', 'group']);
+
+        $this->assertSame($query->getRelations()->get('profile'), $query->getWith()['profile']);
+        $this->assertSame($query->getRelations()->get('group'), $query->getWith()['group']);
+    }
+
+    /** @expectedException \InvalidArgumentException */
+    public function testWithThrowsInvalidArgumentExceptionIfRelationDoesNotExist()
+    {
+        $query = (new Query())
+            ->setModel(new User())
+            ->with('invalid');
+    }
 }
