@@ -216,6 +216,33 @@ class Query implements LimitOffsetInterface
     }
 
     /**
+     * Create and return the hydrator
+     *
+     * @return Hydrator
+     */
+    public function createHydrator()
+    {
+        $model = $this->getModel();
+        $hydrator = new Hydrator();
+        $modelColumns = static::collectColumns($model);
+        $hydrator->setColumnToPropertyMap(
+            array_combine(array_keys(static::qualifyColumns($modelColumns, $model->getTableName())), $modelColumns)
+        );
+
+        foreach ($this->with as $relation) {
+            $target = $relation->getTarget();
+            $targetColumns = static::collectColumns($target);
+            $hydrator->add(
+                $relation->getName(),
+                $relation->getTargetClass(),
+                array_combine(array_keys(static::qualifyColumns($targetColumns, $relation->getName())), $targetColumns)
+            );
+        }
+
+        return $hydrator;
+    }
+
+    /**
      * Ensure that the model's relations have been created
      *
      * @return $this
