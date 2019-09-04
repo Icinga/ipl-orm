@@ -167,10 +167,10 @@ class Query implements LimitOffsetInterface
      */
     public function with($relations)
     {
-        $this->ensureRelationsCreated();
+        $modelRelations = $this->getRelations();
 
         foreach ((array) $relations as $relation) {
-            if (! $this->relations->has($relation)) {
+            if (! $modelRelations->has($relation)) {
                 throw new \InvalidArgumentException(sprintf(
                     "Can't join relation '%s' in model '%s'. Relation not found.",
                     $relation,
@@ -178,7 +178,7 @@ class Query implements LimitOffsetInterface
                 ));
             }
 
-            $this->with[$relation] = $this->relations->get($relation);
+            $this->with[$relation] = $modelRelations->get($relation);
         }
 
         return $this;
