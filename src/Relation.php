@@ -252,4 +252,28 @@ class Relation
 
         return array_combine($foreignKey, $candidateKey);
     }
+
+    /**
+     * Resolve the relation with the passed source model
+     *
+     * Yields a two-element array consisting of the table to join and the join condition both suitable
+     * for {@link \ipl\Sql\Select::join()}.
+     *
+     * @param Model $source
+     *
+     * @return \Generator
+     */
+    public function resolve(Model $source)
+    {
+        $tableName = $source->getTableName();
+        $targetTableAlias = $this->getName();
+        $condition = [];
+
+        foreach ($this->determineKeys($source) as $fk => $ck) {
+            // Qualify keys
+            $condition[] = sprintf('%s.%s = %s.%s', $targetTableAlias, $fk, $tableName, $ck);
+        }
+
+        yield [[$targetTableAlias => $this->getTarget()->getTableName()], $condition];
+    }
 }
