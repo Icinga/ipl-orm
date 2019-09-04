@@ -183,6 +183,31 @@ SQL;
         );
     }
 
+    public function testSelectFromModelWithEagerLoadingOfASignleManyToManyRelation()
+    {
+        $user = new User();
+        $query = (new Query())
+            ->setModel($user)
+            ->with('group');
+
+        $sql = <<<'SQL'
+SELECT
+    user.id AS user_id, user.username AS user_username, user.password AS user_password,
+    group.id AS group_id, group.name AS group_name
+FROM
+    user
+INNER JOIN
+    user_group user_group ON user_group.user_id = user.id
+INNER JOIN
+    group group ON group.id = user_group.group_id
+SQL;
+
+        $this->assertSql(
+            $sql,
+            $query->assembleSelect()
+        );
+    }
+
     public function setUp()
     {
         $this->queryBuilder = new QueryBuilder(new TestAdapter());
