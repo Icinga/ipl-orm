@@ -71,7 +71,7 @@ class Relations
      * @param string $name        Name of the relation
      * @param string $targetClass Target model class
      *
-     * @return Relation
+     * @return BelongsTo|BelongsToMany|HasMany|HasOne|Relation
      *
      * @throws \InvalidArgumentException If the target model class is not of type string
      */
@@ -102,7 +102,7 @@ class Relations
      * @param string $name        Name of the relation
      * @param string $targetClass Target model class
      *
-     * @return Relation
+     * @return HasOne
      */
     public function hasOne($name, $targetClass)
     {
@@ -119,7 +119,7 @@ class Relations
      * @param string $name        Name of the relation
      * @param string $targetClass Target model class
      *
-     * @return Relation
+     * @return HasMany
      */
     public function hasMany($name, $targetClass)
     {
@@ -136,7 +136,7 @@ class Relations
      * @param string $name        Name of the relation
      * @param string $targetClass Target model class
      *
-     * @return Relation
+     * @return BelongsTo
      */
     public function belongsTo($name, $targetClass)
     {
@@ -153,7 +153,7 @@ class Relations
      * @param string $name        Name of the relation
      * @param string $targetClass Target model class
      *
-     * @return Relation
+     * @return BelongsToMany
      */
     public function belongsToMany($name, $targetClass)
     {
