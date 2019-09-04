@@ -137,6 +137,16 @@ class Query implements LimitOffsetInterface
     }
 
     /**
+     * Get the relations to eager load
+     *
+     * @return Relation[]
+     */
+    public function getWith()
+    {
+        return $this->with;
+    }
+
+    /**
      * Add a relation to eager load
      *
      * @param string|array $relations
