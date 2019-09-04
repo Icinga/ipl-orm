@@ -139,6 +139,25 @@ class RelationTest extends \PHPUnit\Framework\TestCase
         $this->assertInstanceOf(TestModel::class, $relation->getTarget());
     }
 
+    public function testGetTargetReturnsTheModelFromSetTarget()
+    {
+        $target = new TestModel();
+        $relation = (new Relation())
+            ->setTarget($target);
+
+        $this->assertSame($target, $relation->getTarget());
+    }
+
+    public function testGetTargetPrefersTheModelFromSetTarget()
+    {
+        $target = new TestModel();
+        $relation = (new Relation())
+            ->setTarget($target)
+            ->setTargetClass(TestModelWithPrimaryKey::class);
+
+        $this->assertSame($target, $relation->getTarget());
+    }
+
     public function testMultipleCallsToGetTargetAlwaysReturnsTheVerySameTargetInstance()
     {
         $relation = (new Relation())
