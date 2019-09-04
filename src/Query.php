@@ -187,20 +187,14 @@ class Query implements LimitOffsetInterface
         }
 
         foreach ($this->with as $relation) {
-            $target = $relation->getTarget();
-            $targetTableName = $target->getTableName();
-            $targetTableAlias = $relation->getName();
-            $conditions = [];
-
-            foreach ($relation->determineKeys($model) as $fk => $ck) {
-                // Qualify keys
-                $conditions[] = sprintf('%s.%s = %s.%s', $targetTableAlias, $fk, $tableName, $ck);
+            foreach ($relation->resolve($model) as list($table, $condition)) {
+                $select->join($table, $condition);
             }
 
-            $select->join([$targetTableAlias => $targetTableName], $conditions);
-
             if (empty($columns)) {
-                $select->columns(static::qualifyColumns(static::collectColumns($target), $targetTableAlias));
+                $select->columns(
+                    static::qualifyColumns(static::collectColumns($relation->getTarget()), $relation->getName())
+                );
             }
         }
 
