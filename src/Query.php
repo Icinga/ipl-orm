@@ -139,25 +139,25 @@ class Query implements LimitOffsetInterface
     /**
      * Add a relation to eager load
      *
-     * @param string $relation
+     * @param string|array $relations
      *
      * @return $this
      */
-    public function with($relation)
+    public function with($relations)
     {
         $this->ensureRelationsCreated();
 
-        if (! $this->relations->has($relation)) {
-            $model = $this->getModel();
+        foreach ((array) $relations as $relation) {
+            if (! $this->relations->has($relation)) {
+                throw new \InvalidArgumentException(sprintf(
+                    "Can't join relation '%s' in model '%s'. Relation not found.",
+                    $relation,
+                    get_class($this->getModel())
+                ));
+            }
 
-            throw new \InvalidArgumentException(sprintf(
-                "Can't join relation '%s' in model '%s'. Relation not found.",
-                $relation,
-                get_class($model)
-            ));
+            $this->with[$relation] = $this->relations->get($relation);
         }
-
-        $this->with[$relation] = $this->relations->get($relation);
 
         return $this;
     }
