@@ -137,6 +137,18 @@ class Query implements LimitOffsetInterface
     }
 
     /**
+     * Get the model's relations
+     *
+     * @return Relations
+     */
+    public function getRelations()
+    {
+        $this->ensureRelationsCreated();
+
+        return $this->relations;
+    }
+
+    /**
      * Get the relations to eager load
      *
      * @return Relation[]
