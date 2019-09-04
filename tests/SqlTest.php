@@ -208,6 +208,29 @@ SQL;
         );
     }
 
+    public function testSelectFromModelWithExplicitColumnsToSelectAutomaticallyEagerLoadsTheCorrespondingRelation()
+    {
+        $user = new User();
+        $query = (new Query())
+            ->setModel($user)
+            ->columns(['user.username', 'profile.given_name', 'profile.surname']);
+
+        $sql = <<<'SQL'
+SELECT
+    user.username AS user_username,
+    profile.given_name AS profile_given_name, profile.surname AS profile_surname
+FROM
+    user
+INNER JOIN
+    profile profile ON profile.user_id = user.id
+SQL;
+
+        $this->assertSql(
+            $sql,
+            $query->assembleSelect()
+        );
+    }
+
     public function setUp()
     {
         $this->queryBuilder = new QueryBuilder(new TestAdapter());
