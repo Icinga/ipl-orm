@@ -259,6 +259,25 @@ class Query implements LimitOffsetInterface
     }
 
     /**
+     * Execute the query
+     *
+     * @return \Generator
+     */
+    public function execute()
+    {
+        $select = $this->assembleSelect();
+        $stmt = $this->getDb()->select($select);
+        $stmt->setFetchMode(\PDO::FETCH_ASSOC);
+
+        $hydrator = $this->createHydrator();
+        $modelClass = get_class($this->getModel());
+
+        foreach ($stmt as $row) {
+            yield $hydrator->hydrate($row, new $modelClass());
+        }
+    }
+
+    /**
      * Require and resolve columns
      *
      * Related models will be automatically added for eager-loading.
