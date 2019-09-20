@@ -247,9 +247,12 @@ class Query implements LimitOffsetInterface
         $model = $this->getModel();
         $hydrator = new Hydrator();
         $modelColumns = static::collectColumns($model);
-        $hydrator->setColumnToPropertyMap(
-            array_combine(array_keys(static::qualifyColumns($modelColumns, $model->getTableName())), $modelColumns)
-        );
+        $hydrator->setColumnToPropertyMap(array_combine(
+        empty($this->with) // Only qualify columns if we loaded relations
+                ? $modelColumns
+                : array_keys(static::qualifyColumns($modelColumns, $model->getTableName())),
+            $modelColumns
+        ));
 
         foreach ($this->with as $relation) {
             $target = $relation->getTarget();
