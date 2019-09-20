@@ -38,7 +38,8 @@ class Query implements LimitOffsetInterface, \IteratorAggregate
      */
     public static function collectColumns(Model $source)
     {
-        return array_merge((array) $source->getKeyName(), (array) $source->getColumns());
+        // Don't fail if Model::getColumns() also contains the primary key columns
+        return array_unique(array_merge((array) $source->getKeyName(), (array) $source->getColumns()));
     }
 
     /**
