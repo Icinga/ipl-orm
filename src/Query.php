@@ -10,7 +10,7 @@ use ipl\Sql\Select;
 /**
  * Represents a database query which is associated to a model and a database connection.
  */
-class Query implements LimitOffsetInterface
+class Query implements LimitOffsetInterface, \IteratorAggregate
 {
     use LimitOffset;
 
@@ -300,6 +300,11 @@ class Query implements LimitOffsetInterface
         foreach ($stmt as $row) {
             yield $hydrator->hydrate($row, new $modelClass());
         }
+    }
+
+    public function getIterator()
+    {
+        return $this->execute();
     }
 
     /**
