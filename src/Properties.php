@@ -10,7 +10,7 @@ use ipl\Stdlib\Str;
 trait Properties
 {
     /** @var array */
-    private $properties = [];
+    protected $properties = [];
 
     /** @var bool Whether accessors and mutators are enabled */
     protected $accessorsAndMutatorsEnabled = false;
