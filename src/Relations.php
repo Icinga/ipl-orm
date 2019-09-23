@@ -102,6 +102,7 @@ class Relations
         /** @var Relation $relation */
         $relation
             ->setName($name)
+            ->setTarget($target)
             ->setTargetClass($targetClass);
 
         return $relation;
