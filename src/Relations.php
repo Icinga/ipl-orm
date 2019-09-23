@@ -88,6 +88,17 @@ class Relations
             ));
         }
 
+        // Test target model
+        $target = new $targetClass();
+        if (! $target instanceof Model) {
+            throw new \InvalidArgumentException(sprintf(
+                '%s() expects parameter 3 to be a subclass of %s, %s given',
+                __METHOD__,
+                Model::class,
+                get_php_type($target)
+            ));
+        }
+
         /** @var Relation $relation */
         $relation
             ->setName($name)
