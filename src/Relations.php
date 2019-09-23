@@ -84,7 +84,7 @@ class Relations
                 '%s() expects parameter 1 to be a subclass of %s, %s given',
                 __METHOD__,
                 Relation::class,
-                get_php_type($targetClass)
+                get_php_type($relation)
             ));
         }
 
