@@ -26,6 +26,9 @@ class Query implements LimitOffsetInterface, \IteratorAggregate
     /** @var Relations Model's relations */
     protected $relations;
 
+    /** @var Select Base SELECT query */
+    protected $selectBase;
+
     /** @var Relation[] Relations to eager load */
     protected $with = [];
 
@@ -150,6 +153,20 @@ class Query implements LimitOffsetInterface, \IteratorAggregate
     }
 
     /**
+     * Get the SELECT base query
+     *
+     * @return Select
+     */
+    public function getSelectBase()
+    {
+        if ($this->selectBase === null) {
+            $this->selectBase = new Select();
+        }
+
+        return $this->selectBase;
+    }
+
+    /**
      * Get the relations to eager load
      *
      * @return Relation[]
@@ -195,8 +212,8 @@ class Query implements LimitOffsetInterface, \IteratorAggregate
         $model = $this->getModel();
         $tableName = $model->getTableName();
 
-        $select = (new Select())
-            ->from($tableName);
+        $select = clone $this->getSelectBase();
+        $select->from($tableName);
 
         $columns = $this->getColumns();
 
