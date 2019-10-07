@@ -186,18 +186,44 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
      */
     public function with($relations)
     {
-        $modelRelations = $this->getRelations();
+        $model = $this->getModel();
+
+        $relationStorage = new \SplObjectStorage();
+        $relationStorage->attach($model, $this->getRelations());
 
         foreach ((array) $relations as $relation) {
-            if (! $modelRelations->has($relation)) {
-                throw new \InvalidArgumentException(sprintf(
-                    "Can't join relation '%s' in model '%s'. Relation not found.",
-                    $relation,
-                    get_class($this->getModel())
-                ));
-            }
+            $current = [];
+            $subject = $model;
 
-            $this->with[$relation] = $modelRelations->get($relation);
+            foreach (explode('.', $relation) as $name) {
+                $current[] = $name;
+                $path = implode('.', $current);
+
+                if (isset($this->with[$path])) {
+                    $subject = $this->with[$path]->getTarget();
+                    continue;
+                }
+
+                if ($relationStorage->contains($subject)) {
+                    $subjectRelations = $relationStorage[$subject];
+                } else {
+                    $subjectRelations = new Relations();
+                    $subject->createRelations($subjectRelations);
+                    $relationStorage->attach($subject, $subjectRelations);
+                }
+
+                if (! $subjectRelations->has($name)) {
+                    throw new \InvalidArgumentException(sprintf(
+                        "Can't join relation '%s' in model '%s'. Relation not found.",
+                        $relation,
+                        get_class($subject)
+                    ));
+                }
+
+                $this->with[$path] = $subjectRelations->get($name)->setSource($subject);
+
+                $subject = $this->with[$path]->getTarget();
+            }
         }
 
         return $this;
@@ -239,7 +265,7 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
         }
 
         foreach ($this->with as $relation) {
-            foreach ($relation->resolve($model) as list($table, $condition)) {
+            foreach ($relation->resolve($relation->getSource() ?: $model) as list($table, $condition)) {
                 $select->join($table, $condition);
             }
 
