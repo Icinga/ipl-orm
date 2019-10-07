@@ -13,6 +13,9 @@ class Relation
     /** @var string Name of the relation */
     protected $name;
 
+    /** @var Model Source model */
+    protected $source;
+
     /** @var string|array Column name(s) of the foreign key found in the target table */
     protected $foreignKey;
 
@@ -83,6 +86,30 @@ class Relation
     public function setName($name)
     {
         $this->name = $name;
+
+        return $this;
+    }
+
+    /**
+     * Get the source model of the relation
+     *
+     * @return Model
+     */
+    public function getSource()
+    {
+        return $this->source;
+    }
+
+    /**
+     * Set the source model of the relation
+     *
+     * @param Model $source
+     *
+     * @return $this
+     */
+    public function setSource(Model $source)
+    {
+        $this->source = $source;
 
         return $this;
     }
