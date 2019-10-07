@@ -231,6 +231,34 @@ SQL;
         );
     }
 
+    public function testSelectFromModelWithNestedWith()
+    {
+        $group = new Group();
+        $query = (new Query())
+            ->setModel($group)
+            ->with('user.audit');
+
+        $sql = <<<'SQL'
+SELECT
+    group.id AS group_id, group.name AS group_name,
+    user.id AS user_id, user.username AS user_username, user.password AS user_password,
+    audit.id AS audit_id, audit.user_id AS audit_user_id, audit.activity AS audit_activity
+FROM
+    group
+INNER JOIN
+    user_group user_group ON user_group.group_id = group.id
+INNER JOIN
+    user user ON user.id = user_group.user_id
+INNER JOIN
+    audit audit ON audit.user_id = user.id
+SQL;
+
+        $this->assertSql(
+            $sql,
+            $query->assembleSelect()
+        );
+    }
+
     public function setUp()
     {
         $this->queryBuilder = new QueryBuilder(new TestAdapter());
