@@ -6,11 +6,12 @@ use ipl\Sql\Connection;
 use ipl\Sql\LimitOffset;
 use ipl\Sql\LimitOffsetInterface;
 use ipl\Sql\Select;
+use ipl\Stdlib\Contract\PaginationInterface;
 
 /**
  * Represents a database query which is associated to a model and a database connection.
  */
-class Query implements LimitOffsetInterface, \IteratorAggregate
+class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggregate
 {
     use LimitOffset;
 
@@ -318,6 +319,11 @@ class Query implements LimitOffsetInterface, \IteratorAggregate
         foreach ($stmt as $row) {
             yield $hydrator->hydrate($row, new $modelClass());
         }
+    }
+
+    public function count()
+    {
+        return $this->getDb()->select($this->assembleSelect()->getCountQuery())->fetchColumn(0);
     }
 
     public function getIterator()
