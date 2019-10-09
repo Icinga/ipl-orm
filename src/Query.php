@@ -320,6 +320,20 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
             );
         }
 
+        $defaults = [];
+        foreach ($this->getRelations() as $relation) {
+            $name = $relation->getName();
+
+            if (! isset($this->with[$name])) {
+                $defaults[$name] = function (Model $model) use ($name) {
+                    return $this->derive($name, $model)->execute();
+                };
+            }
+        }
+        if (! empty($defaults)) {
+            $hydrator->setDefaults($defaults);
+        }
+
         return $hydrator;
     }
 
