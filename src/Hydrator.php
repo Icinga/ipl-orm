@@ -12,6 +12,9 @@ class Hydrator
     /** @var array Column to property resolution map */
     protected $columnToPropertyMap;
 
+    /** @var array Property defaults in terms of key-value pairs */
+    protected $defaults;
+
     /** @var array Additional hydration rules for the model's relations */
     protected $hydrators = [];
 
@@ -25,6 +28,30 @@ class Hydrator
     public function setColumnToPropertyMap(array $columnToPropertyMap)
     {
         $this->columnToPropertyMap = $columnToPropertyMap;
+
+        return $this;
+    }
+
+    /**
+     * Get defaults
+     *
+     * @return array
+     */
+    public function getDefaults()
+    {
+        return $this->defaults;
+    }
+
+    /**
+     * Set defaults
+     *
+     * @param array $defaults
+     *
+     * @return $this
+     */
+    public function setDefaults(array $defaults)
+    {
+        $this->defaults = $defaults;
 
         return $this;
     }
@@ -81,6 +108,10 @@ class Hydrator
             /** @var array $columnToPropertyMap */
             $target->setProperties($this->extractAndMap($data, $columnToPropertyMap));
             $properties[$propertyName] = $target;
+        }
+
+        if ($this->defaults !== null) {
+            $properties += $this->defaults;
         }
 
         $model->setProperties($properties);
