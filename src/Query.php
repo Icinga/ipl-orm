@@ -2,11 +2,16 @@
 
 namespace ipl\Orm;
 
+use InvalidArgumentException;
+use ipl\Orm\Relation\BelongsToMany;
+use ipl\Orm\Relation\HasMany;
+use ipl\Orm\Relation\Junction;
 use ipl\Sql\Connection;
 use ipl\Sql\LimitOffset;
 use ipl\Sql\LimitOffsetInterface;
 use ipl\Sql\Select;
 use ipl\Stdlib\Contract\PaginationInterface;
+use function ipl\Stdlib\get_php_type;
 
 /**
  * Represents a database query which is associated to a model and a database connection.
@@ -219,7 +224,7 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
                 }
 
                 if (! $subjectRelations->has($name)) {
-                    throw new \InvalidArgumentException(sprintf(
+                    throw new InvalidArgumentException(sprintf(
                         "Can't join relation '%s' in model '%s'. Relation not found.",
                         $name,
                         get_class($subject)
@@ -316,6 +321,72 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
         }
 
         return $hydrator;
+    }
+
+    /**
+     * Derive a new query to load the specified relation from a concrete model
+     *
+     * @param string $relation
+     * @param Model  $source
+     *
+     * @return static
+     *
+     * @throws InvalidArgumentException If the relation with the given name does not exist
+     */
+    public function derive($relation, Model $source)
+    {
+        $modelRelations = $this->getRelations();
+
+        if (! $modelRelations->has($relation)) {
+            throw new InvalidArgumentException(sprintf(
+                "Can't join relation '%s' in model '%s'. Relation not found.",
+                $relation,
+                get_class($this->getModel())
+            ));
+        }
+
+        $relation = $modelRelations->get($relation);
+        $target = $relation->getTarget();
+        $conditionsTarget = $target->getTableName();
+        $query = (new Query())
+            ->setModel($target)
+            ->setDb($this->getDb());
+
+        if ($relation instanceof BelongsToMany) {
+            $through = $relation->getThrough();
+
+            if (class_exists($through)) {
+                $junction = new $through();
+
+                if (! $junction instanceof Model) {
+                    throw new InvalidArgumentException(sprintf(
+                        'Junction model class must be an instance of %s, %s given',
+                        Model::class,
+                        get_php_type($junction)
+                    ));
+                }
+            } else {
+                $junction = (new Junction())
+                    ->setTableName($through);
+            }
+
+            $toJunction = (new HasMany())
+                ->setName($junction->getTableName())
+                ->setTarget($junction)
+                ->setTargetClass(get_class($junction));
+
+            $conditionsTarget = $junction->getTableName();
+
+            $query->with[$conditionsTarget] = $toJunction;
+        }
+
+        $conditions = $relation->determineKeys($source);
+        $select = $query->getSelectBase();
+        foreach ($conditions as $fk => $ck) {
+            $select->where(["$conditionsTarget.$fk = ?" => $source->$ck]);
+        }
+
+        return $query;
     }
 
     /**
