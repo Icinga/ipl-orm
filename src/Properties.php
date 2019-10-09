@@ -71,6 +71,10 @@ trait Properties
         }
 
         if (array_key_exists($key, $this->properties)) {
+            if (is_callable($this->properties[$key])) {
+                return $this->properties[$key]($this);
+            }
+
             return $this->properties[$key];
         }
 
