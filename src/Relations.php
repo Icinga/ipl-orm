@@ -2,16 +2,18 @@
 
 namespace ipl\Orm;
 
+use ArrayIterator;
 use ipl\Orm\Relation\BelongsTo;
 use ipl\Orm\Relation\BelongsToMany;
 use ipl\Orm\Relation\HasMany;
 use ipl\Orm\Relation\HasOne;
+use IteratorAggregate;
 use function ipl\Stdlib\get_php_type;
 
 /**
  * Collection of a model's relations.
  */
-class Relations
+class Relations implements IteratorAggregate
 {
     /** @var Relation[] */
     protected $relations = [];
@@ -174,6 +176,11 @@ class Relations
         $this->add($relation);
 
         return $relation;
+    }
+
+    public function getIterator()
+    {
+        return new ArrayIterator($this->relations);
     }
 
     /**
