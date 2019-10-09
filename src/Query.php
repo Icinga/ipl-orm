@@ -321,6 +321,16 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
         }
     }
 
+    /**
+     * Fetch and return the first result
+     *
+     * @return Model|null Null in case there's no result
+     */
+    public function first()
+    {
+        return $this->execute()->current();
+    }
+
     public function count()
     {
         return $this->getDb()->select($this->assembleSelect()->getCountQuery())->fetchColumn(0);
