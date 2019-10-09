@@ -187,6 +187,7 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
     public function with($relations)
     {
         $model = $this->getModel();
+        $tableName = $model->getTableName();
 
         $relationStorage = new \SplObjectStorage();
         $relationStorage->attach($model, $this->getRelations());
@@ -197,6 +198,11 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
 
             foreach (explode('.', $relation) as $name) {
                 $current[] = $name;
+
+                if ($name === $tableName) {
+                    continue;
+                }
+
                 $path = implode('.', $current);
 
                 if (isset($this->with[$path])) {
@@ -215,7 +221,7 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
                 if (! $subjectRelations->has($name)) {
                     throw new \InvalidArgumentException(sprintf(
                         "Can't join relation '%s' in model '%s'. Relation not found.",
-                        $relation,
+                        $name,
                         get_class($subject)
                     ));
                 }
