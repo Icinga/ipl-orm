@@ -59,6 +59,7 @@ class Hydrator
     /**
      * Add a hydration rule
      *
+     * @param string $path                Property path
      * @param string $propertyName        The name of the property to hydrate into
      * @param string $class               The class to use for the model instance
      * @param array  $columnToPropertyMap Column to property resolution map
@@ -68,9 +69,9 @@ class Hydrator
      * @throws \InvalidArgumentException If a hydrator for the given property already exists
      * @throws \InvalidArgumentException If the class to use for the model class is not a subclass of {@link Model}
      */
-    public function add($propertyName, $class, array $columnToPropertyMap)
+    public function add($path, $propertyName, $class, array $columnToPropertyMap)
     {
-        if (isset($this->hydrators[$propertyName])) {
+        if (isset($this->hydrators[$path])) {
             throw new \InvalidArgumentException("Hydrator for property '$propertyName' already exists");
         }
 
@@ -85,7 +86,9 @@ class Hydrator
             ));
         }
 
-        $this->hydrators[$propertyName] = [$class, $columnToPropertyMap];
+        $this->hydrators[$path] = [$propertyName, $class, $columnToPropertyMap];
+
+        //natcasesort($this->hydrators);
 
         return $this;
     }
@@ -102,12 +105,18 @@ class Hydrator
     {
         $properties = $this->extractAndMap($data, $this->columnToPropertyMap);
 
-        foreach ($this->hydrators as $propertyName => list($class, $columnToPropertyMap)) {
+        foreach ($this->hydrators as $path => list($propertyName, $class, $columnToPropertyMap)) {
+            $subject = &$properties;
+            $parts = explode('.', $path);
+            array_pop($parts);
+            foreach ($parts as $part) {
+                $subject = &$subject[$part];
+            }
             /** @var Model $target */
             $target = new $class();
             /** @var array $columnToPropertyMap */
             $target->setProperties($this->extractAndMap($data, $columnToPropertyMap));
-            $properties[$propertyName] = $target;
+            $subject[$propertyName] = $target;
         }
 
         if ($this->defaults !== null) {

@@ -310,10 +310,11 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
             $modelColumns
         ));
 
-        foreach ($this->with as $relation) {
+        foreach ($this->with as $path => $relation) {
             $target = $relation->getTarget();
             $targetColumns = static::collectColumns($target);
             $hydrator->add(
+                $path,
                 $relation->getName(),
                 $relation->getTargetClass(),
                 array_combine(array_keys(static::qualifyColumns($targetColumns, $relation->getTableAlias())), $targetColumns)
