@@ -13,13 +13,13 @@ class TestClassUsingThePropertiesTrait implements \ArrayAccess
         $this->accessorsAndMutatorsEnabled = true;
     }
 
-    public function getFoobarProperty()
+    public function mutateFoobarProperty()
     {
         return 'foobar';
     }
 
-    public function setSpecialProperty($value)
+    public function mutateSpecialProperty($value)
     {
-        $this->properties['special'] = strtoupper($value);
+        return strtoupper($value);
     }
 }

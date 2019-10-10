@@ -13,6 +13,9 @@ trait Properties
     /** @var array */
     protected $properties = [];
 
+    /** @var array */
+    protected $mutatedProperties = [];
+
     /** @var bool Whether accessors and mutators are enabled */
     protected $accessorsAndMutatorsEnabled = false;
 
@@ -25,15 +28,17 @@ trait Properties
      */
     public function hasProperty($key)
     {
-        if ($this->accessorsAndMutatorsEnabled) {
-            $accessor = 'get' . Str::camel($key) . 'Property';
+        if (array_key_exists($key, $this->properties)) {
+            return true;
+        } elseif ($this->accessorsAndMutatorsEnabled) {
+            $mutator = 'mutate' . Str::camel($key) . 'Property';
 
-            if (method_exists($this, $accessor)) {
+            if (method_exists($this, $mutator)) {
                 return true;
             }
         }
 
-        return array_key_exists($key, $this->properties);
+        return false;
     }
 
     /**
@@ -64,11 +69,7 @@ trait Properties
     protected function getProperty($key)
     {
         if ($this->accessorsAndMutatorsEnabled) {
-            $accessor = 'get' . Str::camel($key) . 'Property';
-
-            if (method_exists($this, $accessor)) {
-                return $this->$accessor();
-            }
+            $this->mutateProperty($key);
         }
 
         if (array_key_exists($key, $this->properties)) {
@@ -92,19 +93,36 @@ trait Properties
      */
     protected function setProperty($key, $value)
     {
-        if ($this->accessorsAndMutatorsEnabled) {
-            $mutator = 'set' . Str::camel($key) . 'Property';
-
-            if (method_exists($this, $mutator)) {
-                $this->$mutator($value);
-
-                return $this;
-            }
-        }
-
         $this->properties[$key] = $value;
 
+        if ($this->accessorsAndMutatorsEnabled) {
+            $this->mutateProperty($key);
+        }
+
         return $this;
+    }
+
+    /**
+     * Try to mutate the given key
+     *
+     * @param string $key
+     * @todo Support for generators, if needed
+     */
+    protected function mutateProperty($key)
+    {
+        if (array_key_exists($key, $this->mutatedProperties)) {
+            return;
+        }
+
+        $value = array_key_exists($key, $this->properties)
+            ? $this->properties[$key]
+            : null;
+        $this->mutatedProperties[$key] = $value; // Prevents repeated checks
+
+        $mutator = 'mutate' . Str::camel($key) . 'Property';
+        if (method_exists($this, $mutator)) {
+            $this->properties[$key] = $this->$mutator($value);
+        }
     }
 
     /**
@@ -116,7 +134,11 @@ trait Properties
      */
     public function offsetExists($offset)
     {
-        return $this->hasProperty($offset);
+        if ($this->accessorsAndMutatorsEnabled) {
+            $this->mutateProperty($offset);
+        }
+
+        return isset($this->properties[$offset]);
     }
 
     /**
@@ -150,6 +172,7 @@ trait Properties
     public function offsetUnset($offset)
     {
         unset($this->properties[$offset]);
+        unset($this->mutatedProperties[$offset]);
     }
 
     /**
