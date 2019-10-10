@@ -266,7 +266,7 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
             $select->columns($modelColumns);
 
             foreach ($foreignColumnMap as $relation => $foreignColumns) {
-                $select->columns(static::qualifyColumns($foreignColumns, $this->with[$relation]->getName()));
+                $select->columns(static::qualifyColumns($foreignColumns, $this->with[$relation]->getTableAlias()));
             }
         } elseif (empty($this->with)) {
             // Don't qualify columns if we don't have any relation to load
@@ -282,7 +282,7 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
 
             if (empty($columns)) {
                 $select->columns(
-                    static::qualifyColumns(static::collectColumns($relation->getTarget()), $relation->getName())
+                    static::qualifyColumns(static::collectColumns($relation->getTarget()), $relation->getTableAlias())
                 );
             }
         }
@@ -316,7 +316,7 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
             $hydrator->add(
                 $relation->getName(),
                 $relation->getTargetClass(),
-                array_combine(array_keys(static::qualifyColumns($targetColumns, $relation->getName())), $targetColumns)
+                array_combine(array_keys(static::qualifyColumns($targetColumns, $relation->getTableAlias())), $targetColumns)
             );
         }
 
