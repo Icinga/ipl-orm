@@ -3,6 +3,7 @@
 namespace ipl\Orm;
 
 use ipl\Stdlib\Str;
+use OutOfBoundsException;
 
 /**
  * Trait for property access, mutation and array access.
@@ -58,7 +59,7 @@ trait Properties
      *
      * @return mixed
      *
-     * @throws \InvalidArgumentException If the property by the given key does not exist
+     * @throws OutOfBoundsException If the property by the given key does not exist
      */
     protected function getProperty($key)
     {
@@ -78,7 +79,7 @@ trait Properties
             return $this->properties[$key];
         }
 
-        throw new \InvalidArgumentException("Can't access property '$key'. Property does not exist");
+        throw new OutOfBoundsException("Can't access property '$key'. Property does not exist");
     }
 
     /**
