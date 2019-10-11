@@ -57,6 +57,15 @@ abstract class Model implements \ArrayAccess
     }
 
     /**
+     * Create the model's behaviors
+     *
+     * @param Behaviors $behaviors
+     */
+    public function createBehaviors(Behaviors $behaviors)
+    {
+    }
+
+    /**
      * Create the model's relations
      *
      * If your model should be associated to other models, override this method and create the model's relations.
