@@ -324,10 +324,12 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
         $defaults = [];
         foreach ($this->getRelations() as $relation) {
             $name = $relation->getName();
+            $isOne = $relation->isOne();
 
             if (! isset($this->with[$name])) {
-                $defaults[$name] = function (Model $model) use ($name) {
-                    return $this->derive($name, $model)->execute();
+                $defaults[$name] = function (Model $model) use ($name, $isOne) {
+                    $query = $this->derive($name, $model);
+                    return $isOne ? $query->first() : $query->execute();
                 };
             }
         }
