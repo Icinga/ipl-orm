@@ -12,6 +12,8 @@ use function ipl\Stdlib\get_php_type;
  */
 class BelongsToMany extends Relation
 {
+    protected $isOne = false;
+
     /** @var string Name of the join table or junction model class */
     protected $through;
 

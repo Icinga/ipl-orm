@@ -34,6 +34,9 @@ class Relation
     /** @var bool Whether this is the inverse of a relationship */
     protected $inverse;
 
+    /** @var bool Whether this is a to-one relationship */
+    protected $isOne = true;
+
     /**
      * Get the default column name(s) in the source table used to match the foreign key
      *
@@ -67,6 +70,16 @@ class Relation
             },
             (array) $source->getKeyName()
         );
+    }
+
+    /**
+     * Get whether this is a to-one relationship
+     *
+     * @return bool
+     */
+    public function isOne()
+    {
+        return $this->isOne;
     }
 
     /**
