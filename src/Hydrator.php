@@ -9,6 +9,9 @@ use function ipl\Stdlib\get_php_type;
  */
 class Hydrator
 {
+    /** @var Behaviors The model's behaviors */
+    protected $behaviors;
+
     /** @var array Column to property resolution map */
     protected $columnToPropertyMap;
 
@@ -17,6 +20,20 @@ class Hydrator
 
     /** @var array Additional hydration rules for the model's relations */
     protected $hydrators = [];
+
+    /**
+     * Set the model's behaviors
+     *
+     * @param Behaviors $behaviors
+     *
+     * @return $this
+     */
+    public function setBehaviors(Behaviors $behaviors)
+    {
+        $this->behaviors = $behaviors;
+
+        return $this;
+    }
 
     /**
      * Set the column to property resolution map
@@ -59,17 +76,18 @@ class Hydrator
     /**
      * Add a hydration rule
      *
-     * @param string $path                Property path
-     * @param string $propertyName        The name of the property to hydrate into
-     * @param string $class               The class to use for the model instance
-     * @param array  $columnToPropertyMap Column to property resolution map
+     * @param string    $path                Property path
+     * @param string    $propertyName        The name of the property to hydrate into
+     * @param string    $class               The class to use for the model instance
+     * @param array     $columnToPropertyMap Column to property resolution map
+     * @param Behaviors $behaviors           The class' behaviors
      *
      * @return $this
      *
      * @throws \InvalidArgumentException If a hydrator for the given property already exists
      * @throws \InvalidArgumentException If the class to use for the model class is not a subclass of {@link Model}
      */
-    public function add($path, $propertyName, $class, array $columnToPropertyMap)
+    public function add($path, $propertyName, $class, array $columnToPropertyMap, Behaviors $behaviors)
     {
         if (isset($this->hydrators[$path])) {
             throw new \InvalidArgumentException("Hydrator for property '$propertyName' already exists");
@@ -86,7 +104,7 @@ class Hydrator
             ));
         }
 
-        $this->hydrators[$path] = [$propertyName, $class, $columnToPropertyMap];
+        $this->hydrators[$path] = [$propertyName, $class, $columnToPropertyMap, $behaviors];
 
         //natcasesort($this->hydrators);
 
@@ -105,7 +123,7 @@ class Hydrator
     {
         $properties = $this->extractAndMap($data, $this->columnToPropertyMap);
 
-        foreach ($this->hydrators as $path => list($propertyName, $class, $columnToPropertyMap)) {
+        foreach ($this->hydrators as $path => list($propertyName, $class, $columnToPropertyMap, $behaviors)) {
             $subject = &$properties;
             $parts = explode('.', $path);
             array_pop($parts);
@@ -116,6 +134,7 @@ class Hydrator
             $target = new $class();
             /** @var array $columnToPropertyMap */
             $target->setProperties($this->extractAndMap($data, $columnToPropertyMap));
+            $behaviors->apply($target);
             $subject[$propertyName] = $target;
         }
 
@@ -124,6 +143,8 @@ class Hydrator
         }
 
         $model->setProperties($properties);
+
+        $this->behaviors->apply($model);
 
         return $model;
     }

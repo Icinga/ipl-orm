@@ -29,6 +29,9 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
     /** @var array Columns to select from the model */
     protected $columns = [];
 
+    /** @var Behaviors The model's behaviors */
+    protected $behaviors;
+
     /** @var Relations Model's relations */
     protected $relations;
 
@@ -144,6 +147,21 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
         $this->columns = array_merge($this->columns, (array) $columns);
 
         return $this;
+    }
+
+    /**
+     * Get the model's behaviors
+     *
+     * @return Behaviors
+     */
+    public function getBehaviors()
+    {
+        if ($this->behaviors === null) {
+            $this->behaviors = new Behaviors();
+            $this->getModel()->createBehaviors($this->behaviors);
+        }
+
+        return $this->behaviors;
     }
 
     /**
@@ -313,11 +331,16 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
         foreach ($this->with as $path => $relation) {
             $target = $relation->getTarget();
             $targetColumns = static::collectColumns($target);
+
+            $behaviors = new Behaviors();
+            $target->createBehaviors($behaviors);
+
             $hydrator->add(
                 $path,
                 $relation->getName(),
                 $relation->getTargetClass(),
-                array_combine(array_keys(static::qualifyColumns($targetColumns, $relation->getTableAlias())), $targetColumns)
+                array_combine(array_keys(static::qualifyColumns($targetColumns, $relation->getTableAlias())), $targetColumns),
+                $behaviors
             );
         }
 
@@ -336,6 +359,8 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
         if (! empty($defaults)) {
             $hydrator->setDefaults($defaults);
         }
+
+        $hydrator->setBehaviors($this->getBehaviors());
 
         return $hydrator;
     }
