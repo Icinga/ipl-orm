@@ -43,6 +43,16 @@ abstract class Model implements \ArrayAccess
     abstract public function getColumns();
 
     /**
+     * Get the model's search columns
+     *
+     * @return array
+     */
+    public function getSearchColumns()
+    {
+        return [];
+    }
+
+    /**
      * Get a query which is tied to this model and the given database connection
      *
      * @param Connection $db
