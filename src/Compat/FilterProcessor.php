@@ -132,11 +132,14 @@ class FilterProcessor
                     $tableName = $query
                         ->with($relation)
                         ->getWith()[$relation]
-                        ->getTarget()
-                        ->getTableName();
+                        ->getTableAlias();
 
                     $filter->setColumn($tableName . '.' . $column);
+                } else {
+                    $filter->setColumn( $query->getModel()->getTableName() . '.' . $column);
                 }
+            } else {
+                $filter->setColumn( $query->getModel()->getTableName() . '.' . $column);
             }
         } else {
             /** @var FilterChain $filter */
