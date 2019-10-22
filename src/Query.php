@@ -33,8 +33,8 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
     /** @var SplObjectStorage Cached model behaviors */
     protected $behaviorStorage;
 
-    /** @var Relations Model's relations */
-    protected $relations;
+    /** @var SplObjectStorage Cached model relations */
+    protected $relationStorage;
 
     /** @var Resolver Column and relation resolver */
     protected $resolver;
@@ -48,6 +48,7 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
     public function __construct()
     {
         $this->behaviorStorage = new SplObjectStorage();
+        $this->relationStorage = new SplObjectStorage();
     }
 
     /**
@@ -149,13 +150,23 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
     /**
      * Get the model's relations
      *
+     * @param Model $model If not given, the base model's relations are returned
+     *
      * @return Relations
      */
-    public function getRelations()
+    public function getRelations(Model $model = null)
     {
-        $this->ensureRelationsCreated();
+        if ($model === null) {
+            $model = $this->getModel();
+        }
 
-        return $this->relations;
+        if (! $this->relationStorage->contains($model)) {
+            $relations = new Relations();
+            $model->createRelations($relations);
+            $this->relationStorage->attach($model, $relations);
+        }
+
+        return $this->relationStorage[$model];
     }
 
     /**
@@ -209,9 +220,6 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
         $model = $this->getModel();
         $tableName = $model->getTableName();
 
-        $relationStorage = new \SplObjectStorage();
-        $relationStorage->attach($model, $this->getRelations());
-
         foreach ((array) $relations as $relation) {
             $current = [];
             $subject = $model;
@@ -230,14 +238,7 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
                     continue;
                 }
 
-                if ($relationStorage->contains($subject)) {
-                    $subjectRelations = $relationStorage[$subject];
-                } else {
-                    $subjectRelations = new Relations();
-                    $subject->createRelations($subjectRelations);
-                    $relationStorage->attach($subject, $subjectRelations);
-                }
-
+                $subjectRelations = $this->getRelations($subject);
                 if (! $subjectRelations->has($name)) {
                     throw new InvalidArgumentException(sprintf(
                         "Can't join relation '%s' in model '%s'. Relation not found.",
@@ -427,22 +428,6 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
         }
 
         return $query;
-    }
-
-    /**
-     * Ensure that the model's relations have been created
-     *
-     * @return $this
-     */
-    public function ensureRelationsCreated()
-    {
-        if ($this->relations === null) {
-            $relations = new Relations();
-            $this->getModel()->createRelations($relations);
-            $this->relations = $relations;
-        }
-
-        return $this;
     }
 
     /**

@@ -110,24 +110,23 @@ class QueryTest extends \PHPUnit\Framework\TestCase
         $this->assertSame($offset, $query->getOffset());
     }
 
-    public function testEnsureRelationsCreatedCallsModelsCreateRelations()
+    public function testGetRelationsCallsModelsCreateRelations()
     {
         $model = new TestModelWithCreateRelations();
         (new Query())
             ->setModel($model)
-            ->ensureRelationsCreated();
+            ->getRelations();
 
         $this->assertSame(1, $model->relationsCreatedCount);
     }
 
-    public function testMultipleCallsToEnsureRelationsCreatedCallsModelsCreateRelationsOnlyOnce()
+    public function testMultipleCallsToGetRelationsCallsModelsCreateRelationsOnlyOnce()
     {
         $model = new TestModelWithCreateRelations();
-        (new Query())
-            ->setModel($model)
-            ->ensureRelationsCreated()
-            ->ensureRelationsCreated()
-            ->ensureRelationsCreated();
+        $query = (new Query())->setModel($model);
+        $query->getRelations();
+        $query->getRelations();
+        $query->getRelations();
 
         $this->assertSame(1, $model->relationsCreatedCount);
     }
