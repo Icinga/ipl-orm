@@ -11,6 +11,7 @@ use ipl\Sql\LimitOffset;
 use ipl\Sql\LimitOffsetInterface;
 use ipl\Sql\Select;
 use ipl\Stdlib\Contract\PaginationInterface;
+use SplObjectStorage;
 use function ipl\Stdlib\get_php_type;
 
 /**
@@ -29,8 +30,8 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
     /** @var array Columns to select from the model */
     protected $columns = [];
 
-    /** @var Behaviors The model's behaviors */
-    protected $behaviors;
+    /** @var SplObjectStorage Cached model behaviors */
+    protected $behaviorStorage;
 
     /** @var Relations Model's relations */
     protected $relations;
@@ -43,6 +44,11 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
 
     /** @var Relation[] Relations to eager load */
     protected $with = [];
+
+    public function __construct()
+    {
+        $this->behaviorStorage = new SplObjectStorage();
+    }
 
     /**
      * Get the database connection
@@ -121,16 +127,23 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
     /**
      * Get the model's behaviors
      *
+     * @param Model $model If not given, the base model's behaviors are returned
+     *
      * @return Behaviors
      */
-    public function getBehaviors()
+    public function getBehaviors(Model $model = null)
     {
-        if ($this->behaviors === null) {
-            $this->behaviors = new Behaviors();
-            $this->getModel()->createBehaviors($this->behaviors);
+        if ($model === null) {
+            $model = $this->getModel();
         }
 
-        return $this->behaviors;
+        if (! $this->behaviorStorage->contains($model)) {
+            $behaviors = new Behaviors();
+            $model->createBehaviors($behaviors);
+            $this->behaviorStorage->attach($model, $behaviors);
+        }
+
+        return $this->behaviorStorage[$model];
     }
 
     /**
@@ -317,9 +330,6 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
             $target = $relation->getTarget();
             $targetColumns = $resolver->getSelectableColumns($target);
 
-            $behaviors = new Behaviors();
-            $target->createBehaviors($behaviors);
-
             $hydrator->add(
                 $path,
                 $relation->getName(),
@@ -328,7 +338,7 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
                     array_keys($resolver->qualifyColumns($targetColumns, $relation->getTableAlias())),
                     $targetColumns
                 ),
-                $behaviors
+                $this->getBehaviors($target)
             );
         }
 
