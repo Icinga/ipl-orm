@@ -14,7 +14,7 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
         if (! $filter->isEmpty()) {
             $filter = clone $filter;
 
-            static::requireAndResolveFilterColumns($filter, $query);
+            static::requireAndResolveFilterColumns($filter, $query, $filter);
 
             $where = static::assembleFilter($filter);
 
@@ -26,7 +26,7 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
         }
     }
 
-    protected static function requireAndResolveFilterColumns(Filter $filter, Query $query)
+    protected static function requireAndResolveFilterColumns(Filter $filter, Query $query, Filter $root)
     {
         if ($filter instanceof FilterExpression) {
             $expression = $filter->getExpression();
@@ -35,26 +35,51 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
                 return;
             }
 
+            $baseTable = $query->getModel()->getTableName();
             $column = $filter->getColumn();
 
             $dot = strrpos($column, '.');
             if ($dot !== false) {
-                $relationName = substr($column, 0, $dot);
-                $column = substr($column, $dot + 1);
-
-                if ($relationName !== $query->getModel()->getTableName()) {
-                    $relation = $query->with($relationName)
-                        ->getWith()[$relationName];
-                    $expression = $query->getBehaviors($relation->getTarget())
-                        ->persistProperty($expression, $column);
-                    $column = $relation->getTableAlias() . '.' . $column;
-                } else {
-                    $expression = $query->getBehaviors()->persistProperty($expression, $column);
-                    $column = $query->getModel()->getTableName() . '.' . $column;
+                $relations = explode('.', substr($column, 0, $dot));
+                if ($relations[0] !== $baseTable) {
+                    // Prepend the base table if missing to ensure we'll deal only with absolute paths next
+                    array_unshift($relations, $baseTable);
+                    $column = $baseTable . '.' . $column;
                 }
             } else {
-                $expression = $query->getBehaviors()->persistProperty($expression, $column);
-                $column = $query->getModel()->getTableName() . '.' . $column;
+                $relations = [$baseTable];
+                $column = $baseTable . '.' . $column;
+            }
+
+            do {
+                $relationName = array_shift($relations);
+                $current[] = $relationName;
+                $path = join('.', $current);
+                $columnName = substr($column, strlen($path) + 1);
+
+                if ($path === $baseTable) {
+                    $subject = $query->getModel();
+                } else {
+                    $relation = $query->with($path)
+                        ->getWith()[$path];
+                    $subject = $relation->getTarget();
+                }
+
+                $rewrittenFilter = $query->getBehaviors($subject)
+                    ->rewriteCondition((clone $filter)->setColumn($columnName), $path . '.');
+                if ($rewrittenFilter !== null) {
+                    // TODO: Once we have our new filter implementation, make sure that something like
+                    //       $filter->getParent()->replaceById($filter->getId(), $rewrittenFilter) works
+                    //       ($root is not required anymore)
+                    $root->replaceById($filter->getId(), $rewrittenFilter);
+                    static::requireAndResolveFilterColumns($rewrittenFilter, $query, $root);
+                    return;
+                }
+            } while (! empty($relations));
+
+            $expression = $query->getBehaviors($subject)->persistProperty($expression, $columnName);
+            if (isset($relation)) {
+                $column = $relation->getTableAlias() . '.' . $columnName;
             }
 
             $filter->setColumn($column);
@@ -62,7 +87,7 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
         } else {
             /** @var FilterChain $filter */
             foreach ($filter->filters() as $child) {
-                static::requireAndResolveFilterColumns($child, $query);
+                static::requireAndResolveFilterColumns($child, $query, $root);
             }
         }
     }
