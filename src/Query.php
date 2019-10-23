@@ -202,14 +202,14 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
         foreach ((array) $relations as $relation) {
             $current = [];
             $subject = $model;
+            $segments = explode('.', $relation);
 
-            foreach (explode('.', $relation) as $name) {
+            if ($segments[0] === $tableName) {
+                array_shift($segments);
+            }
+
+            foreach ($segments as $name) {
                 $current[] = $name;
-
-                if ($name === $tableName) {
-                    continue;
-                }
-
                 $path = implode('.', $current);
 
                 if (isset($this->with[$path])) {
