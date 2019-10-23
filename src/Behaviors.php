@@ -2,9 +2,12 @@
 
 namespace ipl\Orm;
 
+use Icinga\Data\Filter\Filter;
+use Icinga\Data\Filter\FilterExpression;
 use ipl\Orm\Contract\PersistBehavior;
 use ipl\Orm\Contract\PropertyBehavior;
 use ipl\Orm\Contract\RetrieveBehavior;
+use ipl\Orm\Contract\RewriteFilterBehavior;
 
 class Behaviors
 {
@@ -17,10 +20,13 @@ class Behaviors
     /** @var PropertyBehavior[] Registered property behaviors */
     protected $propertyBehaviors = [];
 
+    /** @var RewriteFilterBehavior[] Registered rewrite filter behaviors */
+    protected $rewriteFilterBehaviors = [];
+
     /**
      * Add a behavior
      *
-     * @param PersistBehavior|PropertyBehavior|RetrieveBehavior $behavior
+     * @param PersistBehavior|PropertyBehavior|RetrieveBehavior|RewriteFilterBehavior $behavior
      */
     public function add(Behavior $behavior)
     {
@@ -35,6 +41,10 @@ class Behaviors
 
             if ($behavior instanceof PersistBehavior) {
                 $this->persistBehaviors[] = $behavior;
+            }
+
+            if ($behavior instanceof RewriteFilterBehavior) {
+                $this->rewriteFilterBehaviors[] = $behavior;
             }
         }
     }
@@ -95,5 +105,26 @@ class Behaviors
         }
 
         return $value;
+    }
+
+    /**
+     * Rewrite the given filter expression
+     *
+     * @param FilterExpression $expression
+     * @param string           $relation Absolute path of the model
+     *
+     * @return Filter|null
+     */
+    public function rewriteCondition(FilterExpression $expression, $relation = null)
+    {
+        $filter = null;
+        foreach ($this->rewriteFilterBehaviors as $behavior) {
+            $replacement = $behavior->rewriteCondition($filter ?: $expression, $relation);
+            if ($replacement !== null) {
+                $filter = $replacement;
+            }
+        }
+
+        return $filter;
     }
 }
