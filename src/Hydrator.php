@@ -130,11 +130,12 @@ class Hydrator
             foreach ($parts as $part) {
                 $subject = &$subject[$part];
             }
+
             /** @var Model $target */
             $target = new $class();
             /** @var array $columnToPropertyMap */
             $target->setProperties($this->extractAndMap($data, $columnToPropertyMap));
-            $behaviors->apply($target);
+            $behaviors->retrieve($target);
             $subject[$propertyName] = $target;
         }
 
@@ -144,7 +145,7 @@ class Hydrator
 
         $model->setProperties($properties);
 
-        $this->behaviors->apply($model);
+        $this->behaviors->retrieve($model);
 
         return $model;
     }

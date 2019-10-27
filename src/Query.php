@@ -11,6 +11,7 @@ use ipl\Sql\LimitOffset;
 use ipl\Sql\LimitOffsetInterface;
 use ipl\Sql\Select;
 use ipl\Stdlib\Contract\PaginationInterface;
+use SplObjectStorage;
 use function ipl\Stdlib\get_php_type;
 
 /**
@@ -29,11 +30,11 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
     /** @var array Columns to select from the model */
     protected $columns = [];
 
-    /** @var Behaviors The model's behaviors */
-    protected $behaviors;
+    /** @var SplObjectStorage Cached model behaviors */
+    protected $behaviorStorage;
 
-    /** @var Relations Model's relations */
-    protected $relations;
+    /** @var SplObjectStorage Cached model relations */
+    protected $relationStorage;
 
     /** @var Resolver Column and relation resolver */
     protected $resolver;
@@ -43,6 +44,12 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
 
     /** @var Relation[] Relations to eager load */
     protected $with = [];
+
+    public function __construct()
+    {
+        $this->behaviorStorage = new SplObjectStorage();
+        $this->relationStorage = new SplObjectStorage();
+    }
 
     /**
      * Get the database connection
@@ -121,28 +128,45 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
     /**
      * Get the model's behaviors
      *
+     * @param Model $model If not given, the base model's behaviors are returned
+     *
      * @return Behaviors
      */
-    public function getBehaviors()
+    public function getBehaviors(Model $model = null)
     {
-        if ($this->behaviors === null) {
-            $this->behaviors = new Behaviors();
-            $this->getModel()->createBehaviors($this->behaviors);
+        if ($model === null) {
+            $model = $this->getModel();
         }
 
-        return $this->behaviors;
+        if (! $this->behaviorStorage->contains($model)) {
+            $behaviors = new Behaviors();
+            $model->createBehaviors($behaviors);
+            $this->behaviorStorage->attach($model, $behaviors);
+        }
+
+        return $this->behaviorStorage[$model];
     }
 
     /**
      * Get the model's relations
      *
+     * @param Model $model If not given, the base model's relations are returned
+     *
      * @return Relations
      */
-    public function getRelations()
+    public function getRelations(Model $model = null)
     {
-        $this->ensureRelationsCreated();
+        if ($model === null) {
+            $model = $this->getModel();
+        }
 
-        return $this->relations;
+        if (! $this->relationStorage->contains($model)) {
+            $relations = new Relations();
+            $model->createRelations($relations);
+            $this->relationStorage->attach($model, $relations);
+        }
+
+        return $this->relationStorage[$model];
     }
 
     /**
@@ -196,9 +220,6 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
         $model = $this->getModel();
         $tableName = $model->getTableName();
 
-        $relationStorage = new \SplObjectStorage();
-        $relationStorage->attach($model, $this->getRelations());
-
         foreach ((array) $relations as $relation) {
             $current = [];
             $subject = $model;
@@ -217,14 +238,7 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
                     continue;
                 }
 
-                if ($relationStorage->contains($subject)) {
-                    $subjectRelations = $relationStorage[$subject];
-                } else {
-                    $subjectRelations = new Relations();
-                    $subject->createRelations($subjectRelations);
-                    $relationStorage->attach($subject, $subjectRelations);
-                }
-
+                $subjectRelations = $this->getRelations($subject);
                 if (! $subjectRelations->has($name)) {
                     throw new InvalidArgumentException(sprintf(
                         "Can't join relation '%s' in model '%s'. Relation not found.",
@@ -317,9 +331,6 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
             $target = $relation->getTarget();
             $targetColumns = $resolver->getSelectableColumns($target);
 
-            $behaviors = new Behaviors();
-            $target->createBehaviors($behaviors);
-
             $hydrator->add(
                 $path,
                 $relation->getName(),
@@ -328,7 +339,7 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
                     array_keys($resolver->qualifyColumns($targetColumns, $relation->getTableAlias())),
                     $targetColumns
                 ),
-                $behaviors
+                $this->getBehaviors($target)
             );
         }
 
@@ -417,22 +428,6 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
         }
 
         return $query;
-    }
-
-    /**
-     * Ensure that the model's relations have been created
-     *
-     * @return $this
-     */
-    public function ensureRelationsCreated()
-    {
-        if ($this->relations === null) {
-            $relations = new Relations();
-            $this->getModel()->createRelations($relations);
-            $this->relations = $relations;
-        }
-
-        return $this;
     }
 
     /**
