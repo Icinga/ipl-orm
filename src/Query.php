@@ -221,7 +221,7 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
         $tableName = $model->getTableName();
 
         foreach ((array) $relations as $relation) {
-            $current = [];
+            $current = [$tableName];
             $subject = $model;
             $segments = explode('.', $relation);
 
@@ -280,7 +280,11 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
             $select->columns($modelColumns);
 
             foreach ($foreignColumnMap as $relation => $foreignColumns) {
-                $select->columns($resolver->qualifyColumns($foreignColumns, $this->with[$relation]->getTableAlias()));
+                $select->columns(
+                    $resolver->qualifyColumns(
+                        $foreignColumns, $this->with[$resolver->qualifyPath($relation, $tableName)]->getTableAlias()
+                    )
+                );
             }
         } elseif (empty($this->with)) {
             // Don't qualify columns if we don't have any relation to load
@@ -332,7 +336,7 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
             $targetColumns = $resolver->getSelectableColumns($target);
 
             $hydrator->add(
-                $path,
+                explode('.', $path, 2)[1],
                 $relation->getName(),
                 $relation->getTargetClass(),
                 array_combine(
@@ -418,7 +422,7 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
 
             $conditionsTarget = $junction->getTableName();
 
-            $query->with[$conditionsTarget] = $toJunction;
+            $query->with[$this->getResolver()->qualifyPath($conditionsTarget, $source->getTableName())] = $toJunction;
         }
 
         $conditions = $relation->determineKeys($source);
