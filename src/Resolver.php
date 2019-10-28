@@ -104,6 +104,28 @@ class Resolver
     }
 
     /**
+     * Qualify the given path by the specified table name
+     *
+     * @param string $path
+     * @param string $tableName
+     *
+     * @return string
+     */
+    public function qualifyPath($path, $tableName)
+    {
+        $segments = explode('.', $path, 2);
+
+        if ($segments[0] !== $tableName) {
+            array_unshift($segments, $tableName);
+        }
+
+        $path = implode('.', $segments);
+
+        return $path;
+    }
+
+
+    /**
      * Require and resolve columns
      *
      * Related models will be automatically added for eager-loading.
@@ -134,7 +156,7 @@ class Resolver
                         if ($relation !== $tableName) {
                             $query->with($relation);
 
-                            $target = $query->getWith()[$relation]->getTarget();
+                            $target = $query->getWith()[$this->qualifyPath($relation, $tableName)]->getTarget();
 
                             $resolved = &$foreignColumnMap[$relation];
 
