@@ -3,6 +3,7 @@
 namespace ipl\Orm;
 
 use ipl\Sql\Expression;
+use OutOfBoundsException;
 use RuntimeException;
 use SplObjectStorage;
 
@@ -11,6 +12,9 @@ use SplObjectStorage;
  */
 class Resolver
 {
+    /** @var  SplObjectStorage Model aliases */
+    protected $aliases;
+
     /** @var SplObjectStorage Selectable columns from resolved models */
     protected $selectableColumns;
 
@@ -22,8 +26,45 @@ class Resolver
      */
     public function __construct()
     {
+        $this->aliases = new SplObjectStorage();
         $this->selectableColumns = new SplObjectStorage();
         $this->selectColumns = new SplObjectStorage();
+    }
+
+    /**
+     * Get a model alias
+     *
+     * @param Model $model
+     *
+     * @return string
+     *
+     * @throws OutOfBoundsException If no alias exists for the given model
+     */
+    public function getAlias(Model $model)
+    {
+        if (! $this->aliases->contains($model)) {
+            throw new OutOfBoundsException(sprintf(
+                "Can't get alias for model '%s'. Alias does not exist",
+                get_class($model)
+            ));
+        }
+
+        return $this->aliases[$model];
+    }
+
+    /**
+     * Set a model alias
+     *
+     * @param Model  $model
+     * @param string $alias
+     *
+     * @return $this
+     */
+    public function setAlias(Model $model, $alias)
+    {
+        $this->aliases[$model] = $alias;
+
+        return $this;
     }
 
     /**
