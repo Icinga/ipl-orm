@@ -119,6 +119,29 @@ class Resolver
     }
 
     /**
+     * Qualify the given columns by the specified table name
+     *
+     * @param array  $columns
+     * @param string $tableName
+     *
+     * @return array
+     */
+    public function qualifyColumns(array $columns, $tableName)
+    {
+        $qualified = [];
+
+        foreach ($columns as $alias => $column) {
+            if (is_int($alias) || ! $column instanceof Expression) {
+                $column = $tableName . '.' . $column;
+            }
+
+            $qualified[$alias] = $column;
+        }
+
+        return $qualified;
+    }
+
+    /**
      * Qualify the given columns and aliases by the specified table name
      *
      * @param array  $columns
