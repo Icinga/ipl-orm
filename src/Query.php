@@ -11,6 +11,7 @@ use ipl\Sql\LimitOffset;
 use ipl\Sql\LimitOffsetInterface;
 use ipl\Sql\Select;
 use ipl\Stdlib\Contract\PaginationInterface;
+use OutOfBoundsException;
 use SplObjectStorage;
 use function ipl\Stdlib\get_php_type;
 
@@ -177,7 +178,8 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
     public function getResolver()
     {
         if ($this->resolver === null) {
-            $this->resolver = new Resolver();
+            $this->resolver = (new Resolver())
+                ->setAlias($this->getModel(), $this->getModel()->getTableName());
         }
 
         return $this->resolver;
@@ -218,6 +220,7 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
     public function with($relations)
     {
         $model = $this->getModel();
+        $resolver = $this->getResolver();
         $tableName = $model->getTableName();
 
         foreach ((array) $relations as $relation) {
@@ -250,6 +253,8 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
                 $this->with[$path] = $subjectRelations->get($name)->setSource($subject);
 
                 $subject = $this->with[$path]->getTarget();
+
+                $resolver->setAlias($subject, str_replace('.', '_', $path));
             }
         }
 
@@ -272,35 +277,55 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
         if (! empty($columns)) {
             list($modelColumns, $foreignColumnMap) = $resolver->requireAndResolveColumns($this, $columns);
 
-            if (! empty($modelColumns) && ! empty($foreignColumnMap)) {
-                // Only qualify columns if there is a relation to load
-                $modelColumns = $resolver->qualifyColumnsAndAliases($modelColumns, $tableName);
-            }
-
-            $select->columns($modelColumns);
+            $select->columns($resolver->qualifyColumns($modelColumns, $resolver->getAlias($model)));
 
             foreach ($foreignColumnMap as $relation => $foreignColumns) {
                 $select->columns(
                     $resolver->qualifyColumnsAndAliases(
-                        $foreignColumns, $this->with[$resolver->qualifyPath($relation, $tableName)]->getTableAlias()
+                        $foreignColumns,
+                        $resolver->getAlias($this->with[$resolver->qualifyPath($relation, $tableName)]->getTarget())
                     )
                 );
             }
-        } elseif (empty($this->with)) {
-            // Don't qualify columns if we don't have any relation to load
-            $select->columns($resolver->getSelectColumns($model));
         } else {
-            $select->columns($resolver->qualifyColumnsAndAliases($resolver->getSelectColumns($model), $tableName));
+            $select->columns(
+                $resolver->qualifyColumns($resolver->getSelectColumns($model), $resolver->getAlias($model))
+            );
         }
 
         foreach ($this->with as $relation) {
-            foreach ($relation->resolve($relation->getSource() ?: $model) as list($table, $condition)) {
-                $select->join($table, $condition);
+            foreach ($relation->resolve() as list($source, $target, $conditions)) {
+                $condition = [];
+
+                try {
+                    $targetTableAlias = $resolver->getAlias($target);
+                } catch (OutOfBoundsException $e) {
+                    // TODO(el): This is just a quick fix for many-to-many relations where the alias of the junction
+                    // model is unknown yet
+                    $targetTableAlias = $resolver->getAlias($source) . '_' . $target->getTableName();
+                    $resolver->setAlias($target, $targetTableAlias);
+                }
+
+                $sourceTableAlias = $resolver->getAlias($source);
+
+                foreach ($conditions as $fk => $ck) {
+                    $condition[] = sprintf(
+                        '%s.%s = %s.%s',
+                        $targetTableAlias,
+                        $fk,
+                        $sourceTableAlias,
+                        $ck
+                    );
+                }
+
+                $select->join([$targetTableAlias => $target->getTableName()], $condition);
             }
 
             if (empty($columns)) {
                 $select->columns(
-                    $resolver->qualifyColumnsAndAliases($resolver->getSelectColumns($relation->getTarget()), $relation->getTableAlias())
+                    $resolver->qualifyColumnsAndAliases(
+                        $resolver->getSelectColumns($relation->getTarget()), $resolver->getAlias($relation->getTarget())
+                    )
                 );
             }
         }
@@ -325,9 +350,7 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
         $modelColumns = $resolver->getSelectableColumns($model);
 
         $hydrator->setColumnToPropertyMap(array_combine(
-            empty($this->with) // Only qualify columns if we loaded relations
-                ? $modelColumns
-                : array_keys($resolver->qualifyColumnsAndAliases($modelColumns, $model->getTableName())),
+            $modelColumns,
             $modelColumns
         ));
 
@@ -340,7 +363,7 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
                 $relation->getName(),
                 $relation->getTargetClass(),
                 array_combine(
-                    array_keys($resolver->qualifyColumnsAndAliases($targetColumns, $relation->getTableAlias())),
+                    array_keys($resolver->qualifyColumnsAndAliases($targetColumns, $resolver->getAlias($relation->getTarget()))),
                     $targetColumns
                 ),
                 $this->getBehaviors($target)
@@ -392,10 +415,14 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
 
         $relation = $modelRelations->get($relation);
         $target = $relation->getTarget();
+
         $conditionsTarget = $target->getTableName();
         $query = (new Query())
-            ->setModel($target)
-            ->setDb($this->getDb());
+            ->setDb($this->getDb())
+            ->setModel($target);
+        $resolver = $query
+            ->getResolver()
+            ->setAlias($target, $conditionsTarget);
 
         if ($relation instanceof BelongsToMany) {
             $through = $relation->getThrough();
@@ -415,12 +442,16 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
                     ->setTableName($through);
             }
 
+            // Override $conditionsTarget
+            $conditionsTarget = $junction->getTableName();
+
+            $resolver->setAlias($junction, $conditionsTarget);
+
             $toJunction = (new HasMany())
                 ->setName($junction->getTableName())
+                ->setSource($target)
                 ->setTarget($junction)
                 ->setTargetClass(get_class($junction));
-
-            $conditionsTarget = $junction->getTableName();
 
             $query->with[$this->getResolver()->qualifyPath($conditionsTarget, $source->getTableName())] = $toJunction;
         }

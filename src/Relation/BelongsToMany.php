@@ -95,8 +95,10 @@ class BelongsToMany extends Relation
         return $this;
     }
 
-    public function resolve(Model $source)
+    public function resolve()
     {
+        $source = $this->getSource();
+
         $possibleCandidateKey = [$this->getCandidateKey()];
         $possibleForeignKey = [$this->getForeignKey()];
 
@@ -141,19 +143,21 @@ class BelongsToMany extends Relation
 
         $toJunction = (new HasMany())
             ->setName($junction->getTableName())
+            ->setSource($source)
             ->setTarget($junction)
             ->setCandidateKey($this->extractKey($possibleCandidateKey))
             ->setForeignKey($this->extractKey($possibleForeignKey));
 
         $toTarget = (new HasMany())
             ->setName($this->getName())
+            ->setSource($junction)
             ->setTarget($target)
             ->setCandidateKey($this->extractKey($possibleTargetCandidateKey))
             ->setForeignKey($this->extractKey($possibleTargetForeignKey));
 
 
-        yield from $toJunction->resolve($source);
-        yield from $toTarget->resolve($junction);
+        yield from $toJunction->resolve();
+        yield from $toTarget->resolve();
     }
 
     protected function extractKey(array $possibleKey)
