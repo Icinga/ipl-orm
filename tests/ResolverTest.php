@@ -74,6 +74,6 @@ class ResolverTest extends TestCase
         ];
         $resolver = new Resolver();
 
-        $this->assertSame($qualified, $resolver->qualifyColumns($columns, $tableName));
+        $this->assertSame($qualified, $resolver->qualifyColumnsAndAliases($columns, $tableName));
     }
 }

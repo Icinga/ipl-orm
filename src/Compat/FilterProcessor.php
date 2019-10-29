@@ -79,7 +79,7 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
 
             $expression = $query->getBehaviors($subject)->persistProperty($expression, $columnName);
             if (isset($relation)) {
-                $column = $relation->getTableAlias() . '.' . $columnName;
+                $column = $query->getResolver()->getAlias($relation->getTarget()) . '.' . $columnName;
             }
 
             $filter->setColumn($column);

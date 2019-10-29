@@ -2,7 +2,6 @@
 
 namespace ipl\Orm;
 
-use ipl\Orm\Common\TableAlias;
 use function ipl\Stdlib\get_php_type;
 
 /**
@@ -11,8 +10,6 @@ use function ipl\Stdlib\get_php_type;
  */
 class Relation
 {
-    use TableAlias;
-
     /** @var string Name of the relation */
     protected $name;
 
@@ -102,10 +99,6 @@ class Relation
     public function setName($name)
     {
         $this->name = $name;
-
-        if ($this->tableAlias === null) {
-            $this->setTableAlias($name);
-        }
 
         return $this;
     }
@@ -301,26 +294,16 @@ class Relation
     }
 
     /**
-     * Resolve the relation with the passed source model
+     * Resolve the relation
      *
-     * Yields a two-element array consisting of the table to join and the join condition both suitable
-     * for {@link \ipl\Sql\Select::join()}.
-     *
-     * @param Model $source
+     * Yields a three-element array consisting of the source model, target model and the join keys.
      *
      * @return \Generator
      */
-    public function resolve(Model $source)
+    public function resolve()
     {
-        $tableName = $source->getTableName();
-        $targetTableAlias = $this->getTableAlias();
-        $condition = [];
+        $source = $this->getSource();
 
-        foreach ($this->determineKeys($source) as $fk => $ck) {
-            // Qualify keys
-            $condition[] = sprintf('%s.%s = %s.%s', $targetTableAlias, $fk, $tableName, $ck);
-        }
-
-        yield [[$targetTableAlias => $this->getTarget()->getTableName()], $condition];
+        yield [$source, $this->getTarget(), $this->determineKeys($source)];
     }
 }

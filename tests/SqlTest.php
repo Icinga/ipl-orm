@@ -16,7 +16,7 @@ class SqlTest extends \PHPUnit\Framework\TestCase
         $query = (new Query())->setModel($model);
 
         $this->assertSql(
-            'SELECT id FROM test',
+            'SELECT test.id FROM test',
             $query->assembleSelect()
         );
     }
@@ -27,7 +27,7 @@ class SqlTest extends \PHPUnit\Framework\TestCase
         $query = (new Query())->setModel($model);
 
         $this->assertSql(
-            'SELECT lorem, ipsum FROM test',
+            'SELECT test.lorem, test.ipsum FROM test',
             $query->assembleSelect()
         );
     }
@@ -38,7 +38,7 @@ class SqlTest extends \PHPUnit\Framework\TestCase
         $query = (new Query())->setModel($model);
 
         $this->assertSql(
-            'SELECT i, d FROM test',
+            'SELECT test.i, test.d FROM test',
             $query->assembleSelect()
         );
     }
@@ -49,7 +49,7 @@ class SqlTest extends \PHPUnit\Framework\TestCase
         $query = (new Query())->setModel($model);
 
         $this->assertSql(
-            'SELECT id, lorem, ipsum FROM test',
+            'SELECT test.id, test.lorem, test.ipsum FROM test',
             $query->assembleSelect()
         );
     }
@@ -60,7 +60,7 @@ class SqlTest extends \PHPUnit\Framework\TestCase
         $query = (new Query())->setModel($model);
 
         $this->assertSql(
-            'SELECT i, d, lorem, ipsum FROM test',
+            'SELECT test.i, test.d, test.lorem, test.ipsum FROM test',
             $query->assembleSelect()
         );
     }
@@ -73,7 +73,7 @@ class SqlTest extends \PHPUnit\Framework\TestCase
             ->columns(['lorem']);
 
         $this->assertSql(
-            'SELECT lorem FROM test',
+            'SELECT test.lorem FROM test',
             $query->assembleSelect()
         );
     }
@@ -87,7 +87,7 @@ class SqlTest extends \PHPUnit\Framework\TestCase
             ->limit(25);
 
         $this->assertSql(
-            'SELECT * FROM test LIMIT 25',
+            'SELECT test.* FROM test LIMIT 25',
             $query->assembleSelect()
         );
     }
@@ -101,7 +101,7 @@ class SqlTest extends \PHPUnit\Framework\TestCase
             ->offset(25);
 
         $this->assertSql(
-            'SELECT * FROM test OFFSET 25',
+            'SELECT test.* FROM test OFFSET 25',
             $query->assembleSelect()
         );
     }
@@ -116,7 +116,7 @@ class SqlTest extends \PHPUnit\Framework\TestCase
             ->offset(25);
 
         $this->assertSql(
-            'SELECT * FROM test LIMIT 25 OFFSET 25',
+            'SELECT test.* FROM test LIMIT 25 OFFSET 25',
             $query->assembleSelect()
         );
     }
@@ -130,13 +130,13 @@ class SqlTest extends \PHPUnit\Framework\TestCase
 
         $sql = <<<'SQL'
 SELECT
-    user.id AS user_id, user.username AS user_username, user.password AS user_password,
-    profile.id AS profile_id, profile.user_id AS profile_user_id, profile.given_name AS profile_given_name,
-    profile.surname AS profile_surname
+    user.id, user.username, user.password,
+    user_profile.id AS user_profile_id, user_profile.user_id AS user_profile_user_id,
+    user_profile.given_name AS user_profile_given_name, user_profile.surname AS user_profile_surname
 FROM
     user
 INNER JOIN
-    profile profile ON profile.user_id = user.id
+    profile user_profile ON user_profile.user_id = user.id
 SQL;
 
         $this->assertSql(
@@ -154,7 +154,7 @@ SQL;
             ->with('profile');
 
         $this->assertSql(
-            'SELECT * FROM user INNER JOIN profile profile ON profile.user_id = user.id',
+            'SELECT user.* FROM user INNER JOIN profile user_profile ON user_profile.user_id = user.id',
             $query->assembleSelect()
         );
     }
@@ -168,13 +168,13 @@ SQL;
 
         $sql = <<<'SQL'
 SELECT
-    profile.id AS profile_id, profile.user_id AS profile_user_id, profile.given_name AS profile_given_name,
-    profile.surname AS profile_surname,
-    user.id AS user_id, user.username AS user_username, user.password AS user_password
+    profile.id, profile.user_id, profile.given_name, profile.surname,
+    profile_user.id AS profile_user_id, profile_user.username AS profile_user_username,
+    profile_user.password AS profile_user_password
 FROM
     profile
 INNER JOIN
-    user user ON user.id = profile.user_id
+    user profile_user ON profile_user.id = profile.user_id
 SQL;
 
         $this->assertSql(
@@ -183,7 +183,7 @@ SQL;
         );
     }
 
-    public function testSelectFromModelWithEagerLoadingOfASignleManyToManyRelation()
+    public function testSelectFromModelWithEagerLoadingOfASingleManyToManyRelation()
     {
         $user = new User();
         $query = (new Query())
@@ -192,14 +192,14 @@ SQL;
 
         $sql = <<<'SQL'
 SELECT
-    user.id AS user_id, user.username AS user_username, user.password AS user_password,
-    group.id AS group_id, group.name AS group_name
+    user.id, user.username, user.password,
+    user_group.id AS user_group_id, user_group.name AS user_group_name
 FROM
     user
 INNER JOIN
-    user_group user_group ON user_group.user_id = user.id
+    user_group user_user_group ON user_user_group.user_id = user.id
 INNER JOIN
-    group group ON group.id = user_group.group_id
+    group user_group ON user_group.id = user_user_group.group_id
 SQL;
 
         $this->assertSql(
@@ -217,12 +217,12 @@ SQL;
 
         $sql = <<<'SQL'
 SELECT
-    user.username AS user_username,
-    profile.given_name AS profile_given_name, profile.surname AS profile_surname
+    user.username,
+    user_profile.given_name AS user_profile_given_name, user_profile.surname AS user_profile_surname
 FROM
     user
 INNER JOIN
-    profile profile ON profile.user_id = user.id
+    profile user_profile ON user_profile.user_id = user.id
 SQL;
 
         $this->assertSql(
@@ -240,17 +240,17 @@ SQL;
 
         $sql = <<<'SQL'
 SELECT
-    group.id AS group_id, group.name AS group_name,
-    user.id AS user_id, user.username AS user_username, user.password AS user_password,
-    audit.id AS audit_id, audit.user_id AS audit_user_id, audit.activity AS audit_activity
+    group.id, group.name,
+    group_user.id AS group_user_id, group_user.username AS group_user_username, group_user.password AS group_user_password,
+    group_user_audit.id AS group_user_audit_id, group_user_audit.user_id AS group_user_audit_user_id, group_user_audit.activity AS group_user_audit_activity
 FROM
     group
 INNER JOIN
-    user_group user_group ON user_group.group_id = group.id
+    user_group group_user_group ON group_user_group.group_id = group.id
 INNER JOIN
-    user user ON user.id = user_group.user_id
+    user group_user ON group_user.id = group_user_group.user_id
 INNER JOIN
-    audit audit ON audit.user_id = user.id
+    audit group_user_audit ON group_user_audit.user_id = group_user.id
 SQL;
 
         $this->assertSql(
