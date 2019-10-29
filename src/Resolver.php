@@ -119,14 +119,14 @@ class Resolver
     }
 
     /**
-     * Qualify the given columns by the specified table name
+     * Qualify the given columns and aliases by the specified table name
      *
      * @param array  $columns
      * @param string $tableName
      *
      * @return array
      */
-    public function qualifyColumns(array $columns, $tableName)
+    public function qualifyColumnsAndAliases(array $columns, $tableName)
     {
         $qualified = [];
 

@@ -274,14 +274,14 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
 
             if (! empty($modelColumns) && ! empty($foreignColumnMap)) {
                 // Only qualify columns if there is a relation to load
-                $modelColumns = $resolver->qualifyColumns($modelColumns, $tableName);
+                $modelColumns = $resolver->qualifyColumnsAndAliases($modelColumns, $tableName);
             }
 
             $select->columns($modelColumns);
 
             foreach ($foreignColumnMap as $relation => $foreignColumns) {
                 $select->columns(
-                    $resolver->qualifyColumns(
+                    $resolver->qualifyColumnsAndAliases(
                         $foreignColumns, $this->with[$resolver->qualifyPath($relation, $tableName)]->getTableAlias()
                     )
                 );
@@ -290,7 +290,7 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
             // Don't qualify columns if we don't have any relation to load
             $select->columns($resolver->getSelectColumns($model));
         } else {
-            $select->columns($resolver->qualifyColumns($resolver->getSelectColumns($model), $tableName));
+            $select->columns($resolver->qualifyColumnsAndAliases($resolver->getSelectColumns($model), $tableName));
         }
 
         foreach ($this->with as $relation) {
@@ -300,7 +300,7 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
 
             if (empty($columns)) {
                 $select->columns(
-                    $resolver->qualifyColumns($resolver->getSelectColumns($relation->getTarget()), $relation->getTableAlias())
+                    $resolver->qualifyColumnsAndAliases($resolver->getSelectColumns($relation->getTarget()), $relation->getTableAlias())
                 );
             }
         }
@@ -327,7 +327,7 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
         $hydrator->setColumnToPropertyMap(array_combine(
             empty($this->with) // Only qualify columns if we loaded relations
                 ? $modelColumns
-                : array_keys($resolver->qualifyColumns($modelColumns, $model->getTableName())),
+                : array_keys($resolver->qualifyColumnsAndAliases($modelColumns, $model->getTableName())),
             $modelColumns
         ));
 
@@ -340,7 +340,7 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
                 $relation->getName(),
                 $relation->getTargetClass(),
                 array_combine(
-                    array_keys($resolver->qualifyColumns($targetColumns, $relation->getTableAlias())),
+                    array_keys($resolver->qualifyColumnsAndAliases($targetColumns, $relation->getTableAlias())),
                     $targetColumns
                 ),
                 $this->getBehaviors($target)
