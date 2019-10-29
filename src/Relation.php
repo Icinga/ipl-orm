@@ -28,6 +28,9 @@ class Relation
     /** @var Model Target model */
     protected $target;
 
+    /** @var string Type of the JOIN used in the query */
+    protected $joinType = 'INNER';
+
     /** @var bool Whether this is the inverse of a relationship */
     protected $inverse;
 
@@ -239,6 +242,30 @@ class Relation
     public function setTarget(Model $target)
     {
         $this->target = $target;
+
+        return $this;
+    }
+
+    /**
+     * Get the type of the JOIN used in the query
+     *
+     * @return string
+     */
+    public function getJoinType()
+    {
+        return $this->joinType;
+    }
+
+    /**
+     * Set the type of the JOIN used in the query
+     *
+     * @param string $joinType
+     *
+     * @return Relation
+     */
+    public function setJoinType($joinType)
+    {
+        $this->joinType = $joinType;
 
         return $this;
     }

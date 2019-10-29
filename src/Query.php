@@ -318,7 +318,21 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
                     );
                 }
 
-                $select->join([$targetTableAlias => $target->getTableName()], $condition);
+                $table = [$targetTableAlias => $target->getTableName()];
+
+                switch ($relation->getJoinType()) {
+                    case 'LEFT':
+                        $select->joinLeft($table, $condition);
+
+                        break;
+                    case 'RIGHT':
+                        $select->joinRight($table, $condition);
+
+                        break;
+                    case 'INNER':
+                    default:
+                        $select->join($table, $condition);
+                }
             }
 
             if (empty($columns)) {
