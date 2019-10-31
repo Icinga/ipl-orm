@@ -120,6 +120,32 @@ class Resolver
     }
 
     /**
+     * Qualify the given alias by the specified table name
+     *
+     * @param string $alias
+     * @param string $tableName
+     *
+     * @return string
+     */
+    public function qualifyAlias($alias, $tableName)
+    {
+        return $tableName . '_' . $alias;
+    }
+
+    /**
+     * Qualify the given column by the specified table name
+     *
+     * @param string $column
+     * @param string $tableName
+     *
+     * @return string
+     */
+    public function qualifyColumn($column, $tableName)
+    {
+        return $tableName . '.' . $column;
+    }
+
+    /**
      * Qualify the given columns by the specified table name
      *
      * @param array  $columns
@@ -133,7 +159,7 @@ class Resolver
 
         foreach ($columns as $alias => $column) {
             if (is_int($alias) || ! $column instanceof Expression) {
-                $column = $tableName . '.' . $column;
+                $column = $this->qualifyColumn($column, $tableName);
             }
 
             $qualified[$alias] = $column;
@@ -156,10 +182,10 @@ class Resolver
 
         foreach ($columns as $alias => $column) {
             if (is_int($alias)) {
-                $alias = $tableName . '_' . $column;
-                $column = $tableName . '.' . $column;
+                $alias = $this->qualifyAlias($column, $tableName);
+                $column = $this->qualifyColumn($column, $tableName);
             } elseif (! $column instanceof Expression) {
-                $column = $tableName . '.' . $column;
+                $column = $this->qualifyColumn($column, $tableName);
             }
 
             $qualified[$alias] = $column;
