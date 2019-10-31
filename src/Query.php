@@ -2,6 +2,8 @@
 
 namespace ipl\Orm;
 
+use ArrayObject;
+use Generator;
 use InvalidArgumentException;
 use ipl\Orm\Relation\BelongsToMany;
 use ipl\Orm\Relation\HasMany;
@@ -276,20 +278,24 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
     {
         $columns = $this->getColumns();
         $model = $this->getModel();
-        $tableName = $model->getTableName();
         $select = clone $this->getSelectBase();
         $resolver = $this->getResolver();
 
         if (! empty($columns)) {
-            list($modelColumns, $foreignColumnMap) = $resolver->requireAndResolveColumns($this, $columns);
+            $resolved = $this->groupColumnsByTarget($resolver->requireAndResolveColumns($this, $columns));
 
-            $select->columns($resolver->qualifyColumns($modelColumns, $resolver->getAlias($model)));
+            if ($resolved->contains($model)) {
+                $select->columns(
+                    $resolver->qualifyColumns($resolved[$model]->getArrayCopy(), $resolver->getAlias($model))
+                );
+                $resolved->detach($model);
+            }
 
-            foreach ($foreignColumnMap as $relation => $foreignColumns) {
+            foreach ($resolved as $target) {
                 $select->columns(
                     $resolver->qualifyColumnsAndAliases(
-                        $foreignColumns,
-                        $resolver->getAlias($this->with[$resolver->qualifyPath($relation, $tableName)]->getTarget())
+                        $resolved[$target]->getArrayCopy(),
+                        $resolver->getAlias($target)
                     )
                 );
             }
@@ -573,5 +579,34 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
     public function getIterator()
     {
         return $this->execute();
+    }
+
+    /**
+     * Group columns from {@link Resolver::requireAndResolveColumns()} by target models
+     *
+     * @param Generator $columns
+     *
+     * @return SplObjectStorage
+     */
+    protected function groupColumnsByTarget(Generator $columns)
+    {
+        $columnStorage = new SplObjectStorage();
+
+        foreach ($columns as list($target, $alias, $column)) {
+            if (! $columnStorage->contains($target)) {
+                $resolved = new ArrayObject();
+                $columnStorage->attach($target, $resolved);
+            } else {
+                $resolved = $columnStorage[$target];
+            }
+
+            if (is_int($alias)) {
+                $resolved[] = $column;
+            } else {
+                $resolved[$alias] = $column;
+            }
+        }
+
+        return $columnStorage;
     }
 }
