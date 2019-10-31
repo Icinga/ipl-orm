@@ -53,6 +53,16 @@ abstract class Model implements \ArrayAccess
     }
 
     /**
+     * Get the model's sort rules
+     *
+     * @return array
+     */
+    public function getSortRules()
+    {
+        return [];
+    }
+
+    /**
      * Get a query which is tied to this model and the given database connection
      *
      * @param Connection $db
