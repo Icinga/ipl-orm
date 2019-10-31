@@ -20,8 +20,9 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
 
             if ($where) {
                 $operator = array_shift($where);
+                $conditions = array_shift($where);
 
-                $query->getSelectBase()->where($where, $operator);
+                $query->getSelectBase()->where($conditions, $operator);
             }
         }
     }
