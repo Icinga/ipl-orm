@@ -14,7 +14,10 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
         if (! $filter->isEmpty()) {
             $filter = clone $filter;
 
-            static::requireAndResolveFilterColumns($filter, $query, $filter);
+            $rewrittenFilter = static::requireAndResolveFilterColumns($filter, $query);
+            if ($rewrittenFilter !== null) {
+                $filter = $rewrittenFilter;
+            }
 
             $where = static::assembleFilter($filter);
 
@@ -27,7 +30,7 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
         }
     }
 
-    protected static function requireAndResolveFilterColumns(Filter $filter, Query $query, Filter $root)
+    protected static function requireAndResolveFilterColumns(Filter $filter, Query $query)
     {
         if ($filter instanceof FilterExpression) {
             $expression = $filter->getExpression();
@@ -69,12 +72,8 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
                 $rewrittenFilter = $query->getBehaviors($subject)
                     ->rewriteCondition((clone $filter)->setColumn($columnName), $path . '.');
                 if ($rewrittenFilter !== null) {
-                    // TODO: Once we have our new filter implementation, make sure that something like
-                    //       $filter->getParent()->replaceById($filter->getId(), $rewrittenFilter) works
-                    //       ($root is not required anymore)
-                    $root->replaceById($filter->getId(), $rewrittenFilter);
-                    static::requireAndResolveFilterColumns($rewrittenFilter, $query, $root);
-                    return;
+                    static::requireAndResolveFilterColumns($rewrittenFilter, $query);
+                    return $rewrittenFilter;
                 }
             } while (! empty($relations));
 
@@ -88,7 +87,11 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
         } else {
             /** @var FilterChain $filter */
             foreach ($filter->filters() as $child) {
-                static::requireAndResolveFilterColumns($child, $query, $root);
+                /** @var Filter $child */
+                $rewrittenFilter = static::requireAndResolveFilterColumns($child, $query);
+                if ($rewrittenFilter !== null) {
+                    $filter->replaceById($child->getId(), $rewrittenFilter);
+                }
             }
         }
     }
