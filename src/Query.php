@@ -305,6 +305,24 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
             );
         }
 
+        $aggregateColumns = $model->getAggregateColumns();
+        if ($aggregateColumns === true) {
+            $select->groupBy(
+                $resolver->qualifyColumns((array) $model->getKeyName(), $resolver->getAlias($model))
+            );
+        } elseif (! empty($aggregateColumns)) {
+            $aggregateColumns = array_flip($aggregateColumns);
+            foreach ($select->getColumns() as $alias => $column) {
+                if (isset($aggregateColumns[$alias])) {
+                    $select->groupBy(
+                        $resolver->qualifyColumns((array) $model->getKeyName(), $resolver->getAlias($model))
+                    );
+
+                    break;
+                }
+            }
+        }
+
         foreach ($this->with as $relation) {
             foreach ($relation->resolve() as list($source, $target, $conditions)) {
                 $condition = [];
