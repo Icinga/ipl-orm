@@ -369,6 +369,8 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
             $select->offset($this->getOffset());
         }
 
+        $this->order($select);
+
         return $select;
     }
 
@@ -608,5 +610,62 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
         }
 
         return $columnStorage;
+    }
+
+    /**
+     * Resolve, require and apply ORDER BY columns
+     *
+     * @param Select $select
+     *
+     * @return $this
+     */
+    protected function order(Select $select)
+    {
+        $sortRules = $this->getModel()->getSortRules();
+
+        if (empty($sortRules)) {
+            return $this;
+        }
+
+        $default = reset($sortRules);
+        $directions = [];
+        $columns = explode(',', $default);
+        foreach ($columns as $spec) {
+            $columnAndDirection = explode(' ', trim($spec), 2);
+            $column = array_shift($columnAndDirection);
+            if (! empty($columnAndDirection)) {
+                $direction = $columnAndDirection[0];
+            } else {
+                $direction = null;
+            }
+            $directions[$column] = $direction;
+        }
+
+        $order = [];
+        $resolver = $this->getResolver();
+
+        foreach ($resolver->requireAndResolveColumns($this, array_keys($directions)) as list($model, $alias, $column)) {
+            $direction = reset($directions);
+
+            $tableName = $resolver->getAlias($model);
+
+            if (is_int($alias)) {
+                $order[] = implode(
+                    ' ',
+                    array_filter([$resolver->qualifyColumn($column, $tableName), $direction])
+                );
+            } else {
+                $order[] = implode(
+                    ' ',
+                    array_filter([$resolver->qualifyAlias($alias, $tableName), $direction])
+                );
+            }
+
+            array_unshift($directions);
+        }
+
+        $select->orderBy($order);
+
+        return $this;
     }
 }
