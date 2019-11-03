@@ -22,6 +22,9 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
 {
     use LimitOffset;
 
+    /** @var int Count cache */
+    protected $count;
+
     /** @var Connection Database connection */
     protected $db;
 
@@ -550,7 +553,11 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
 
     public function count()
     {
-        return $this->getDb()->select($this->assembleSelect()->getCountQuery())->fetchColumn(0);
+        if ($this->count === null) {
+            $this->count = $this->getDb()->select($this->assembleSelect()->getCountQuery())->fetchColumn(0);
+        }
+
+        return $this->count;
     }
 
     public function getIterator()
