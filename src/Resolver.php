@@ -2,6 +2,7 @@
 
 namespace ipl\Orm;
 
+use Generator;
 use ipl\Sql\Expression;
 use OutOfBoundsException;
 use RuntimeException;
@@ -119,6 +120,32 @@ class Resolver
     }
 
     /**
+     * Qualify the given alias by the specified table name
+     *
+     * @param string $alias
+     * @param string $tableName
+     *
+     * @return string
+     */
+    public function qualifyAlias($alias, $tableName)
+    {
+        return $tableName . '_' . $alias;
+    }
+
+    /**
+     * Qualify the given column by the specified table name
+     *
+     * @param string $column
+     * @param string $tableName
+     *
+     * @return string
+     */
+    public function qualifyColumn($column, $tableName)
+    {
+        return $tableName . '.' . $column;
+    }
+
+    /**
      * Qualify the given columns by the specified table name
      *
      * @param array  $columns
@@ -132,7 +159,7 @@ class Resolver
 
         foreach ($columns as $alias => $column) {
             if (is_int($alias) || ! $column instanceof Expression) {
-                $column = $tableName . '.' . $column;
+                $column = $this->qualifyColumn($column, $tableName);
             }
 
             $qualified[$alias] = $column;
@@ -155,10 +182,10 @@ class Resolver
 
         foreach ($columns as $alias => $column) {
             if (is_int($alias)) {
-                $alias = $tableName . '_' . $column;
-                $column = $tableName . '.' . $column;
+                $alias = $this->qualifyAlias($column, $tableName);
+                $column = $this->qualifyColumn($column, $tableName);
             } elseif (! $column instanceof Expression) {
-                $column = $tableName . '.' . $column;
+                $column = $this->qualifyColumn($column, $tableName);
             }
 
             $qualified[$alias] = $column;
@@ -194,9 +221,10 @@ class Resolver
      *
      * Related models will be automatically added for eager-loading.
      *
+     * @param Query $query
      * @param array $columns
      *
-     * @return array
+     * @return Generator
      *
      * @throws RuntimeException If a column does not exist
      */
@@ -204,48 +232,33 @@ class Resolver
     {
         $model = $query->getModel();
         $tableName = $model->getTableName();
-        $modelColumns = [];
-        $foreignColumnMap = [];
 
         foreach ($columns as $alias => $column) {
-            if (! $column instanceof Expression) {
-                $dot = strrpos($column, '.');
+            if ($column === '*' || $column instanceof Expression) {
+                yield [$model, $alias, $column];
 
-                switch (true) {
-                    /** @noinspection PhpMissingBreakStatementInspection */
-                    case $dot !== false:
-                        $relation = substr($column, 0, $dot);
-                        $column = substr($column, $dot + 1);
-
-                        if ($relation !== $tableName) {
-                            $query->with($relation);
-
-                            $target = $query->getWith()[$this->qualifyPath($relation, $tableName)]->getTarget();
-
-                            $resolved = &$foreignColumnMap[$relation];
-
-                            break;
-                        }
-                    // Move to default
-                    default:
-                        $target = $model;
-
-                        $resolved = &$modelColumns;
-                }
-            }
-
-            if (is_int($alias)) {
-                $resolved[] = $column;
-            } else {
-                $resolved[$alias] = $column;
-            }
-
-            if ($column === '*') {
                 continue;
             }
 
-            if ($column instanceof Expression) {
-                continue;
+            $dot = strrpos($column, '.');
+
+            switch (true) {
+                /** @noinspection PhpMissingBreakStatementInspection */
+                case $dot !== false:
+                    $relation = substr($column, 0, $dot);
+                    $column = substr($column, $dot + 1);
+
+                    if ($relation !== $tableName) {
+                        $query->with($relation);
+
+                        $target = $query->getWith()[$this->qualifyPath($relation, $tableName)]->getTarget();
+
+                        break;
+                    }
+                // Move to default
+                default:
+                    $relation = null;
+                    $target = $model;
             }
 
             if (! $this->hasSelectableColumn($target, $column)) {
@@ -255,9 +268,9 @@ class Resolver
                     get_class($target)
                 ));
             }
-        }
 
-        return [$modelColumns, $foreignColumnMap];
+            yield [$target, $alias, $column];
+        }
     }
 
     /**

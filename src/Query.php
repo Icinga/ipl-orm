@@ -2,6 +2,8 @@
 
 namespace ipl\Orm;
 
+use ArrayObject;
+use Generator;
 use InvalidArgumentException;
 use ipl\Orm\Relation\BelongsToMany;
 use ipl\Orm\Relation\HasMany;
@@ -276,20 +278,24 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
     {
         $columns = $this->getColumns();
         $model = $this->getModel();
-        $tableName = $model->getTableName();
         $select = clone $this->getSelectBase();
         $resolver = $this->getResolver();
 
         if (! empty($columns)) {
-            list($modelColumns, $foreignColumnMap) = $resolver->requireAndResolveColumns($this, $columns);
+            $resolved = $this->groupColumnsByTarget($resolver->requireAndResolveColumns($this, $columns));
 
-            $select->columns($resolver->qualifyColumns($modelColumns, $resolver->getAlias($model)));
+            if ($resolved->contains($model)) {
+                $select->columns(
+                    $resolver->qualifyColumns($resolved[$model]->getArrayCopy(), $resolver->getAlias($model))
+                );
+                $resolved->detach($model);
+            }
 
-            foreach ($foreignColumnMap as $relation => $foreignColumns) {
+            foreach ($resolved as $target) {
                 $select->columns(
                     $resolver->qualifyColumnsAndAliases(
-                        $foreignColumns,
-                        $resolver->getAlias($this->with[$resolver->qualifyPath($relation, $tableName)]->getTarget())
+                        $resolved[$target]->getArrayCopy(),
+                        $resolver->getAlias($target)
                     )
                 );
             }
@@ -362,6 +368,8 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
         if ($this->hasOffset()) {
             $select->offset($this->getOffset());
         }
+
+        $this->order($select);
 
         return $select;
     }
@@ -573,5 +581,91 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
     public function getIterator()
     {
         return $this->execute();
+    }
+
+    /**
+     * Group columns from {@link Resolver::requireAndResolveColumns()} by target models
+     *
+     * @param Generator $columns
+     *
+     * @return SplObjectStorage
+     */
+    protected function groupColumnsByTarget(Generator $columns)
+    {
+        $columnStorage = new SplObjectStorage();
+
+        foreach ($columns as list($target, $alias, $column)) {
+            if (! $columnStorage->contains($target)) {
+                $resolved = new ArrayObject();
+                $columnStorage->attach($target, $resolved);
+            } else {
+                $resolved = $columnStorage[$target];
+            }
+
+            if (is_int($alias)) {
+                $resolved[] = $column;
+            } else {
+                $resolved[$alias] = $column;
+            }
+        }
+
+        return $columnStorage;
+    }
+
+    /**
+     * Resolve, require and apply ORDER BY columns
+     *
+     * @param Select $select
+     *
+     * @return $this
+     */
+    protected function order(Select $select)
+    {
+        $sortRules = $this->getModel()->getSortRules();
+
+        if (empty($sortRules)) {
+            return $this;
+        }
+
+        $default = reset($sortRules);
+        $directions = [];
+        $columns = explode(',', $default);
+        foreach ($columns as $spec) {
+            $columnAndDirection = explode(' ', trim($spec), 2);
+            $column = array_shift($columnAndDirection);
+            if (! empty($columnAndDirection)) {
+                $direction = $columnAndDirection[0];
+            } else {
+                $direction = null;
+            }
+            $directions[$column] = $direction;
+        }
+
+        $order = [];
+        $resolver = $this->getResolver();
+
+        foreach ($resolver->requireAndResolveColumns($this, array_keys($directions)) as list($model, $alias, $column)) {
+            $direction = reset($directions);
+
+            $tableName = $resolver->getAlias($model);
+
+            if (is_int($alias)) {
+                $order[] = implode(
+                    ' ',
+                    array_filter([$resolver->qualifyColumn($column, $tableName), $direction])
+                );
+            } else {
+                $order[] = implode(
+                    ' ',
+                    array_filter([$resolver->qualifyAlias($alias, $tableName), $direction])
+                );
+            }
+
+            array_unshift($directions);
+        }
+
+        $select->orderBy($order);
+
+        return $this;
     }
 }
