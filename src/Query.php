@@ -496,6 +496,16 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
     }
 
     /**
+     * Dump the query
+     *
+     * @return array
+     */
+    public function dump()
+    {
+        return $this->getDb()->getQueryBuilder()->assembleSelect($this->assembleSelect());
+    }
+
+    /**
      * Execute the query
      *
      * @return ResultSet
