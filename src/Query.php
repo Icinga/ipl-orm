@@ -31,6 +31,9 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
     /** @var array Columns to select from the model */
     protected $columns = [];
 
+    /** @var bool Whether to peek ahead for more results */
+    protected $peekAhead = false;
+
     /** @var SplObjectStorage Cached model behaviors */
     protected $behaviorStorage;
 
@@ -344,8 +347,18 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
             }
         }
 
-        $select->limit($this->getLimit());
-        $select->offset($this->getOffset());
+        if ($this->hasLimit()) {
+            $limit = $this->getLimit();
+
+            if ($this->peekAhead) {
+                ++$limit;
+            }
+
+            $select->limit($limit);
+        }
+        if ($this->hasOffset()) {
+            $select->offset($this->getOffset());
+        }
 
         return $select;
     }
@@ -482,9 +495,46 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
     /**
      * Execute the query
      *
-     * @return \Generator
+     * @return ResultSet
      */
     public function execute()
+    {
+        return new ResultSet($this->yieldResults(), $this->getLimit());
+    }
+
+    /**
+     * Fetch and return the first result
+     *
+     * @return Model|null Null in case there's no result
+     */
+    public function first()
+    {
+        return $this->execute()->current();
+    }
+
+    /**
+     * Set whether to peek ahead for more results
+     *
+     * Enabling this causes the current query limit to be increased by one. The potential extra row being yielded will
+     * be removed from the result set. Note that this only applies when fetching multiple results of limited queries.
+     *
+     * @param bool $peekAhead
+     *
+     * @return $this
+     */
+    public function peekAhead($peekAhead = true)
+    {
+        $this->peekAhead = (bool) $peekAhead;
+
+        return $this;
+    }
+
+    /**
+     * Yield the query's results
+     *
+     * @return \Generator
+     */
+    public function yieldResults()
     {
         $select = $this->assembleSelect();
         $stmt = $this->getDb()->select($select);
@@ -496,16 +546,6 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
         foreach ($stmt as $row) {
             yield $hydrator->hydrate($row, new $modelClass());
         }
-    }
-
-    /**
-     * Fetch and return the first result
-     *
-     * @return Model|null Null in case there's no result
-     */
-    public function first()
-    {
-        return $this->execute()->current();
     }
 
     public function count()
