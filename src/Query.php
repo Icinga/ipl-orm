@@ -405,7 +405,7 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
             if (! isset($this->with[$name])) {
                 $defaults[$name] = function (Model $model) use ($name, $isOne) {
                     $query = $this->derive($name, $model);
-                    return $isOne ? $query->first() : $query->execute();
+                    return $isOne ? $query->first() : $query;
                 };
             }
         }
