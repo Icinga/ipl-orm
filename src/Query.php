@@ -201,8 +201,16 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
     public function getSelectBase()
     {
         if ($this->selectBase === null) {
-            $this->selectBase = (new Select())
-                ->from($this->getModel()->getTableName());
+            $this->selectBase = new Select();
+
+            $tableName = $this->getModel()->getTableName();
+
+            $aliasPrefix = $this->getResolver()->getAliasPrefix();
+            if ($aliasPrefix !== null) {
+                $this->selectBase->from([$aliasPrefix . $tableName => $tableName]);
+            } else {
+                $this->selectBase->from($tableName);
+            }
         }
 
         return $this->selectBase;
