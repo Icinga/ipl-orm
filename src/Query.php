@@ -9,6 +9,7 @@ use ipl\Orm\Relation\BelongsToMany;
 use ipl\Orm\Relation\HasMany;
 use ipl\Orm\Relation\Junction;
 use ipl\Sql\Connection;
+use ipl\Sql\Expression;
 use ipl\Sql\LimitOffset;
 use ipl\Sql\LimitOffsetInterface;
 use ipl\Sql\Select;
@@ -543,6 +544,53 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
         }
 
         return $query;
+    }
+
+    /**
+     * Create a sub-query linked to rows of this query
+     *
+     * @param string $targetPath The path to the relation to use as FROM
+     *
+     * @return static
+     */
+    public function createSubQuery($targetPath)
+    {
+        $targetRelation = (clone $this)->with($targetPath)->getWith()[$targetPath]; // TODO: Do that without `with()`
+        $sourceParts = array_reverse(explode('.', $targetPath));
+
+        // Exchange the first part with the target's table name
+        $sourceParts[0] = $targetRelation->getTarget()->getTableName();
+
+        $sourcePath = join('.', $sourceParts);
+
+        $subQuery = (new static())
+            ->setDb($this->getDb())
+            ->setModel($targetRelation->getTarget())
+            ->columns([new Expression('1')])
+            ->with($sourcePath);
+
+        // Set an alias prefix to avoid collisions with the outer query
+        $subQuery->getResolver()->setAliasPrefix('sub_');
+
+        $rightMostRelation = $subQuery->getWith()[$sourcePath];
+        foreach ($rightMostRelation->resolve() as list($source, $target, $relatedKeys)) {
+            if ($target === $rightMostRelation->getTarget()) {
+                $baseAlias = $subQuery->getResolver()->getAlias($rightMostRelation->getSource());
+                $subQuery->getResolver()->setAlias($source, $baseAlias . '_'. $source->getTableName());
+                break;
+            }
+        }
+
+        $subQueryConditions = [];
+        foreach ($relatedKeys as $ck => $fk) {
+            $fk = $subQuery->getResolver()->getAlias($source) . '.' . $fk;
+            $ck = $this->getModel()->getTableName() . '.' . $ck;
+            $subQueryConditions[] = "$fk = $ck";
+        }
+
+        $subQuery->getSelectBase()->where($subQueryConditions);
+
+        return $subQuery;
     }
 
     /**
