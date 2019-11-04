@@ -189,7 +189,7 @@ class Resolver
         $qualified = [];
 
         foreach ($columns as $alias => $column) {
-            if (is_int($alias) || ! $column instanceof Expression) {
+            if (is_int($alias) && ! $column instanceof Expression) {
                 $column = $this->qualifyColumn($column, $tableName);
             }
 
