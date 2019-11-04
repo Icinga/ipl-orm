@@ -278,6 +278,22 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
     }
 
     /**
+     * Remove an eager loaded relation
+     *
+     * @param string|array $relations
+     *
+     * @return $this
+     */
+    public function without($relations)
+    {
+        foreach ((array) $relations as $relation) {
+            unset($this->with[$relation]);
+        }
+
+        return $this;
+    }
+
+    /**
      * Assemble and return the SELECT query
      *
      * @return Select
