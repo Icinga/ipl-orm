@@ -646,20 +646,17 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
 
         foreach ($resolver->requireAndResolveColumns($this, array_keys($directions)) as list($model, $alias, $column)) {
             $direction = reset($directions);
-
+            $selectColumns = $resolver->getSelectColumns($model);
             $tableName = $resolver->getAlias($model);
 
-            if (is_int($alias)) {
-                $order[] = implode(
-                    ' ',
-                    array_filter([$resolver->qualifyColumn($column, $tableName), $direction])
-                );
-            } else {
-                $order[] = implode(
-                    ' ',
-                    array_filter([$resolver->qualifyAlias($alias, $tableName), $direction])
-                );
+            if (isset($selectColumns[$column])) {
+                $column = $selectColumns[$column];
             }
+
+            $order[] = implode(
+                ' ',
+                array_filter([$resolver->qualifyColumn($column, $tableName), $direction])
+            );
 
             array_unshift($directions);
         }
