@@ -26,6 +26,10 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
 
         if (! $filter->isEmpty()) {
             $filter = clone $filter;
+            if (! $filter->isChain()) {
+                // TODO: Quickfix, there's probably a better solution?
+                $filter = Filter::matchAll($filter);
+            }
 
             $rewrittenFilter = (new static())->requireAndResolveFilterColumns($filter, $query);
             if ($rewrittenFilter !== null) {
