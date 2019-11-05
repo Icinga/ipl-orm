@@ -12,6 +12,8 @@ use ipl\Orm\UnionQuery;
 
 class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
 {
+    protected $baseJoins = [];
+
     protected $madeJoins = [];
 
     public static function apply(Filter $filter, Query $query)
@@ -31,7 +33,12 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
                 $filter = Filter::matchAll($filter);
             }
 
-            $rewrittenFilter = (new static())->requireAndResolveFilterColumns($filter, $query);
+            $processor = new static();
+            foreach ($query->getWith() as $path => $_) {
+                $processor->baseJoins[$path] = true;
+            }
+
+            $rewrittenFilter = $processor->requireAndResolveFilterColumns($filter, $query);
             if ($rewrittenFilter !== null) {
                 $filter = $rewrittenFilter;
             }
@@ -195,7 +202,10 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
                             });
 
                             if (empty($madeBy)) {
-                                $query->without($joinPath);
+                                if (! isset($this->baseJoins[$joinPath])) {
+                                    $query->without($joinPath);
+                                }
+
                                 unset($this->madeJoins[$joinPath]);
                             }
                         }
