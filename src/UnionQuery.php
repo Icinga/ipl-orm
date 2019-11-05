@@ -41,7 +41,13 @@ class UnionQuery extends Query
         $union = new Select();
 
         foreach ($this->getUnions() as $query) {
-            $union->unionAll($query->assembleSelect());
+            $select = $query->assembleSelect();
+            $columns = $select->getColumns();
+            $select->resetColumns();
+            ksort($columns);
+            $select->columns($columns);
+
+            $union->unionAll($select);
         }
 
         $this->selectBase->from([$this->getModel()->getTableName() => $union]);
