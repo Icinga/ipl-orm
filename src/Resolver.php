@@ -16,6 +16,9 @@ class Resolver
     /** @var  SplObjectStorage Model aliases */
     protected $aliases;
 
+    /** @var string The alias prefix to use */
+    protected $aliasPrefix;
+
     /** @var SplObjectStorage Selectable columns from resolved models */
     protected $selectableColumns;
 
@@ -50,7 +53,7 @@ class Resolver
             ));
         }
 
-        return $this->aliases[$model];
+        return $this->aliasPrefix . $this->aliases[$model];
     }
 
     /**
@@ -63,7 +66,35 @@ class Resolver
      */
     public function setAlias(Model $model, $alias)
     {
+        if (isset($this->aliasPrefix) && strpos($alias, $this->aliasPrefix) === 0) {
+            $alias = substr($alias, strlen($this->aliasPrefix));
+        }
+
         $this->aliases[$model] = $alias;
+
+        return $this;
+    }
+
+    /**
+     * Get the alias prefix
+     *
+     * @return string
+     */
+    public function getAliasPrefix()
+    {
+        return $this->aliasPrefix;
+    }
+
+    /**
+     * Set the alias prefix
+     *
+     * @param string $alias
+     *
+     * @return $this
+     */
+    public function setAliasPrefix($alias)
+    {
+        $this->aliasPrefix = $alias;
 
         return $this;
     }
@@ -158,7 +189,7 @@ class Resolver
         $qualified = [];
 
         foreach ($columns as $alias => $column) {
-            if (is_int($alias) || ! $column instanceof Expression) {
+            if (is_int($alias) && ! $column instanceof Expression) {
                 $column = $this->qualifyColumn($column, $tableName);
             }
 
