@@ -43,6 +43,16 @@ abstract class Model implements \ArrayAccess
     abstract public function getColumns();
 
     /**
+     * Get the models aggregate columns
+     *
+     * @return array|bool Aggregate columns as array or true to always aggregate
+     */
+    public function getAggregateColumns()
+    {
+        return false;
+    }
+
+    /**
      * Get the model's search columns
      *
      * @return array

@@ -6,11 +6,20 @@ use Icinga\Data\Filter\Filter;
 use Icinga\Data\Filter\FilterChain;
 use Icinga\Data\Filter\FilterExpression;
 use ipl\Orm\Query;
+use ipl\Orm\UnionQuery;
 
 class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
 {
     public static function apply(Filter $filter, Query $query)
     {
+        if ($query instanceof UnionQuery) {
+            foreach ($query->getUnions() as $union) {
+                static::apply($filter, $union);
+            }
+
+            return;
+        }
+
         if (! $filter->isEmpty()) {
             $filter = clone $filter;
 
