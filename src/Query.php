@@ -434,6 +434,17 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
             $target = $relation->getTarget();
             $targetColumns = $resolver->getSelectableColumns($target);
 
+            $defaults = [];
+            foreach ($this->getRelations($target) as $targetRelation) {
+                $name = $targetRelation->getName();
+                $isOne = $targetRelation->isOne();
+
+                $defaults[$name] = function (Model $model) use ($name, $isOne) {
+                    $query = $this->derive($name, $model);
+                    return $isOne ? $query->first() : $query;
+                };
+            }
+
             $hydrator->add(
                 explode('.', $path, 2)[1],
                 $relation->getName(),
@@ -442,6 +453,7 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
                     array_keys($resolver->qualifyColumnsAndAliases($targetColumns, $resolver->getAlias($relation->getTarget()))),
                     $targetColumns
                 ),
+                $defaults,
                 $this->getBehaviors($target)
             );
         }

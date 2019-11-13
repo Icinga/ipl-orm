@@ -80,6 +80,7 @@ class Hydrator
      * @param string    $propertyName        The name of the property to hydrate into
      * @param string    $class               The class to use for the model instance
      * @param array     $columnToPropertyMap Column to property resolution map
+     * @param array     $defaults            Default properties
      * @param Behaviors $behaviors           The class' behaviors
      *
      * @return $this
@@ -87,7 +88,7 @@ class Hydrator
      * @throws \InvalidArgumentException If a hydrator for the given property already exists
      * @throws \InvalidArgumentException If the class to use for the model class is not a subclass of {@link Model}
      */
-    public function add($path, $propertyName, $class, array $columnToPropertyMap, Behaviors $behaviors)
+    public function add($path, $propertyName, $class, array $columnToPropertyMap, array $defaults, Behaviors $behaviors)
     {
         if (isset($this->hydrators[$path])) {
             throw new \InvalidArgumentException("Hydrator for property '$propertyName' already exists");
@@ -104,7 +105,8 @@ class Hydrator
             ));
         }
 
-        $this->hydrators[$path] = [$propertyName, $class, $columnToPropertyMap, $behaviors];
+        // TODO: Maybe .. teach this about the query after all? Then only $propertyName and $class would need to be passed
+        $this->hydrators[$path] = [$propertyName, $class, $columnToPropertyMap, $defaults, $behaviors];
 
         //natcasesort($this->hydrators);
 
@@ -123,7 +125,7 @@ class Hydrator
     {
         $properties = $this->extractAndMap($data, $this->columnToPropertyMap);
 
-        foreach ($this->hydrators as $path => list($propertyName, $class, $columnToPropertyMap, $behaviors)) {
+        foreach ($this->hydrators as $path => list($propertyName, $class, $columnToPropertyMap, $defaults, $behaviors)) {
             $subject = &$properties;
             $parts = explode('.', $path);
             array_pop($parts);
@@ -133,8 +135,7 @@ class Hydrator
 
             /** @var Model $target */
             $target = new $class();
-            /** @var array $columnToPropertyMap */
-            $target->setProperties($this->extractAndMap($data, $columnToPropertyMap));
+            $target->setProperties($this->extractAndMap($data, $columnToPropertyMap) + $defaults);
             $behaviors->retrieve($target);
             $subject[$propertyName] = $target;
         }
