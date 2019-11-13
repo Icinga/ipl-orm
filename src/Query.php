@@ -5,18 +5,13 @@ namespace ipl\Orm;
 use ArrayObject;
 use Generator;
 use InvalidArgumentException;
-use ipl\Orm\Relation\BelongsToMany;
-use ipl\Orm\Relation\HasMany;
-use ipl\Orm\Relation\Junction;
 use ipl\Sql\Connection;
-use ipl\Sql\Expression;
 use ipl\Sql\LimitOffset;
 use ipl\Sql\LimitOffsetInterface;
 use ipl\Sql\Select;
 use ipl\Stdlib\Contract\PaginationInterface;
 use OutOfBoundsException;
 use SplObjectStorage;
-use function ipl\Stdlib\get_php_type;
 
 /**
  * Represents a database query which is associated to a model and a database connection.
@@ -484,90 +479,36 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
      */
     public function derive($relation, Model $source)
     {
-        $modelRelations = $this->getRelations();
-
-        if (! $modelRelations->has($relation)) {
-            throw new InvalidArgumentException(sprintf(
-                "Can't join relation '%s' in model '%s'. Relation not found.",
-                $relation,
-                get_class($this->getModel())
-            ));
-        }
-
-        $relation = $modelRelations->get($relation);
-        $target = $relation->getTarget();
-
-        $conditionsTarget = $target->getTableName();
-        $query = (new Query())
-            ->setDb($this->getDb())
-            ->setModel($target);
-        $resolver = $query
-            ->getResolver()
-            ->setAlias($target, $conditionsTarget);
-
-        if ($relation instanceof BelongsToMany) {
-            $through = $relation->getThrough();
-
-            if (class_exists($through)) {
-                $junction = new $through();
-
-                if (! $junction instanceof Model) {
-                    throw new InvalidArgumentException(sprintf(
-                        'Junction model class must be an instance of %s, %s given',
-                        Model::class,
-                        get_php_type($junction)
-                    ));
-                }
-            } else {
-                $junction = (new Junction())
-                    ->setTableName($through);
-            }
-
-            // Override $conditionsTarget
-            $conditionsTarget = $junction->getTableName();
-
-            $resolver->setAlias($junction, $conditionsTarget);
-
-            $toJunction = (new HasMany())
-                ->setName($junction->getTableName())
-                ->setSource($target)
-                ->setTarget($junction)
-                ->setTargetClass(get_class($junction));
-
-            $query->with[$this->getResolver()->qualifyPath($conditionsTarget, $source->getTableName())] = $toJunction;
-        }
-
-        $conditions = $relation->determineKeys($source);
-        $select = $query->getSelectBase();
-        foreach ($conditions as $fk => $ck) {
-            $select->where(["$conditionsTarget.$fk = ?" => $source->$ck]);
-        }
-
-        return $query;
+        // TODO: Think of a way to merge derive() and createSubQuery()
+        return $this->createSubQuery(
+            $this->getRelations($source)->get($relation)->getTarget(),
+            $this->getResolver()->qualifyPath($relation, $source->getTableName()),
+            $source
+        );
     }
 
     /**
      * Create a sub-query linked to rows of this query
      *
-     * @param string $targetPath The path to the relation to use as FROM
+     * @param Model $target The model to query
+     * @param string $targetPath The target's absolute relation path
+     * @param Model $from The source model
      *
      * @return static
      */
-    public function createSubQuery($targetPath)
+    public function createSubQuery(Model $target, $targetPath, Model $from = null)
     {
-        $targetRelation = (clone $this)->with($targetPath)->getWith()[$targetPath]; // TODO: Do that without `with()`
         $sourceParts = array_reverse(explode('.', $targetPath));
 
         // Exchange the first part with the target's table name
-        $sourceParts[0] = $targetRelation->getTarget()->getTableName();
+        $sourceParts[0] = $target->getTableName();
 
         $sourcePath = join('.', $sourceParts);
 
         $subQuery = (new static())
             ->setDb($this->getDb())
-            ->setModel($targetRelation->getTarget())
-            ->columns([new Expression('1')])
-            ->with($sourcePath);
+            ->setModel($target)
+            ->with($sourcePath); // TODO: Selects the source's columns again, don't do that
 
         // Set an alias prefix to avoid collisions with the outer query
         $subQuery->getResolver()->setAliasPrefix('sub_');
@@ -584,8 +525,15 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
         $subQueryConditions = [];
         foreach ($relatedKeys as $ck => $fk) {
             $fk = $subQuery->getResolver()->getAlias($source) . '.' . $fk;
-            $ck = $this->getModel()->getTableName() . '.' . $ck;
-            $subQueryConditions[] = "$fk = $ck";
+
+            if (isset($from->$ck)) {
+                $subQueryConditions["$fk = ?"] = $from->$ck;
+            } else {
+                $subQueryConditions[] = sprintf(
+                    "$fk = %s.$ck",
+                    $this->getResolver()->getAlias($from ?: $this->getModel())
+                );
+            }
         }
 
         $subQuery->getSelectBase()->where($subQueryConditions);

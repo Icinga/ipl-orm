@@ -9,6 +9,7 @@ use Icinga\Data\Filter\FilterExpression;
 use Icinga\Data\Filter\FilterOr;
 use ipl\Orm\Query;
 use ipl\Orm\UnionQuery;
+use ipl\Sql\Expression;
 
 class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
 {
@@ -158,7 +159,11 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
             foreach ($subQueryFilters as $sign => $filterCombinations) {
                 foreach ($filterCombinations as $column => $filters) {
                     // The relation path must be the same for all entries
-                    $subQuery = $query->createSubQuery($filters[0]->metaData['relationPath']);
+                    $relationPath = $filters[0]->metaData['relationPath'];
+                    // TODO: Do that without `with()`
+                    $relation = (clone $query)->with($relationPath)->getWith()[$relationPath];
+                    $subQuery = $query->createSubQuery($relation->getTarget(), $relationPath);
+                    $subQuery->columns([new Expression('1')]);
 
                     if ($sign === '!=' || $filter instanceof FilterAnd) {
                         $targetKeys = join(',', array_values(
