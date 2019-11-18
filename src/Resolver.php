@@ -158,7 +158,7 @@ class Resolver
      *
      * @return string
      */
-    public function qualifyAlias($alias, $tableName)
+    public function qualifyColumnAlias($alias, $tableName)
     {
         return $tableName . '_' . $alias;
     }
@@ -213,7 +213,7 @@ class Resolver
 
         foreach ($columns as $alias => $column) {
             if (is_int($alias)) {
-                $alias = $this->qualifyAlias($column, $tableName);
+                $alias = $this->qualifyColumnAlias($column, $tableName);
                 $column = $this->qualifyColumn($column, $tableName);
             } elseif (! $column instanceof Expression) {
                 $column = $this->qualifyColumn($column, $tableName);
