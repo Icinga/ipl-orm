@@ -28,6 +28,6 @@ class Group extends Model
     {
         $relations
             ->belongsToMany('user', User::class)
-            ->setThrough('user_group');
+            ->through('user_group');
     }
 }

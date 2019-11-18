@@ -15,6 +15,9 @@ class BelongsToMany extends Relation
     protected $isOne = false;
 
     /** @var string Name of the join table or junction model class */
+    protected $throughClass;
+
+    /** @var Model The junction model */
     protected $through;
 
     /** @var string|array Column name(s) of the target model's foreign key found in the join table */
@@ -28,15 +31,50 @@ class BelongsToMany extends Relation
      *
      * @return string
      */
-    public function getThrough()
+    public function getThroughClass()
     {
-        return $this->through;
+        return $this->throughClass;
     }
 
     /**
      * Set the join table name or junction model class
      *
      * @param string $through
+     *
+     * @return $this
+     */
+    public function through($through)
+    {
+        $this->throughClass = $through;
+
+        return $this;
+    }
+
+    /**
+     * Get the junction model
+     *
+     * @return Model|Junction
+     */
+    public function getThrough()
+    {
+        if ($this->through === null) {
+            $throughClass = $this->getThroughClass();
+
+            if (class_exists($throughClass)) {
+                $this->through = new $throughClass();
+            } else {
+                $this->through = (new Junction())
+                    ->setTableName($throughClass);
+            }
+        }
+
+        return $this->through;
+    }
+
+    /**
+     * Set the junction model
+     *
+     * @param Model $through
      *
      * @return $this
      */
@@ -107,19 +145,9 @@ class BelongsToMany extends Relation
         $possibleTargetCandidateKey = [$this->getTargetForeignKey() ?: static::getDefaultForeignKey($target)];
         $possibleTargetForeignKey = [$this->getTargetCandidateKey() ?: static::getDefaultCandidateKey($target)];
 
-        $through = $this->getThrough();
+        $junction = $this->getThrough();
 
-        if (class_exists($through)) {
-            $junction = new $through();
-
-            if (! $junction instanceof Model) {
-                throw new \InvalidArgumentException(sprintf(
-                    'Junction model class must be an instance of %s, %s given',
-                    Model::class,
-                    get_php_type($junction)
-                ));
-            }
-
+        if (! $junction instanceof Junction) {
             $relations = new Relations();
             $junction->createRelations($relations);
 
@@ -136,9 +164,6 @@ class BelongsToMany extends Relation
                 $possibleTargetCandidateKey[] = $targetRelation->getForeignKey();
                 $possibleTargetForeignKey[] = $targetRelation->getCandidateKey();
             }
-        } else {
-            $junction = (new Junction())
-                ->setTableName($through);
         }
 
         $toJunction = (new HasMany())
