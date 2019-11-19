@@ -110,27 +110,6 @@ class QueryTest extends \PHPUnit\Framework\TestCase
         $this->assertSame($offset, $query->getOffset());
     }
 
-    public function testGetRelationsCallsModelsCreateRelations()
-    {
-        $model = new TestModelWithCreateRelations();
-        (new Query())
-            ->setModel($model)
-            ->getRelations();
-
-        $this->assertSame(1, $model->relationsCreatedCount);
-    }
-
-    public function testMultipleCallsToGetRelationsCallsModelsCreateRelationsOnlyOnce()
-    {
-        $model = new TestModelWithCreateRelations();
-        $query = (new Query())->setModel($model);
-        $query->getRelations();
-        $query->getRelations();
-        $query->getRelations();
-
-        $this->assertSame(1, $model->relationsCreatedCount);
-    }
-
     public function testGetWithReturnsEmptyArrayIfThereAreNoRelationsToEagerLoad()
     {
         $with = (new Query())->getWith();

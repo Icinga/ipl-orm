@@ -35,12 +35,6 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
     /** @var bool Whether to peek ahead for more results */
     protected $peekAhead = false;
 
-    /** @var SplObjectStorage Cached model behaviors */
-    protected $behaviorStorage;
-
-    /** @var SplObjectStorage Cached model relations */
-    protected $relationStorage;
-
     /** @var Resolver Column and relation resolver */
     protected $resolver;
 
@@ -50,11 +44,6 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
     /** @var Relation[] Relations to eager load */
     protected $with = [];
 
-    public function __construct()
-    {
-        $this->behaviorStorage = new SplObjectStorage();
-        $this->relationStorage = new SplObjectStorage();
-    }
 
     /**
      * Get the database connection
@@ -129,50 +118,6 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
         $this->columns = array_merge($this->columns, (array) $columns);
 
         return $this;
-    }
-
-    /**
-     * Get the model's behaviors
-     *
-     * @param Model $model If not given, the base model's behaviors are returned
-     *
-     * @return Behaviors
-     */
-    public function getBehaviors(Model $model = null)
-    {
-        if ($model === null) {
-            $model = $this->getModel();
-        }
-
-        if (! $this->behaviorStorage->contains($model)) {
-            $behaviors = new Behaviors();
-            $model->createBehaviors($behaviors);
-            $this->behaviorStorage->attach($model, $behaviors);
-        }
-
-        return $this->behaviorStorage[$model];
-    }
-
-    /**
-     * Get the model's relations
-     *
-     * @param Model $model If not given, the base model's relations are returned
-     *
-     * @return Relations
-     */
-    public function getRelations(Model $model = null)
-    {
-        if ($model === null) {
-            $model = $this->getModel();
-        }
-
-        if (! $this->relationStorage->contains($model)) {
-            $relations = new Relations();
-            $model->createRelations($relations);
-            $this->relationStorage->attach($model, $relations);
-        }
-
-        return $this->relationStorage[$model];
     }
 
     /**
