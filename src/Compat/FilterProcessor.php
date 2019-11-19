@@ -8,6 +8,7 @@ use Icinga\Data\Filter\FilterChain;
 use Icinga\Data\Filter\FilterExpression;
 use Icinga\Data\Filter\FilterOr;
 use ipl\Orm\Query;
+use ipl\Orm\Relation;
 use ipl\Orm\UnionQuery;
 use ipl\Sql\Expression;
 
@@ -64,13 +65,15 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
                 return;
             }
 
-            $baseTable = $query->getModel()->getTableName();
             $column = $filter->getColumn();
             if (isset($filter->metaData)) {
                 $column = $filter->metaData['relationCol'];
             }
 
-            $column = $query->getResolver()->qualifyPath($column, $baseTable);
+            $resolver = $query->getResolver();
+            $baseTable = $query->getModel()->getTableName();
+            $column = $resolver->qualifyPath($column, $baseTable);
+
             $filter->metaData['column'] = $column;
 
             // TODO: legacy filter columns? (with underscores)
@@ -79,23 +82,23 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
             $filter->metaData['relationPath'] = $relationPath;
             $filter->metaData['relationCol'] = $columnName;
 
-            $relations = explode('.', $relationPath);
-
-            do {
-                $relationName = array_shift($relations);
-                $current[] = $relationName;
-                $path = join('.', $current);
+            $relations = array_merge(
+                [$baseTable => null],
+                iterator_to_array($resolver->resolveRelations($relationPath))
+            );
+            foreach ($relations as $path => $relation) {
                 $columnName = substr($column, strlen($path) + 1);
 
                 if ($path === $baseTable) {
                     $subject = $query->getModel();
                 } else {
+                    /** @var Relation $relation */
                     $relation = $query->with($path)
                         ->getWith()[$path];
                     $subject = $relation->getTarget();
                 }
 
-                $rewrittenFilter = $query->getResolver()->getBehaviors($subject)
+                $rewrittenFilter = $resolver->getBehaviors($subject)
                     ->rewriteCondition((clone $filter)->setColumn($columnName), $path . '.');
                 if ($rewrittenFilter !== null) {
                     if (isset($rewrittenFilter->transferMetaData) || $rewrittenFilter instanceof $filter) {
@@ -105,21 +108,17 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
                         $rewrittenFilter->metaData['original'] = $filter;
                     }
 
-                    if (isset($relation)) {
-                        $this->madeJoins[$path][] = $rewrittenFilter;
-                    }
-
                     $this->requireAndResolveFilterColumns($rewrittenFilter, $query);
                     return $rewrittenFilter;
-                } elseif (isset($relation)) {
-                    $this->madeJoins[$path][] = $filter;
                 }
-            } while (! empty($relations));
+            }
 
-            $expression = $query->getResolver()->getBehaviors($subject)->persistProperty($expression, $columnName);
-            $column = $query->getResolver()->qualifyPath($columnName, $query->getResolver()->getAlias(
-                isset($relation) ? $relation->getTarget() : $query->getModel()
-            ));
+            if ($relationPath !== $baseTable) {
+                $this->madeJoins[$relationPath][] = $filter;
+            }
+
+            $expression = $resolver->getBehaviors($subject)->persistProperty($expression, $columnName);
+            $column = $resolver->qualifyPath($columnName, $resolver->getAlias($subject));
 
             $filter->setColumn($column);
             $filter->setExpression($expression);
@@ -141,7 +140,7 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
 
                     $relationPath = $child->metaData['relationPath'];
                     if ($relationPath !== $query->getModel()->getTableName()) {
-                        if (! $query->getWith()[$relationPath]->isOne()) {
+                        if (! $query->getResolver()->resolveRelation($relationPath)->isOne()) {
                             if (isset($child->metaData['original'])) {
                                 $column = $child->metaData['original']->metaData['column'];
                                 $sign = $child->metaData['original']->getSign();
@@ -160,8 +159,7 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
                 foreach ($filterCombinations as $column => $filters) {
                     // The relation path must be the same for all entries
                     $relationPath = $filters[0]->metaData['relationPath'];
-                    // TODO: Do that without `with()`
-                    $relation = (clone $query)->with($relationPath)->getWith()[$relationPath];
+                    $relation = $query->getResolver()->resolveRelation($relationPath);
                     $subQuery = $query->createSubQuery($relation->getTarget(), $relationPath);
                     $subQuery->columns([new Expression('1')]);
 

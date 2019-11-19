@@ -423,9 +423,10 @@ class Resolver
                     $column = substr($column, $dot + 1);
 
                     if ($relation !== $tableName) {
-                        $query->with($relation);
+                        $relation = $this->qualifyPath($relation, $tableName);
 
-                        $target = $query->getWith()[$this->qualifyPath($relation, $tableName)]->getTarget();
+                        $this->query->with($relation);
+                        $target = $this->resolvedRelations[$relation]->getTarget();
 
                         break;
                     }

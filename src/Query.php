@@ -10,13 +10,13 @@ use ipl\Sql\LimitOffset;
 use ipl\Sql\LimitOffsetInterface;
 use ipl\Sql\Select;
 use ipl\Stdlib\Contract\PaginationInterface;
-use OutOfBoundsException;
+use IteratorAggregate;
 use SplObjectStorage;
 
 /**
  * Represents a database query which is associated to a model and a database connection.
  */
-class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggregate
+class Query implements LimitOffsetInterface, PaginationInterface, IteratorAggregate
 {
     use LimitOffset;
 
@@ -172,43 +172,10 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
      */
     public function with($relations)
     {
-        $model = $this->getModel();
-        $resolver = $this->getResolver();
-        $tableName = $model->getTableName();
-
+        $tableName = $this->getModel()->getTableName();
         foreach ((array) $relations as $relation) {
-            $current = [$tableName];
-            $subject = $model;
-            $segments = explode('.', $relation);
-
-            if ($segments[0] === $tableName) {
-                array_shift($segments);
-            }
-
-            foreach ($segments as $name) {
-                $current[] = $name;
-                $path = implode('.', $current);
-
-                if (isset($this->with[$path])) {
-                    $subject = $this->with[$path]->getTarget();
-                    continue;
-                }
-
-                $subjectRelations = $this->getResolver()->getRelations($subject);
-                if (! $subjectRelations->has($name)) {
-                    throw new InvalidArgumentException(sprintf(
-                        "Can't join relation '%s' in model '%s'. Relation not found.",
-                        $name,
-                        get_class($subject)
-                    ));
-                }
-
-                $this->with[$path] = $subjectRelations->get($name)->setSource($subject);
-
-                $subject = $this->with[$path]->getTarget();
-
-                $resolver->setAlias($subject, str_replace('.', '_', $path));
-            }
+            $relation = $this->getResolver()->qualifyPath($relation, $tableName);
+            $this->with[$relation] = $this->getResolver()->resolveRelation($relation);
         }
 
         return $this;
@@ -223,7 +190,9 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
      */
     public function without($relations)
     {
+        $tableName = $this->getModel()->getTableName();
         foreach ((array) $relations as $relation) {
+            $relation = $this->getResolver()->qualifyPath($relation, $tableName);
             unset($this->with[$relation]);
         }
 
@@ -264,6 +233,15 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
             $select->columns(
                 $resolver->qualifyColumns($resolver->getSelectColumns($model), $resolver->getAlias($model))
             );
+
+            foreach ($this->getWith() as $relation) {
+                $select->columns(
+                    $resolver->qualifyColumnsAndAliases(
+                        $resolver->getSelectColumns($relation->getTarget()),
+                        $resolver->getAlias($relation->getTarget())
+                    )
+                );
+            }
         }
 
         $aggregateColumns = $model->getAggregateColumns();
@@ -284,54 +262,47 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
             }
         }
 
-        foreach ($this->with as $relation) {
-            foreach ($relation->resolve() as list($source, $target, $conditions)) {
-                $condition = [];
-
-                try {
-                    $targetTableAlias = $resolver->getAlias($target);
-                } catch (OutOfBoundsException $e) {
-                    // TODO(el): This is just a quick fix for many-to-many relations where the alias of the junction
-                    // model is unknown yet
-                    $targetTableAlias = $resolver->getAlias($source) . '_' . $target->getTableName();
-                    $resolver->setAlias($target, $targetTableAlias);
+        $joinedRelations = [];
+        foreach ($this->getWith() as $path => $_) {
+            foreach ($resolver->resolveRelations($path) as $relationPath => $relation) {
+                if (isset($joinedRelations[$relationPath])) {
+                    continue;
                 }
 
-                $sourceTableAlias = $resolver->getAlias($source);
+                foreach ($relation->resolve() as list($source, $target, $relatedKeys)) {
+                    /** @var Model $source */
+                    /** @var Model $target */
 
-                foreach ($conditions as $fk => $ck) {
-                    $condition[] = sprintf(
-                        '%s.%s = %s.%s',
-                        $targetTableAlias,
-                        $fk,
-                        $sourceTableAlias,
-                        $ck
-                    );
+                    $sourceAlias = $resolver->getAlias($source);
+                    $targetAlias = $resolver->getAlias($target);
+
+                    $conditions = [];
+                    foreach ($relatedKeys as $fk => $ck) {
+                        $conditions[] = sprintf(
+                            '%s = %s',
+                            $resolver->qualifyColumn($fk, $targetAlias),
+                            $resolver->qualifyColumn($ck, $sourceAlias)
+                        );
+                    }
+
+                    $table = [$targetAlias => $target->getTableName()];
+
+                    switch ($relation->getJoinType()) {
+                        case 'LEFT':
+                            $select->joinLeft($table, $conditions);
+
+                            break;
+                        case 'RIGHT':
+                            $select->joinRight($table, $conditions);
+
+                            break;
+                        case 'INNER':
+                        default:
+                            $select->join($table, $conditions);
+                    }
                 }
 
-                $table = [$targetTableAlias => $target->getTableName()];
-
-                switch ($relation->getJoinType()) {
-                    case 'LEFT':
-                        $select->joinLeft($table, $condition);
-
-                        break;
-                    case 'RIGHT':
-                        $select->joinRight($table, $condition);
-
-                        break;
-                    case 'INNER':
-                    default:
-                        $select->join($table, $condition);
-                }
-            }
-
-            if (empty($columns)) {
-                $select->columns(
-                    $resolver->qualifyColumnsAndAliases(
-                        $resolver->getSelectColumns($relation->getTarget()), $resolver->getAlias($relation->getTarget())
-                    )
-                );
+                $joinedRelations[$relationPath] = true;
             }
         }
 
@@ -371,7 +342,7 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
             $modelColumns
         ));
 
-        foreach ($this->with as $path => $relation) {
+        foreach ($this->getWith() as $path => $relation) {
             $target = $relation->getTarget();
             $targetColumns = $resolver->getSelectableColumns($target);
 
@@ -391,7 +362,10 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
                 $relation->getName(),
                 $relation->getTargetClass(),
                 array_combine(
-                    array_keys($resolver->qualifyColumnsAndAliases($targetColumns, $resolver->getAlias($relation->getTarget()))),
+                    array_keys($resolver->qualifyColumnsAndAliases(
+                        $targetColumns,
+                        $resolver->getAlias($relation->getTarget())
+                    )),
                     $targetColumns
                 ),
                 $defaults,
@@ -451,41 +425,33 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
      */
     public function createSubQuery(Model $target, $targetPath, Model $from = null)
     {
-        $sourceParts = array_reverse(explode('.', $targetPath));
-
-        // Exchange the first part with the target's table name
-        $sourceParts[0] = $target->getTableName();
-
-        $sourcePath = join('.', $sourceParts);
-
         $subQuery = (new static())
             ->setDb($this->getDb())
-            ->setModel($target)
-            ->with($sourcePath); // TODO: Selects the source's columns again, don't do that
+            ->setModel($target);
 
-        // Set an alias prefix to avoid collisions with the outer query
-        $subQuery->getResolver()->setAliasPrefix('sub_');
+        $resolver = $this->getResolver();
+        $sourceParts = array_reverse(explode('.', $targetPath));
+        $sourceParts[0] = $target->getTableName();
 
-        $rightMostRelation = $subQuery->getWith()[$sourcePath];
-        foreach ($rightMostRelation->resolve() as list($source, $target, $relatedKeys)) {
-            if ($target === $rightMostRelation->getTarget()) {
-                $baseAlias = $subQuery->getResolver()->getAlias($rightMostRelation->getSource());
-                $subQuery->getResolver()->setAlias($source, $baseAlias . '_'. $source->getTableName());
-                break;
-            }
-        }
+        $subQueryResolver = $subQuery->getResolver();
+        $sourcePath = join('.', $sourceParts);
+        $subQuery->with($sourcePath); // TODO: Selects the source's columns again, don't do that
+
+        // TODO: Should be done by the caller. Though, that's not possible until we've got a filter abstraction
+        //       which allows to post-pone filter column qualification.
+        $subQueryResolver->setAliasPrefix('sub_');
+
+        $baseAlias = $resolver->getAlias($this->getModel());
+        $sourceAlias = $subQueryResolver->getAlias($subQueryResolver->resolveRelation($sourcePath)->getTarget());
 
         $subQueryConditions = [];
-        foreach ($relatedKeys as $ck => $fk) {
-            $fk = $subQuery->getResolver()->getAlias($source) . '.' . $fk;
+        foreach ((array) $this->getModel()->getKeyName() as $column) {
+            $fk = $subQueryResolver->qualifyColumn($column, $sourceAlias);
 
-            if (isset($from->$ck)) {
-                $subQueryConditions["$fk = ?"] = $from->$ck;
+            if (isset($from->$column)) {
+                $subQueryConditions["$fk = ?"] = $from->$column;
             } else {
-                $subQueryConditions[] = sprintf(
-                    "$fk = %s.$ck",
-                    $this->getResolver()->getAlias($from ?: $this->getModel())
-                );
+                $subQueryConditions[] = "$fk = " . $resolver->qualifyColumn($column, $baseAlias);
             }
         }
 
