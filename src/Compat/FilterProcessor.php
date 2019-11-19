@@ -118,7 +118,7 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
             }
 
             $expression = $resolver->getBehaviors($subject)->persistProperty($expression, $columnName);
-            $column = $resolver->qualifyPath($columnName, $resolver->getAlias($subject));
+            $column = $resolver->getAlias($subject) . '.' . $columnName;
 
             $filter->setColumn($column);
             $filter->setExpression($expression);
