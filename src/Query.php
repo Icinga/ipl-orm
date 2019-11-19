@@ -100,6 +100,7 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
     public function setModel(Model $model)
     {
         $this->model = $model;
+        $this->getResolver()->setAlias($model, $model->getTableName());
 
         return $this;
     }
@@ -182,8 +183,7 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
     public function getResolver()
     {
         if ($this->resolver === null) {
-            $this->resolver = (new Resolver())
-                ->setAlias($this->getModel(), $this->getModel()->getTableName());
+            $this->resolver = new Resolver();
         }
 
         return $this->resolver;
@@ -199,14 +199,9 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
         if ($this->selectBase === null) {
             $this->selectBase = new Select();
 
-            $tableName = $this->getModel()->getTableName();
-
-            $aliasPrefix = $this->getResolver()->getAliasPrefix();
-            if ($aliasPrefix !== null) {
-                $this->selectBase->from([$aliasPrefix . $tableName => $tableName]);
-            } else {
-                $this->selectBase->from($tableName);
-            }
+            $this->selectBase->from([
+                $this->getResolver()->getAlias($this->getModel()) => $this->getModel()->getTableName()
+            ]);
         }
 
         return $this->selectBase;
