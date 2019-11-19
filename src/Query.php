@@ -183,7 +183,8 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
     public function getResolver()
     {
         if ($this->resolver === null) {
-            $this->resolver = new Resolver();
+            $this->resolver = (new Resolver())
+                ->setQuery($this);
         }
 
         return $this->resolver;
@@ -297,7 +298,7 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
         $resolver = $this->getResolver();
 
         if (! empty($columns)) {
-            $resolved = $this->groupColumnsByTarget($resolver->requireAndResolveColumns($this, $columns));
+            $resolved = $this->groupColumnsByTarget($resolver->requireAndResolveColumns($columns));
 
             if ($resolved->contains($model)) {
                 $select->columns(
@@ -689,7 +690,7 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
         $order = [];
         $resolver = $this->getResolver();
 
-        foreach ($resolver->requireAndResolveColumns($this, array_keys($directions)) as list($model, $alias, $column)) {
+        foreach ($resolver->requireAndResolveColumns(array_keys($directions)) as list($model, $alias, $column)) {
             $direction = reset($directions);
             $selectColumns = $resolver->getSelectColumns($model);
             $tableName = $resolver->getAlias($model);

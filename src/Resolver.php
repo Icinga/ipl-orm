@@ -269,16 +269,15 @@ class Resolver
      *
      * Related models will be automatically added for eager-loading.
      *
-     * @param Query $query
      * @param array $columns
      *
      * @return Generator
      *
      * @throws RuntimeException If a column does not exist
      */
-    public function requireAndResolveColumns(Query $query, array $columns)
+    public function requireAndResolveColumns(array $columns)
     {
-        $model = $query->getModel();
+        $model = $this->query->getModel();
         $tableName = $model->getTableName();
 
         foreach ($columns as $alias => $column) {
