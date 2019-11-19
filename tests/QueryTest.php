@@ -146,7 +146,10 @@ class QueryTest extends \PHPUnit\Framework\TestCase
 
         $query->with('profile');
 
-        $this->assertSame($query->getRelations()->get('profile'), $query->getWith()['user.profile']);
+        $this->assertSame(
+            $query->getResolver()->getRelations($query->getModel())->get('profile'),
+            $query->getWith()['user.profile']
+        );
     }
 
     public function testWithWithArrayAsParamaterAddsTheCorrectRelationsToEagerLoad()
@@ -156,8 +159,14 @@ class QueryTest extends \PHPUnit\Framework\TestCase
 
         $query->with(['profile', 'group']);
 
-        $this->assertSame($query->getRelations()->get('profile'), $query->getWith()['user.profile']);
-        $this->assertSame($query->getRelations()->get('group'), $query->getWith()['user.group']);
+        $this->assertSame(
+            $query->getResolver()->getRelations($query->getModel())->get('profile'),
+            $query->getWith()['user.profile']
+        );
+        $this->assertSame(
+            $query->getResolver()->getRelations($query->getModel())->get('group'),
+            $query->getWith()['user.group']
+        );
     }
 
     /** @expectedException \InvalidArgumentException */

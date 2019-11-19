@@ -249,7 +249,7 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
                     continue;
                 }
 
-                $subjectRelations = $this->getRelations($subject);
+                $subjectRelations = $this->getResolver()->getRelations($subject);
                 if (! $subjectRelations->has($name)) {
                     throw new InvalidArgumentException(sprintf(
                         "Can't join relation '%s' in model '%s'. Relation not found.",
@@ -431,7 +431,7 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
             $targetColumns = $resolver->getSelectableColumns($target);
 
             $defaults = [];
-            foreach ($this->getRelations($target) as $targetRelation) {
+            foreach ($this->getResolver()->getRelations($target) as $targetRelation) {
                 $name = $targetRelation->getName();
                 $isOne = $targetRelation->isOne();
 
@@ -450,12 +450,12 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
                     $targetColumns
                 ),
                 $defaults,
-                $this->getBehaviors($target)
+                $this->getResolver()->getBehaviors($target)
             );
         }
 
         $defaults = [];
-        foreach ($this->getRelations() as $relation) {
+        foreach ($this->getResolver()->getRelations($model) as $relation) {
             $name = $relation->getName();
             $isOne = $relation->isOne();
 
@@ -470,7 +470,7 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
             $hydrator->setDefaults($defaults);
         }
 
-        $hydrator->setBehaviors($this->getBehaviors());
+        $hydrator->setBehaviors($this->getResolver()->getBehaviors($model));
 
         return $hydrator;
     }
@@ -489,7 +489,7 @@ class Query implements LimitOffsetInterface, PaginationInterface, \IteratorAggre
     {
         // TODO: Think of a way to merge derive() and createSubQuery()
         return $this->createSubQuery(
-            $this->getRelations($source)->get($relation)->getTarget(),
+            $this->getResolver()->getRelations($source)->get($relation)->getTarget(),
             $this->getResolver()->qualifyPath($relation, $source->getTableName()),
             $source
         );

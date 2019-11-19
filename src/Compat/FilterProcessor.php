@@ -95,7 +95,7 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
                     $subject = $relation->getTarget();
                 }
 
-                $rewrittenFilter = $query->getBehaviors($subject)
+                $rewrittenFilter = $query->getResolver()->getBehaviors($subject)
                     ->rewriteCondition((clone $filter)->setColumn($columnName), $path . '.');
                 if ($rewrittenFilter !== null) {
                     if (isset($rewrittenFilter->transferMetaData) || $rewrittenFilter instanceof $filter) {
@@ -116,7 +116,7 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
                 }
             } while (! empty($relations));
 
-            $expression = $query->getBehaviors($subject)->persistProperty($expression, $columnName);
+            $expression = $query->getResolver()->getBehaviors($subject)->persistProperty($expression, $columnName);
             $column = $query->getResolver()->qualifyPath($columnName, $query->getResolver()->getAlias(
                 isset($relation) ? $relation->getTarget() : $query->getModel()
             ));
