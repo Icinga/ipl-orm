@@ -2,6 +2,8 @@
 
 namespace ipl\Orm\Compat;
 
+use AppendIterator;
+use ArrayIterator;
 use Icinga\Data\Filter\Filter;
 use Icinga\Data\Filter\FilterAnd;
 use Icinga\Data\Filter\FilterChain;
@@ -82,10 +84,9 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
             $filter->metaData['relationPath'] = $relationPath;
             $filter->metaData['relationCol'] = $columnName;
 
-            $relations = array_merge(
-                [$baseTable => null],
-                iterator_to_array($resolver->resolveRelations($relationPath))
-            );
+            $relations = new AppendIterator();
+            $relations->append(new ArrayIterator([$baseTable => null]));
+            $relations->append($resolver->resolveRelations($relationPath));
             foreach ($relations as $path => $relation) {
                 $columnName = substr($column, strlen($path) + 1);
 
