@@ -13,7 +13,10 @@ use SplObjectStorage;
  */
 class Resolver
 {
-    /** @var  SplObjectStorage Model aliases */
+    /** @var Query The query to resolve */
+    protected $query;
+
+    /** @var SplObjectStorage Model aliases */
     protected $aliases;
 
     /** @var string The alias prefix to use */
@@ -33,6 +36,20 @@ class Resolver
         $this->aliases = new SplObjectStorage();
         $this->selectableColumns = new SplObjectStorage();
         $this->selectColumns = new SplObjectStorage();
+    }
+
+    /**
+     * Set the query this resolver belongs to
+     *
+     * @param Query $query
+     *
+     * @return $this
+     */
+    public function setQuery(Query $query)
+    {
+        $this->query = $query;
+
+        return $this;
     }
 
     /**
