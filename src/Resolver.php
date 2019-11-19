@@ -3,6 +3,8 @@
 namespace ipl\Orm;
 
 use Generator;
+use InvalidArgumentException;
+use ipl\Orm\Relation\BelongsToMany;
 use ipl\Sql\Expression;
 use OutOfBoundsException;
 use RuntimeException;
@@ -33,6 +35,9 @@ class Resolver
 
     /** @var SplObjectStorage Select columns from resolved models */
     protected $selectColumns;
+
+    /** @var Relation[] Resolved relations */
+    protected $resolvedRelations = [];
 
     /**
      * Create a new resolver
@@ -307,6 +312,84 @@ class Resolver
         return $path;
     }
 
+    /**
+     * Resolve the rightmost relation of the given path
+     *
+     * Also resolves all other relations.
+     *
+     * @param string $path
+     *
+     * @return Relation
+     */
+    public function resolveRelation($path)
+    {
+        if (! isset($this->resolvedRelations[$path])) {
+            $this->resolvedRelations += iterator_to_array($this->resolveRelations($path));
+        }
+
+        return $this->resolvedRelations[$path];
+    }
+
+    /**
+     * Resolve all relations of the given path
+     *
+     * Traverses the entire path and yields the path travelled so far as key and the relation as value.
+     *
+     * @param string $path
+     *
+     * @return Generator
+     * @throws InvalidArgumentException In case $path is not fully qualified or a relation is unknown
+     */
+    public function resolveRelations($path)
+    {
+        $relations = explode('.', $path);
+        $subject = $this->query->getModel();
+
+        if ($relations[0] !== $subject->getTableName()) {
+            throw new InvalidArgumentException(sprintf(
+                'Cannot resolve relation path "%s". Base table name is missing.',
+                $path
+            ));
+        }
+
+        $segments = [array_shift($relations)];
+        foreach ($relations as $relationName) {
+            $segments[] = $relationName;
+            $relationPath = join('.', $segments);
+
+            if (isset($this->resolvedRelations[$relationPath])) {
+                $relation = $this->resolvedRelations[$relationPath];
+            } else {
+                $subjectRelations = $this->getRelations($subject);
+                if (! $subjectRelations->has($relationName)) {
+                    throw new InvalidArgumentException(sprintf(
+                        'Cannot join relation "%s" in model "%s". Relation not found.',
+                        $relationName,
+                        get_class($subject)
+                    ));
+                }
+
+                $relation = $subjectRelations->get($relationName);
+                $relation->setSource($subject);
+
+                $this->resolvedRelations[$relationPath] = $relation;
+
+                if ($relation instanceof BelongsToMany) {
+                    $through = $relation->getThrough();
+                    $this->setAlias($through, join('_', array_merge(
+                        array_slice($segments, 0, -1),
+                        [$through->getTableName()]
+                    )));
+                }
+
+                $this->setAlias($relation->getTarget(), join('_', $segments));
+            }
+
+            yield $relationPath => $relation;
+
+            $subject = $relation->getTarget();
+        }
+    }
 
     /**
      * Require and resolve columns
