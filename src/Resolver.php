@@ -16,6 +16,12 @@ class Resolver
     /** @var Query The query to resolve */
     protected $query;
 
+    /** @var SplObjectStorage Model relations */
+    protected $relations;
+
+    /** @var SplObjectStorage Model behaviors */
+    protected $behaviors;
+
     /** @var SplObjectStorage Model aliases */
     protected $aliases;
 
@@ -33,6 +39,8 @@ class Resolver
      */
     public function __construct()
     {
+        $this->relations = new SplObjectStorage();
+        $this->behaviors = new SplObjectStorage();
         $this->aliases = new SplObjectStorage();
         $this->selectableColumns = new SplObjectStorage();
         $this->selectColumns = new SplObjectStorage();
@@ -50,6 +58,42 @@ class Resolver
         $this->query = $query;
 
         return $this;
+    }
+
+    /**
+     * Get a model's relations
+     *
+     * @param Model $model
+     *
+     * @return Relations
+     */
+    public function getRelations(Model $model)
+    {
+        if (! $this->relations->contains($model)) {
+            $relations = new Relations();
+            $model->createRelations($relations);
+            $this->relations->attach($model, $relations);
+        }
+
+        return $this->relations[$model];
+    }
+
+    /**
+     * Get a model's behaviors
+     *
+     * @param Model $model
+     *
+     * @return Behaviors
+     */
+    public function getBehaviors(Model $model)
+    {
+        if (! $this->behaviors->contains($model)) {
+            $behaviors = new Behaviors();
+            $model->createBehaviors($behaviors);
+            $this->behaviors->attach($model, $behaviors);
+        }
+
+        return $this->behaviors[$model];
     }
 
     /**

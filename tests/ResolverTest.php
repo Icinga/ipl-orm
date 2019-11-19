@@ -2,11 +2,33 @@
 
 namespace ipl\Tests\Orm;
 
+use ipl\Orm\Query;
 use ipl\Orm\Resolver;
 use PHPUnit\Framework\TestCase;
 
 class ResolverTest extends TestCase
 {
+    public function testGetRelationsCallsModelsCreateRelations()
+    {
+        $model = new TestModelWithCreateRelations();
+        (new Query())
+            ->getResolver()
+            ->getRelations($model);
+
+        $this->assertSame(1, $model->relationsCreatedCount);
+    }
+
+    public function testMultipleCallsToGetRelationsCallsModelsCreateRelationsOnlyOnce()
+    {
+        $model = new TestModelWithCreateRelations();
+        $query = new Query();
+        $query->getResolver()->getRelations($model);
+        $query->getResolver()->getRelations($model);
+        $query->getResolver()->getRelations($model);
+
+        $this->assertSame(1, $model->relationsCreatedCount);
+    }
+
     public function testGetSelectColumnsReturnsEmptyArrayIfPrimaryKeyAndColumnsAreEmpty()
     {
         $model = new TestModel();
