@@ -102,8 +102,7 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
                 $rewrittenFilter = $resolver->getBehaviors($subject)
                     ->rewriteCondition((clone $filter)->setColumn($columnName), $path . '.');
                 if ($rewrittenFilter !== null) {
-                    if (isset($rewrittenFilter->transferMetaData) || $rewrittenFilter instanceof $filter) {
-                        // The filter hasn't changed semantically
+                    if (isset($rewrittenFilter->transferMetaData)) {
                         $rewrittenFilter->metaData['relationPath'] = $path;
                         $rewrittenFilter->metaData['relationCol'] = $columnName;
                         $rewrittenFilter->metaData['original'] = $filter;
