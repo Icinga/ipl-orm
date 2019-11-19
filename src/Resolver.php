@@ -132,10 +132,6 @@ class Resolver
      */
     public function setAlias(Model $model, $alias)
     {
-        if (isset($this->aliasPrefix) && strpos($alias, $this->aliasPrefix) === 0) {
-            $alias = substr($alias, strlen($this->aliasPrefix));
-        }
-
         $this->aliases[$model] = $alias;
 
         return $this;
