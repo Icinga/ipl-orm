@@ -309,6 +309,24 @@ class Resolver
     }
 
     /**
+     * Get whether the given relation path points to a distinct entity
+     *
+     * @param string $path
+     *
+     * @return bool
+     */
+    public function isDistinctRelation($path)
+    {
+        foreach ($this->resolveRelations($path) as $relation) {
+            if (! $relation->isOne()) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
      * Resolve the rightmost relation of the given path
      *
      * Also resolves all other relations.
