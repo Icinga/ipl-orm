@@ -139,7 +139,7 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
 
                     $relationPath = $child->metaData['relationPath'];
                     if ($relationPath !== $query->getModel()->getTableName()) {
-                        if (! $query->getResolver()->resolveRelation($relationPath)->isOne()) {
+                        if (! $query->getResolver()->isDistinctRelation($relationPath)) {
                             if (isset($child->metaData['original'])) {
                                 $column = $child->metaData['original']->metaData['column'];
                                 $sign = $child->metaData['original']->getSign();
