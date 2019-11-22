@@ -108,8 +108,7 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
                         $rewrittenFilter->metaData['original'] = $filter;
                     }
 
-                    $this->requireAndResolveFilterColumns($rewrittenFilter, $query);
-                    return $rewrittenFilter;
+                    return $this->requireAndResolveFilterColumns($rewrittenFilter, $query) ?: $rewrittenFilter;
                 }
             }
 
@@ -185,8 +184,6 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
                     }
 
                     foreach ($filters as $i => $child) {
-                        $filter->removeId($child->getId());
-
                         if ($sign === '!=') {
                             // Unequal comparisons must be negated since the sub-query is an inverse of the outer one
                             if ($child->isExpression()) {
@@ -212,6 +209,8 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
                                 unset($this->madeJoins[$joinPath]);
                             }
                         }
+
+                        $filter->removeId($child->getId());
                     }
 
                     static::apply(Filter::matchAny($filters), $subQuery);
