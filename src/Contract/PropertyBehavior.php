@@ -17,14 +17,18 @@ abstract class PropertyBehavior implements RetrieveBehavior, PersistBehavior
      */
     public function __construct(array $properties)
     {
-        $this->properties = array_flip($properties);
+        if (is_int(key($properties))) {
+            $this->properties = array_flip($properties);
+        } else {
+            $this->properties = $properties;
+        }
     }
 
     public function retrieve(Model $model)
     {
-        foreach ($this->properties as $key => $_) {
+        foreach ($this->properties as $key => $ctx) {
             try {
-                $model[$key] = $this->fromDb($model[$key], $key);
+                $model[$key] = $this->fromDb($model[$key], $key, $ctx);
             } catch (OutOfBoundsException $_) {
                 // pass
             }
@@ -33,9 +37,9 @@ abstract class PropertyBehavior implements RetrieveBehavior, PersistBehavior
 
     public function persist(Model $model)
     {
-        foreach ($this->properties as $key => $_) {
+        foreach ($this->properties as $key => $ctx) {
             try {
-                $model[$key] = $this->toDb($model[$key], $key);
+                $model[$key] = $this->toDb($model[$key], $key, $ctx);
             } catch (OutOfBoundsException $_) {
                 // pass
             }
@@ -56,7 +60,7 @@ abstract class PropertyBehavior implements RetrieveBehavior, PersistBehavior
             return $value;
         }
 
-        return $this->fromDb($value, $key);
+        return $this->fromDb($value, $key, $this->properties[$key]);
     }
 
     /**
@@ -73,7 +77,7 @@ abstract class PropertyBehavior implements RetrieveBehavior, PersistBehavior
             return $value;
         }
 
-        return $this->toDb($value, $key);
+        return $this->toDb($value, $key, $this->properties[$key]);
     }
 
     /**
@@ -81,18 +85,20 @@ abstract class PropertyBehavior implements RetrieveBehavior, PersistBehavior
      *
      * @param mixed  $value
      * @param string $key
+     * @param mixed $context
      *
      * @return mixed
      */
-    abstract public function fromDb($value, $key);
+    abstract public function fromDb($value, $key, $context);
 
     /**
      * Transform the given value which is about to be persisted to the database
      *
      * @param mixed  $value
      * @param string $key
+     * @param mixed $context
      *
      * @return mixed
      */
-    abstract public function toDb($value, $key);
+    abstract public function toDb($value, $key, $context);
 }
