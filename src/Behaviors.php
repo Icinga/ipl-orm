@@ -42,10 +42,10 @@ class Behaviors
             if ($behavior instanceof PersistBehavior) {
                 $this->persistBehaviors[] = $behavior;
             }
+        }
 
-            if ($behavior instanceof RewriteFilterBehavior) {
-                $this->rewriteFilterBehaviors[] = $behavior;
-            }
+        if ($behavior instanceof RewriteFilterBehavior) {
+            $this->rewriteFilterBehaviors[] = $behavior;
         }
     }
 
