@@ -61,8 +61,7 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
     protected function requireAndResolveFilterColumns(Filter $filter, Query $query)
     {
         if ($filter instanceof FilterExpression) {
-            $expression = $filter->getExpression();
-            if ($expression === '*') {
+            if ($filter->getExpression() === '*') {
                 // Wildcard only filters are ignored so stop early here to avoid joining a table for nothing
                 return;
             }
@@ -78,11 +77,7 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
 
             $filter->metaData['column'] = $column;
 
-            // TODO: legacy filter columns? (with underscores)
             list($relationPath, $columnName) = preg_split('/\.(?=[^.]+$)/', $column);
-
-            $filter->metaData['relationPath'] = $relationPath;
-            $filter->metaData['relationCol'] = $columnName;
 
             $relations = new AppendIterator();
             $relations->append(new ArrayIterator([$baseTable => null]));
@@ -99,8 +94,15 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
                     $subject = $relation->getTarget();
                 }
 
-                $rewrittenFilter = $resolver->getBehaviors($subject)
-                    ->rewriteCondition((clone $filter)->setColumn($columnName), $path . '.');
+                $subjectBehaviors = $resolver->getBehaviors($subject);
+
+                // Prepare filter as if it were final to allow full control for rewrite filter behaviors
+                $filter->setExpression($subjectBehaviors->persistProperty($filter->getExpression(), $columnName));
+                $filter->setColumn($resolver->getAlias($subject) . '.' . $columnName);
+                $filter->metaData['relationCol'] = $columnName;
+                $filter->metaData['relationPath'] = $path;
+
+                $rewrittenFilter = $subjectBehaviors->rewriteCondition($filter, $path . '.');
                 if ($rewrittenFilter !== null) {
                     if (isset($rewrittenFilter->transferMetaData)) {
                         $rewrittenFilter->metaData['relationPath'] = $path;
@@ -115,12 +117,6 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
             if ($relationPath !== $baseTable) {
                 $this->madeJoins[$relationPath][] = $filter;
             }
-
-            $expression = $resolver->getBehaviors($subject)->persistProperty($expression, $columnName);
-            $column = $resolver->getAlias($subject) . '.' . $columnName;
-
-            $filter->setColumn($column);
-            $filter->setExpression($expression);
         } else {
             /** @var FilterChain $filter */
 
