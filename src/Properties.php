@@ -2,6 +2,7 @@
 
 namespace ipl\Orm;
 
+use Closure;
 use ipl\Stdlib\Str;
 use OutOfBoundsException;
 
@@ -73,7 +74,7 @@ trait Properties
         }
 
         if (array_key_exists($key, $this->properties)) {
-            if (is_callable($this->properties[$key])) {
+            if ($this->properties[$key] instanceof Closure) {
                 return $this->properties[$key]($this);
             }
 
