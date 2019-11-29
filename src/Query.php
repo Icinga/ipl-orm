@@ -44,6 +44,8 @@ class Query implements LimitOffsetInterface, PaginationInterface, IteratorAggreg
     /** @var Relation[] Relations to eager load */
     protected $with = [];
 
+    /** @var Relation[] Relations to utilize (join) */
+    protected $utilize = [];
 
     /**
      * Get the database connection
@@ -200,6 +202,46 @@ class Query implements LimitOffsetInterface, PaginationInterface, IteratorAggreg
     }
 
     /**
+     * Get utilized (joined) relations
+     *
+     * @return Relation[]
+     */
+    public function getUtilize()
+    {
+        return $this->utilize;
+    }
+
+    /**
+     * Add a relation to utilize (join)
+     *
+     * @param string $path
+     *
+     * @return $this
+     */
+    public function utilize($path)
+    {
+        $path = $this->getResolver()->qualifyPath($path, $this->getModel()->getTableName());
+        $this->utilize[$path] = $this->getResolver()->resolveRelation($path);
+
+        return $this;
+    }
+
+    /**
+     * Remove a utilized (joined) relation
+     *
+     * @param string $path
+     *
+     * @return $this
+     */
+    public function omit($path)
+    {
+        $path = $this->getResolver()->qualifyPath($path, $this->getModel()->getTableName());
+        unset($this->utilize[$path]);
+
+        return $this;
+    }
+
+    /**
      * Assemble and return the SELECT query
      *
      * @return Select
@@ -263,7 +305,7 @@ class Query implements LimitOffsetInterface, PaginationInterface, IteratorAggreg
         }
 
         $joinedRelations = [];
-        foreach ($this->getWith() as $path => $_) {
+        foreach ($this->getWith() + $this->getUtilize() as $path => $_) {
             foreach ($resolver->resolveRelations($path) as $relationPath => $relation) {
                 if (isset($joinedRelations[$relationPath])) {
                     continue;
