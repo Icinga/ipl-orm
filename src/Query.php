@@ -658,7 +658,7 @@ class Query implements LimitOffsetInterface, PaginationInterface, IteratorAggreg
 
             $order[] = [$column, $direction];
 
-            array_unshift($directions);
+            array_shift($directions);
         }
 
         $select->orderBy($order);
