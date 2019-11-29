@@ -5,7 +5,7 @@ namespace ipl\Orm;
 use Generator;
 use InvalidArgumentException;
 use ipl\Orm\Relation\BelongsToMany;
-use ipl\Sql\Expression;
+use ipl\Sql\ExpressionInterface;
 use OutOfBoundsException;
 use RuntimeException;
 use SplObjectStorage;
@@ -251,7 +251,7 @@ class Resolver
         $qualified = [];
 
         foreach ($columns as $alias => $column) {
-            if (is_int($alias) && ! $column instanceof Expression) {
+            if (is_int($alias) && ! $column instanceof ExpressionInterface) {
                 $column = $this->qualifyColumn($column, $tableName);
             }
 
@@ -277,7 +277,7 @@ class Resolver
             if (is_int($alias)) {
                 $alias = $this->qualifyColumnAlias($column, $tableName);
                 $column = $this->qualifyColumn($column, $tableName);
-            } elseif (! $column instanceof Expression) {
+            } elseif (! $column instanceof ExpressionInterface) {
                 $column = $this->qualifyColumn($column, $tableName);
             }
 
@@ -422,7 +422,7 @@ class Resolver
         $tableName = $model->getTableName();
 
         foreach ($columns as $alias => $column) {
-            if ($column === '*' || $column instanceof Expression) {
+            if ($column === '*' || $column instanceof ExpressionInterface) {
                 yield [$model, $alias, $column];
 
                 continue;
