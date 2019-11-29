@@ -477,7 +477,7 @@ class Query implements LimitOffsetInterface, PaginationInterface, IteratorAggreg
 
         $subQueryResolver = $subQuery->getResolver();
         $sourcePath = join('.', $sourceParts);
-        $subQuery->with($sourcePath); // TODO: Selects the source's columns again, don't do that
+        $subQuery->utilize($sourcePath); // TODO: Don't join if there's a matching foreign key
 
         // TODO: Should be done by the caller. Though, that's not possible until we've got a filter abstraction
         //       which allows to post-pone filter column qualification.
