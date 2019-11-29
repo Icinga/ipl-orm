@@ -652,10 +652,11 @@ class Query implements LimitOffsetInterface, PaginationInterface, IteratorAggreg
                 $column = $selectColumns[$column];
             }
 
-            $order[] = implode(
-                ' ',
-                array_filter([$resolver->qualifyColumn($column, $tableName), $direction])
-            );
+            if (is_string($column)) {
+                $column = $resolver->qualifyColumn($column, $tableName);
+            }
+
+            $order[] = [$column, $direction];
 
             array_unshift($directions);
         }
