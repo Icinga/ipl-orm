@@ -38,7 +38,7 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
             }
 
             $processor = new static();
-            foreach ($query->getWith() as $path => $_) {
+            foreach ($query->getUtilize() as $path => $_) {
                 $processor->baseJoins[$path] = true;
             }
 
@@ -89,8 +89,6 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
                     $subject = $query->getModel();
                 } else {
                     /** @var Relation $relation */
-                    $relation = $query->with($path)
-                        ->getWith()[$path];
                     $subject = $relation->getTarget();
                 }
 
@@ -115,6 +113,7 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
             }
 
             if ($relationPath !== $baseTable) {
+                $query->utilize($relationPath);
                 $this->madeJoins[$relationPath][] = $filter;
             }
         } else {
@@ -199,7 +198,7 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
 
                             if (empty($madeBy)) {
                                 if (! isset($this->baseJoins[$joinPath])) {
-                                    $query->without($joinPath);
+                                    $query->omit($joinPath);
                                 }
 
                                 unset($this->madeJoins[$joinPath]);
