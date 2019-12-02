@@ -185,7 +185,8 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
                                 $filters[$i] = $child->setSign('=');
                                 $filters[$i]->metaData = $child->metaData;
                             } else {
-                                $filters[$i] = Filter::not($child);
+                                $childId = $child->getId(); // Gets re-indexed otherwise
+                                $filters[$i] = Filter::not($child)->setId($childId);
                             }
                         }
 
