@@ -102,12 +102,6 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
 
                 $rewrittenFilter = $subjectBehaviors->rewriteCondition($filter, $path . '.');
                 if ($rewrittenFilter !== null) {
-                    if (isset($rewrittenFilter->transferMetaData)) {
-                        $rewrittenFilter->metaData['relationPath'] = $path;
-                        $rewrittenFilter->metaData['relationCol'] = $columnName;
-                        $rewrittenFilter->metaData['original'] = $filter;
-                    }
-
                     return $this->requireAndResolveFilterColumns($rewrittenFilter, $query) ?: $rewrittenFilter;
                 }
             }
@@ -128,10 +122,8 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
                     $child = $rewrittenFilter;
                 }
 
-                // We optimize only single expressions or chains with explicit meta-data
-                if (! isset($child->noOptmization) && ($child instanceof FilterExpression || isset($child->metaData))) {
-                    $child->noOptmization = true;
-
+                // We optimize only single expressions
+                if ($child instanceof FilterExpression) {
                     $relationPath = $child->metaData['relationPath'];
                     if ($relationPath !== $query->getModel()->getTableName()) {
                         if (! $query->getResolver()->isDistinctRelation($relationPath)) {
