@@ -77,11 +77,11 @@ abstract class Model implements \ArrayAccess
     }
 
     /**
-     * Get the model's sort rules
+     * Get the model's default sort
      *
-     * @return array
+     * @return array|string
      */
-    public function getSortRules()
+    public function getDefaultSort()
     {
         return [];
     }
