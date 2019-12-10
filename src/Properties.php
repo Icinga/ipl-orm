@@ -120,7 +120,7 @@ trait Properties
             : null;
         $this->mutatedProperties[$key] = $value; // Prevents repeated checks
 
-        $mutator = 'mutate' . Str::camel($key) . 'Property';
+        $mutator = Str::camel('mutate_' . $key) . 'Property';
         if (method_exists($this, $mutator)) {
             $this->properties[$key] = $this->$mutator($value);
         }
