@@ -8,6 +8,8 @@ use InvalidArgumentException;
 use ipl\Sql\Connection;
 use ipl\Sql\LimitOffset;
 use ipl\Sql\LimitOffsetInterface;
+use ipl\Sql\OrderBy;
+use ipl\Sql\OrderByInterface;
 use ipl\Sql\Select;
 use ipl\Stdlib\Contract\PaginationInterface;
 use IteratorAggregate;
@@ -16,9 +18,10 @@ use SplObjectStorage;
 /**
  * Represents a database query which is associated to a model and a database connection.
  */
-class Query implements LimitOffsetInterface, PaginationInterface, IteratorAggregate
+class Query implements LimitOffsetInterface, OrderByInterface, PaginationInterface, IteratorAggregate
 {
     use LimitOffset;
+    use OrderBy;
 
     /** @var int Count cache */
     protected $count;
