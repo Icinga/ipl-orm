@@ -67,21 +67,21 @@ abstract class Model implements \ArrayAccess
     }
 
     /**
-     * Get the model's search columns
-     *
-     * @return array
-     */
-    public function getSearchColumns()
-    {
-        return [];
-    }
-
-    /**
      * Get the model's default sort
      *
      * @return array|string
      */
     public function getDefaultSort()
+    {
+        return [];
+    }
+
+    /**
+     * Get the model's search columns
+     *
+     * @return array
+     */
+    public function getSearchColumns()
     {
         return [];
     }
