@@ -43,6 +43,20 @@ abstract class Model implements \ArrayAccess
     abstract public function getColumns();
 
     /**
+     * Get a query which is tied to this model and the given database connection
+     *
+     * @param Connection $db
+     *
+     * @return Query
+     */
+    public static function on(Connection $db)
+    {
+        return (new Query())
+            ->setDb($db)
+            ->setModel(new static());
+    }
+
+    /**
      * Get the models aggregate columns
      *
      * @return array|bool Aggregate columns as array or true to always aggregate
@@ -70,20 +84,6 @@ abstract class Model implements \ArrayAccess
     public function getSortRules()
     {
         return [];
-    }
-
-    /**
-     * Get a query which is tied to this model and the given database connection
-     *
-     * @param Connection $db
-     *
-     * @return Query
-     */
-    public static function on(Connection $db)
-    {
-        return (new Query())
-            ->setDb($db)
-            ->setModel(new static());
     }
 
     /**
