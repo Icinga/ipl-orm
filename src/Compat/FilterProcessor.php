@@ -206,7 +206,7 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
                     $filter->addFilter(new FilterExpression(
                         '',
                         ($sign === '!=' ? 'NOT ' : '') . 'EXISTS',
-                        $subQuery->assembleSelect()
+                        $subQuery->assembleSelect()->resetOrderBy()
                     ));
                 }
             }
