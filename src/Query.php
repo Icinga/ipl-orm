@@ -5,9 +5,12 @@ namespace ipl\Orm;
 use ArrayObject;
 use Generator;
 use InvalidArgumentException;
+use ipl\Orm\Common\SortUtil;
 use ipl\Sql\Connection;
 use ipl\Sql\LimitOffset;
 use ipl\Sql\LimitOffsetInterface;
+use ipl\Sql\OrderBy;
+use ipl\Sql\OrderByInterface;
 use ipl\Sql\Select;
 use ipl\Stdlib\Contract\PaginationInterface;
 use IteratorAggregate;
@@ -16,9 +19,10 @@ use SplObjectStorage;
 /**
  * Represents a database query which is associated to a model and a database connection.
  */
-class Query implements LimitOffsetInterface, PaginationInterface, IteratorAggregate
+class Query implements LimitOffsetInterface, OrderByInterface, PaginationInterface, IteratorAggregate
 {
     use LimitOffset;
+    use OrderBy;
 
     /** @var int Count cache */
     protected $count;
@@ -620,31 +624,31 @@ class Query implements LimitOffsetInterface, PaginationInterface, IteratorAggreg
      */
     protected function order(Select $select)
     {
-        $sortRules = $this->getModel()->getSortRules();
+        $orderBy = $this->getOrderBy();
+        $defaultSort = (array) $this->getModel()->getDefaultSort();
 
-        if (empty($sortRules)) {
-            return $this;
-        }
-
-        $default = reset($sortRules);
-        $directions = [];
-        $columns = explode(',', $default);
-        foreach ($columns as $spec) {
-            $columnAndDirection = explode(' ', trim($spec), 2);
-            $column = array_shift($columnAndDirection);
-            if (! empty($columnAndDirection)) {
-                $direction = $columnAndDirection[0];
-            } else {
-                $direction = null;
+        if (empty($orderBy)) {
+            if (empty($defaultSort)) {
+                return $this;
             }
-            $directions[$column] = $direction;
+
+            $orderBy = SortUtil::createOrderBy($defaultSort);
         }
 
-        $order = [];
+        $columnsAndDirections = [];
+        $orderByResolved = [];
         $resolver = $this->getResolver();
 
-        foreach ($resolver->requireAndResolveColumns(array_keys($directions)) as list($model, $alias, $column)) {
-            $direction = reset($directions);
+        // Prepare flat ORDER BY column(s) and direction(s) for requireAndResolveColumns()
+        foreach ($orderBy as $part) {
+            list($column, $direction) = $part;
+            $columnsAndDirections[$column] = $direction;
+        }
+
+        foreach (
+            $resolver->requireAndResolveColumns(array_keys($columnsAndDirections)) as list($model, $alias, $column)
+        ) {
+            $direction = reset($columnsAndDirections);
             $selectColumns = $resolver->getSelectColumns($model);
             $tableName = $resolver->getAlias($model);
 
@@ -656,12 +660,12 @@ class Query implements LimitOffsetInterface, PaginationInterface, IteratorAggreg
                 $column = $resolver->qualifyColumn($column, $tableName);
             }
 
-            $order[] = [$column, $direction];
+            $orderByResolved[] = [$column, $direction];
 
-            array_shift($directions);
+            array_shift($columnsAndDirections);
         }
 
-        $select->orderBy($order);
+        $select->orderBy($orderByResolved);
 
         return $this;
     }
