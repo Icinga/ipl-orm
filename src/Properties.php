@@ -75,7 +75,9 @@ trait Properties
 
         if (array_key_exists($key, $this->properties)) {
             if ($this->properties[$key] instanceof Closure) {
-                return $this->properties[$key]($this);
+                $value = $this->properties[$key]($this);
+                $this->setProperty($key, $value);
+                return $value;
             }
 
             return $this->properties[$key];
