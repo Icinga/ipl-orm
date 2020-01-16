@@ -123,7 +123,7 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
                 }
 
                 // We optimize only single expressions
-                if ($child instanceof FilterExpression) {
+                if (isset($child->metaData) && $child instanceof FilterExpression) {
                     $relationPath = $child->metaData['relationPath'];
                     if ($relationPath !== $query->getModel()->getTableName()) {
                         if (! $query->getResolver()->isDistinctRelation($relationPath)) {
