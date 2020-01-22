@@ -33,6 +33,7 @@ jobs:
         uses: shivammathur/setup-php@v1
         with:
           php-version: ${{ matrix.php }}
+          extensions: pdo, pdo_sqlite
           tools: phpcs
 
       - name: Setup dependencies
@@ -72,8 +73,8 @@ jobs:
         uses: shivammathur/setup-php@v1
         with:
           php-version: ${{ matrix.php }}
+          extensions: pdo, pdo_sqlite
           tools: phpunit:${{ matrix.phpunit-version || env.phpunit-version }}
-          extensions: pdo
 
       - name: Setup dependencies
         run: composer install -n --no-progress
