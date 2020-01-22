@@ -69,7 +69,8 @@ class ResolverTest extends TestCase
         $resolver = new Resolver();
 
         $this->assertSame(
-            array_merge((array) $model->getKeyName(), $model->getColumns()), $resolver->getSelectColumns($model)
+            array_merge((array) $model->getKeyName(), $model->getColumns()),
+            $resolver->getSelectColumns($model)
         );
     }
 
