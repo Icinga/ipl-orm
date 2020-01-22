@@ -22,14 +22,6 @@ class QueryTest extends \PHPUnit\Framework\TestCase
         $this->assertSame($model, $query->getModel());
     }
 
-    /**
-     * @expectedException \TypeError
-     */
-    public function testSetModelThrowsExceptionOnTypeMismatch()
-    {
-        (new Query())->setModel('invalid');
-    }
-
     public function testGetDbReturnsNullIfUnset()
     {
         $query = new Query();
@@ -44,14 +36,6 @@ class QueryTest extends \PHPUnit\Framework\TestCase
             ->setDb($db);
 
         $this->assertSame($db, $query->getDb());
-    }
-
-    /**
-     * @expectedException \TypeError
-     */
-    public function testSetDbThrowsExceptionOnTypeMismatch()
-    {
-        (new Query())->setDb('invalid');
     }
 
     public function testGetColumnsReturnsEmptyArrayIfUnset()
