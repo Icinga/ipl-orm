@@ -12,7 +12,7 @@ abstract class Model implements \ArrayAccess
 {
     use Properties;
 
-    public final function __construct(array $properties = null)
+    final public function __construct(array $properties = null)
     {
         if (! empty($this->properties)) {
             $this->setProperties($properties);
