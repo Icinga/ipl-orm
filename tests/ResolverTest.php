@@ -47,7 +47,7 @@ class ResolverTest extends TestCase
         $this->assertSame((array) $model->getKeyName(), $resolver->getSelectColumns($model));
     }
 
-    public function testGetSelectColumnsOnlyReturnsTheCompoundPrimaryKeyAsArrayIfThereIsOnlyThePrimaryKeyAndItIsCompound()
+    public function testGetSelectColumnsOnlyReturnsTheCompoundPrimaryKeyAsArrayIfTheresOnlyThePrimaryKeyAndItsCompound()
     {
         $model = new TestModelWithCompoundPrimaryKey();
         $resolver = new Resolver();
