@@ -20,6 +20,9 @@
       "ipl\\Orm\\": "src"
     }
   },
+  "require-dev": {
+    "ext-pdo_sqlite": "*"
+  },
   "autoload-dev": {
     "psr-4": {
       "ipl\\Tests\\Orm\\": "tests"
