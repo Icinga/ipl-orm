@@ -180,9 +180,13 @@ class BelongsToMany extends Relation
             ->setCandidateKey($this->extractKey($possibleTargetCandidateKey))
             ->setForeignKey($this->extractKey($possibleTargetForeignKey));
 
+        foreach ($toJunction->resolve() as $k => $v) {
+            yield $k => $v;
+        }
 
-        yield from $toJunction->resolve();
-        yield from $toTarget->resolve();
+        foreach ($toTarget->resolve() as $k => $v) {
+            yield $k => $v;
+        }
     }
 
     protected function extractKey(array $possibleKey)
