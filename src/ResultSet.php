@@ -84,6 +84,9 @@ class ResultSet implements Iterator
         }
 
         $this->cache[$this->generator->key()] = $this->generator->current();
+
+        // Only required on PHP 5.6, 7+ does it automatically
+        $this->cache->seek($this->generator->key());
     }
 
     protected function yieldTraversable(Traversable $traversable)
