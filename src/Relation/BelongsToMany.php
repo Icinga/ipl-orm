@@ -5,6 +5,7 @@ namespace ipl\Orm\Relation;
 use ipl\Orm\Model;
 use ipl\Orm\Relation;
 use ipl\Orm\Relations;
+
 use function ipl\Stdlib\get_php_type;
 
 /**
@@ -180,9 +181,13 @@ class BelongsToMany extends Relation
             ->setCandidateKey($this->extractKey($possibleTargetCandidateKey))
             ->setForeignKey($this->extractKey($possibleTargetForeignKey));
 
+        foreach ($toJunction->resolve() as $k => $v) {
+            yield $k => $v;
+        }
 
-        yield from $toJunction->resolve();
-        yield from $toTarget->resolve();
+        foreach ($toTarget->resolve() as $k => $v) {
+            yield $k => $v;
+        }
     }
 
     protected function extractKey(array $possibleKey)

@@ -105,7 +105,8 @@ class Hydrator
             ));
         }
 
-        // TODO: Maybe .. teach this about the query after all? Then only $propertyName and $class would need to be passed
+        // TODO: Maybe .. teach this about the query after all?
+        // Then only $propertyName and $class would need to be passed
         $this->hydrators[$path] = [$propertyName, $class, $columnToPropertyMap, $defaults, $behaviors];
 
         //natcasesort($this->hydrators);
@@ -125,7 +126,9 @@ class Hydrator
     {
         $properties = $this->extractAndMap($data, $this->columnToPropertyMap);
 
-        foreach ($this->hydrators as $path => list($propertyName, $class, $columnToPropertyMap, $defaults, $behaviors)) {
+        foreach ($this->hydrators as $path => $vars) {
+            list($propertyName, $class, $columnToPropertyMap, $defaults, $behaviors) = $vars;
+
             $subject = &$properties;
             $parts = explode('.', $path);
             array_pop($parts);

@@ -35,7 +35,7 @@ class ResolverTest extends TestCase
         $resolver = new Resolver();
         $columns = $resolver->getSelectColumns($model);
 
-        $this->assertIsArray($columns);
+        $this->assertInternalType('array', $columns);
         $this->assertEmpty($columns);
     }
 
@@ -47,7 +47,7 @@ class ResolverTest extends TestCase
         $this->assertSame((array) $model->getKeyName(), $resolver->getSelectColumns($model));
     }
 
-    public function testGetSelectColumnsOnlyReturnsTheCompoundPrimaryKeyAsArrayIfThereIsOnlyThePrimaryKeyAndItIsCompound()
+    public function testGetSelectColumnsOnlyReturnsTheCompoundPrimaryKeyAsArrayIfTheresOnlyThePrimaryKeyAndItsCompound()
     {
         $model = new TestModelWithCompoundPrimaryKey();
         $resolver = new Resolver();
@@ -69,7 +69,8 @@ class ResolverTest extends TestCase
         $resolver = new Resolver();
 
         $this->assertSame(
-            array_merge((array) $model->getKeyName(), $model->getColumns()), $resolver->getSelectColumns($model)
+            array_merge((array) $model->getKeyName(), $model->getColumns()),
+            $resolver->getSelectColumns($model)
         );
     }
 

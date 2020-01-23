@@ -240,9 +240,14 @@ SQL;
 
         $sql = <<<'SQL'
 SELECT
-    group.id, group.name,
-    group_user.id AS group_user_id, group_user.username AS group_user_username, group_user.password AS group_user_password,
-    group_user_audit.id AS group_user_audit_id, group_user_audit.user_id AS group_user_audit_user_id, group_user_audit.activity AS group_user_audit_activity
+    group.id,
+    group.name,
+    group_user.id AS group_user_id,
+    group_user.username AS group_user_username,
+    group_user.password AS group_user_password,
+    group_user_audit.id AS group_user_audit_id,
+    group_user_audit.user_id AS group_user_audit_user_id,
+    group_user_audit.activity AS group_user_audit_activity
 FROM
     group
 INNER JOIN
