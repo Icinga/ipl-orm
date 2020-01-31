@@ -21,8 +21,6 @@ class ResultSet implements Iterator
         $this->cache = new ArrayIterator();
         $this->generator = $this->yieldTraversable($traversable);
         $this->limit = $limit;
-
-        $this->advance();
     }
 
     public function hasMore()
@@ -37,6 +35,10 @@ class ResultSet implements Iterator
 
     public function current()
     {
+        if ($this->position === null) {
+            $this->advance();
+        }
+
         return $this->cache->current();
     }
 
@@ -48,12 +50,14 @@ class ResultSet implements Iterator
             $this->generator->next();
             $this->advance();
         }
-
-        ++$this->position;
     }
 
     public function key()
     {
+        if ($this->position === null) {
+            $this->advance();
+        }
+
         return $this->cache->key();
     }
 
@@ -72,9 +76,9 @@ class ResultSet implements Iterator
 
         if ($this->position === null) {
             $this->advance();
+        } else {
+            $this->position = 0;
         }
-
-        $this->position = 0;
     }
 
     protected function advance()
@@ -87,6 +91,12 @@ class ResultSet implements Iterator
 
         // Only required on PHP 5.6, 7+ does it automatically
         $this->cache->seek($this->generator->key());
+
+        if ($this->position === null) {
+            $this->position = 0;
+        } else {
+            $this->position += 1;
+        }
     }
 
     protected function yieldTraversable(Traversable $traversable)
