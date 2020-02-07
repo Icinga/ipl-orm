@@ -78,6 +78,19 @@ class SqlTest extends \PHPUnit\Framework\TestCase
         );
     }
 
+    public function testSelectFromModelWithExplicitAliasedColumns()
+    {
+        $model = new TestModelWithColumns();
+        $query = (new Query())
+            ->setModel($model)
+            ->columns(['test_lorem' => 'lorem']);
+
+        $this->assertSql(
+            'SELECT test.lorem AS test_lorem FROM test',
+            $query->assembleSelect()
+        );
+    }
+
     public function testSelectFromModelWithLimit()
     {
         $model = new TestModel();
@@ -213,11 +226,11 @@ SQL;
         $user = new User();
         $query = (new Query())
             ->setModel($user)
-            ->columns(['user.username', 'profile.given_name', 'profile.surname']);
+            ->columns(['user_username' => 'user.username', 'profile.given_name', 'profile.surname']);
 
         $sql = <<<'SQL'
 SELECT
-    user.username,
+    user.username AS user_username,
     user_profile.given_name AS user_profile_given_name, user_profile.surname AS user_profile_surname
 FROM
     user
