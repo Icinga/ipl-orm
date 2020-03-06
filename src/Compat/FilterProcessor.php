@@ -159,7 +159,9 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
 
                         if ($sign !== '!=' || $filter instanceof FilterOr) {
                             // Unequal (!=) comparisons chained with an OR are considered an XOR
-                            $count = count($filters);
+                            $count = count(array_unique(array_map(function (FilterExpression $f) {
+                                return $f->getExpression();
+                            }, $filters)));
                         } else {
                             // Unequal (!=) comparisons are transformed to equal (=) ones. If chained with an AND
                             // we just have to check for a single result as an object must not match any of these
