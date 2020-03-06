@@ -19,11 +19,12 @@ class UnionQuery extends Query
         if ($this->unions === null) {
             $this->unions = [];
 
-            foreach ($this->getModel()->getUnions() as list($target, $columns)) {
+            foreach ($this->getModel()->getUnions() as list($target, $relations, $columns)) {
                 $query = (new Query())
                     ->setDb($this->getDb())
                     ->setModel(new $target())
-                    ->columns($columns);
+                    ->columns($columns)
+                    ->with($relations);
 
                 $this->unions[] = $query;
             }
