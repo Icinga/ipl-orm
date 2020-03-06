@@ -145,6 +145,16 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
                 foreach ($filterCombinations as $column => $filters) {
                     // The relation path must be the same for all entries
                     $relationPath = $filters[0]->metaData['relationPath'];
+
+                    // In case the parent query also selects the relation we may not require a subquery.
+                    // Otherwise we form a cartesian product and get unwanted results back.
+                    $selectedByParent = isset($query->getWith()[$relationPath]);
+
+                    // Though, only single equal comparisons or those chained with an OR may be evaluated on the base
+                    if ($selectedByParent && $sign !== '!=' && (count($filters) === 1 || $filter instanceof FilterOr)) {
+                        continue;
+                    }
+
                     $relation = $query->getResolver()->resolveRelation($relationPath);
                     $subQuery = $query->createSubQuery($relation->getTarget(), $relationPath);
                     $subQuery->columns([new Expression('1')]);
