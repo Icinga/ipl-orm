@@ -183,7 +183,7 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
                         }
 
                         // Remove joins solely used for filter conditions
-                        foreach ($this->madeJoins as $joinPath => $madeBy) {
+                        foreach ($this->madeJoins as $joinPath => &$madeBy) {
                             $madeBy = array_filter($madeBy, function ($relationFilter) use ($child) {
                                 return $child->getId() !== $relationFilter->getId()
                                     && ! $child->hasId($relationFilter->getId());
