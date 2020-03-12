@@ -12,7 +12,7 @@
   "require": {
     "ext-pdo": "*",
     "ipl/sql": "dev-master",
-    "ipl/stdlib": ">=0.3.0",
+    "ipl/stdlib": ">=0.5.0",
     "php": ">=5.6.0"
   },
   "autoload": {
