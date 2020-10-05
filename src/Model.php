@@ -43,6 +43,23 @@ abstract class Model implements \ArrayAccess
     abstract public function getColumns();
 
     /**
+     * Get the model's column meta data
+     *
+     * Meta data is indexed by column names, values are either strings (labels) or arrays of this format:
+     *
+     * [
+     *  'label' => 'A Column',
+     *  'type'  => 'enum(y,n)'
+     * ]
+     *
+     * @return array
+     */
+    public function getMetaData()
+    {
+        return [];
+    }
+
+    /**
      * Get a query which is tied to this model and the given database connection
      *
      * @param Connection $db
