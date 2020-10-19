@@ -5,6 +5,7 @@ namespace ipl\Orm;
 use Generator;
 use InvalidArgumentException;
 use ipl\Orm\Relation\BelongsToMany;
+use ipl\Orm\Relation\HasOne;
 use ipl\Sql\ExpressionInterface;
 use OutOfBoundsException;
 use RuntimeException;
@@ -36,6 +37,9 @@ class Resolver
     /** @var SplObjectStorage Select columns from resolved models */
     protected $selectColumns;
 
+    /** @var SplObjectStorage Meta data from models and their direct relations */
+    protected $metaData;
+
     /** @var Relation[] Resolved relations */
     protected $resolvedRelations = [];
 
@@ -49,6 +53,7 @@ class Resolver
         $this->aliases = new SplObjectStorage();
         $this->selectableColumns = new SplObjectStorage();
         $this->selectColumns = new SplObjectStorage();
+        $this->metaData = new SplObjectStorage();
     }
 
     /**
@@ -210,6 +215,22 @@ class Resolver
         }
 
         return $this->selectColumns[$subject];
+    }
+
+    /**
+     * Get all meta data from the given model and its direct relations
+     *
+     * @param Model $subject
+     *
+     * @return array Column paths as keys (relative to $subject) and their meta data as values
+     */
+    public function getMetaData(Model $subject)
+    {
+        if (! $this->metaData->contains($subject)) {
+            $this->metaData->attach($subject, $this->collectMetaData($subject));
+        }
+
+        return $this->metaData[$subject];
     }
 
     /**
@@ -485,5 +506,50 @@ class Resolver
         }
 
         $this->selectableColumns->attach($subject, $selectable);
+    }
+
+    /**
+     * Collect all meta data from the given model and its direct relations
+     *
+     * @param Model $subject
+     *
+     * @return array
+     */
+    protected function collectMetaData(Model $subject)
+    {
+        $models = [$subject->getTableName() => $subject];
+        $this->collectDirectRelations($subject, $models, []);
+
+        $columns = [];
+        foreach ($models as $path => $model) {
+            /** @var Model $model */
+            foreach ($model->getMetaData() as $columnName => $columnMeta) {
+                $columns[$path . '.' . $columnName] = $columnMeta;
+            }
+        }
+
+        return $columns;
+    }
+
+    /**
+     * Collect all direct relations of the given model
+     *
+     * A direct relation is either a direct descendant of the model
+     * or a descendant of such related in a to-one cardinality.
+     *
+     * @param Model $subject
+     * @param array $models
+     * @param array $path
+     */
+    protected function collectDirectRelations(Model $subject, array &$models, array $path)
+    {
+        foreach ($this->getRelations($subject) as $name => $relation) {
+            /** @var Relation $relation */
+            if (empty($path) || $relation instanceof HasOne) {
+                $relationPath = array_merge($path, [$name]);
+                $models[join('.', $relationPath)] = $relation->getTarget();
+                $this->collectDirectRelations($relation->getTarget(), $models, $relationPath);
+            }
+        }
     }
 }
