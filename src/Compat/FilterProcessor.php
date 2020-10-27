@@ -125,7 +125,10 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
                 // We optimize only single expressions
                 if (isset($child->metaData) && $child instanceof FilterExpression) {
                     $relationPath = $child->metaData['relationPath'];
-                    if ($relationPath !== $query->getModel()->getTableName()) {
+                    if (
+                        $relationPath !== $query->getModel()->getTableName()
+                        && ! isset($query->getWith()[$relationPath])
+                    ) {
                         if (! $query->getResolver()->isDistinctRelation($relationPath)) {
                             if (isset($child->metaData['original'])) {
                                 $column = $child->metaData['original']->metaData['column'];
