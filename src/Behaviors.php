@@ -2,15 +2,20 @@
 
 namespace ipl\Orm;
 
+use ArrayIterator;
 use Icinga\Data\Filter\Filter;
 use Icinga\Data\Filter\FilterExpression;
 use ipl\Orm\Contract\PersistBehavior;
 use ipl\Orm\Contract\PropertyBehavior;
 use ipl\Orm\Contract\RetrieveBehavior;
 use ipl\Orm\Contract\RewriteFilterBehavior;
+use IteratorAggregate;
 
-class Behaviors
+class Behaviors implements IteratorAggregate
 {
+    /** @var array Registered behaviors */
+    protected $behaviors = [];
+
     /** @var RetrieveBehavior[] Registered retrieve behaviors */
     protected $retrieveBehaviors = [];
 
@@ -30,6 +35,8 @@ class Behaviors
      */
     public function add(Behavior $behavior)
     {
+        $this->behaviors[] = $behavior;
+
         if ($behavior instanceof PropertyBehavior) {
             $this->retrieveBehaviors[] = $behavior;
             $this->persistBehaviors[] = $behavior;
@@ -47,6 +54,16 @@ class Behaviors
         if ($behavior instanceof RewriteFilterBehavior) {
             $this->rewriteFilterBehaviors[] = $behavior;
         }
+    }
+
+    /**
+     * Iterate registered behaviors
+     *
+     * @return ArrayIterator
+     */
+    public function getIterator()
+    {
+        return new ArrayIterator($this->behaviors);
     }
 
     /**
