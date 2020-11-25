@@ -3,6 +3,7 @@
 namespace ipl\Orm;
 
 use ipl\Sql\Connection;
+use ipl\Stdlib\Properties;
 
 /**
  * Models represent single database tables or parts of it.
