@@ -40,8 +40,8 @@ class Resolver
     /** @var SplObjectStorage Meta data from models and their direct relations */
     protected $metaData;
 
-    /** @var Relation[] Resolved relations */
-    protected $resolvedRelations = [];
+    /** @var SplObjectStorage Resolved relations */
+    protected $resolvedRelations;
 
     /**
      * Create a new resolver
@@ -54,6 +54,7 @@ class Resolver
         $this->selectableColumns = new SplObjectStorage();
         $this->selectColumns = new SplObjectStorage();
         $this->metaData = new SplObjectStorage();
+        $this->resolvedRelations = new SplObjectStorage();
     }
 
     /**
@@ -353,16 +354,20 @@ class Resolver
      * Also resolves all other relations.
      *
      * @param string $path
+     * @param Model  $subject
      *
      * @return Relation
      */
-    public function resolveRelation($path)
+    public function resolveRelation($path, Model $subject = null)
     {
-        if (! isset($this->resolvedRelations[$path])) {
-            $this->resolvedRelations += iterator_to_array($this->resolveRelations($path));
+        $subject = $subject ?: $this->query->getModel();
+        if (! $this->resolvedRelations->contains($subject) || ! isset($this->resolvedRelations[$subject][$path])) {
+            foreach ($this->resolveRelations($path, $subject) as $_) {
+                // run and exhaust generator
+            }
         }
 
-        return $this->resolvedRelations[$path];
+        return $this->resolvedRelations[$subject][$path];
     }
 
     /**
@@ -371,14 +376,15 @@ class Resolver
      * Traverses the entire path and yields the path travelled so far as key and the relation as value.
      *
      * @param string $path
+     * @param Model  $subject
      *
      * @return Generator
      * @throws InvalidArgumentException In case $path is not fully qualified or a relation is unknown
      */
-    public function resolveRelations($path)
+    public function resolveRelations($path, Model $subject = null)
     {
         $relations = explode('.', $path);
-        $subject = $this->query->getModel();
+        $subject = $subject ?: $this->query->getModel();
 
         if ($relations[0] !== $subject->getTableName()) {
             throw new InvalidArgumentException(sprintf(
@@ -387,27 +393,33 @@ class Resolver
             ));
         }
 
+        $resolvedRelations = [];
+        if ($this->resolvedRelations->contains($subject)) {
+            $resolvedRelations = $this->resolvedRelations[$subject];
+        }
+
+        $target = $subject;
         $segments = [array_shift($relations)];
         foreach ($relations as $relationName) {
             $segments[] = $relationName;
             $relationPath = join('.', $segments);
 
-            if (isset($this->resolvedRelations[$relationPath])) {
-                $relation = $this->resolvedRelations[$relationPath];
+            if (isset($resolvedRelations[$relationPath])) {
+                $relation = $resolvedRelations[$relationPath];
             } else {
-                $subjectRelations = $this->getRelations($subject);
-                if (! $subjectRelations->has($relationName)) {
+                $targetRelations = $this->getRelations($target);
+                if (! $targetRelations->has($relationName)) {
                     throw new InvalidArgumentException(sprintf(
                         'Cannot join relation "%s" in model "%s". Relation not found.',
                         $relationName,
-                        get_class($subject)
+                        get_class($target)
                     ));
                 }
 
-                $relation = $subjectRelations->get($relationName);
-                $relation->setSource($subject);
+                $relation = $targetRelations->get($relationName);
+                $relation->setSource($target);
 
-                $this->resolvedRelations[$relationPath] = $relation;
+                $resolvedRelations[$relationPath] = $relation;
 
                 if ($relation instanceof BelongsToMany) {
                     $through = $relation->getThrough();
@@ -422,8 +434,10 @@ class Resolver
 
             yield $relationPath => $relation;
 
-            $subject = $relation->getTarget();
+            $target = $relation->getTarget();
         }
+
+        $this->resolvedRelations->attach($subject, $resolvedRelations);
     }
 
     /**
@@ -461,7 +475,7 @@ class Resolver
                         $relation = $this->qualifyPath($relation, $tableName);
 
                         $this->query->with($relation);
-                        $target = $this->resolvedRelations[$relation]->getTarget();
+                        $target = $this->resolvedRelations[$model][$relation]->getTarget();
 
                         break;
                     }
