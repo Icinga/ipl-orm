@@ -4,15 +4,13 @@ namespace ipl\Orm\Compat;
 
 use AppendIterator;
 use ArrayIterator;
-use Icinga\Data\Filter\Filter;
-use Icinga\Data\Filter\FilterAnd;
-use Icinga\Data\Filter\FilterChain;
-use Icinga\Data\Filter\FilterExpression;
-use Icinga\Data\Filter\FilterOr;
 use ipl\Orm\Query;
 use ipl\Orm\Relation;
 use ipl\Orm\UnionQuery;
 use ipl\Sql\Expression;
+use ipl\Sql\Filter\Exists;
+use ipl\Sql\Filter\NotExists;
+use ipl\Stdlib\Filter;
 
 class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
 {
@@ -20,7 +18,7 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
 
     protected $madeJoins = [];
 
-    public static function apply(Filter $filter, Query $query)
+    public static function apply(Filter\Rule $filter, Query $query)
     {
         if ($query instanceof UnionQuery) {
             foreach ($query->getUnions() as $union) {
@@ -30,11 +28,11 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
             return;
         }
 
-        if (! $filter->isEmpty()) {
+        if ($filter instanceof Filter\Condition || ! $filter->isEmpty()) {
             $filter = clone $filter;
-            if (! $filter->isChain()) {
+            if (! $filter instanceof Filter\Chain) {
                 // TODO: Quickfix, there's probably a better solution?
-                $filter = Filter::matchAll($filter);
+                $filter = Filter::all($filter);
             }
 
             $processor = new static();
@@ -58,24 +56,24 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
         }
     }
 
-    protected function requireAndResolveFilterColumns(Filter $filter, Query $query)
+    protected function requireAndResolveFilterColumns(Filter\Rule $filter, Query $query)
     {
-        if ($filter instanceof FilterExpression) {
-            if ($filter->getExpression() === '*') {
+        if ($filter instanceof Filter\Condition) {
+            if ($filter->getValue() === '*') {
                 // Wildcard only filters are ignored so stop early here to avoid joining a table for nothing
                 return;
             }
 
             $column = $filter->getColumn();
-            if (isset($filter->metaData)) {
-                $column = $filter->metaData['relationCol'];
+            if (isset($filter->relationCol)) {
+                $column = $filter->relationCol;
             }
 
             $resolver = $query->getResolver();
             $baseTable = $query->getModel()->getTableName();
             $column = $resolver->qualifyPath($column, $baseTable);
 
-            $filter->metaData['column'] = $column;
+            $filter->columnPath = $column;
 
             list($relationPath, $columnName) = preg_split('/\.(?=[^.]+$)/', $column);
 
@@ -95,10 +93,10 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
                 $subjectBehaviors = $resolver->getBehaviors($subject);
 
                 // Prepare filter as if it were final to allow full control for rewrite filter behaviors
-                $filter->setExpression($subjectBehaviors->persistProperty($filter->getExpression(), $columnName));
+                $filter->setValue($subjectBehaviors->persistProperty($filter->getValue(), $columnName));
                 $filter->setColumn($resolver->getAlias($subject) . '.' . $columnName);
-                $filter->metaData['relationCol'] = $columnName;
-                $filter->metaData['relationPath'] = $path;
+                $filter->relationCol = $columnName;
+                $filter->relationPath = $path;
 
                 $rewrittenFilter = $subjectBehaviors->rewriteCondition($filter, $path . '.');
                 if ($rewrittenFilter !== null) {
@@ -111,50 +109,52 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
                 $this->madeJoins[$relationPath][] = $filter;
             }
         } else {
-            /** @var FilterChain $filter */
+            /** @var Filter\Chain $filter */
 
             $subQueryFilters = [];
-            foreach ($filter->filters() as $child) {
-                /** @var Filter $child */
+            foreach ($filter as $child) {
+                /** @var Filter\Rule $child */
                 $rewrittenFilter = $this->requireAndResolveFilterColumns($child, $query);
                 if ($rewrittenFilter !== null) {
-                    $filter->replaceById($child->getId(), $rewrittenFilter);
+                    $filter->replace($child, $rewrittenFilter);
                     $child = $rewrittenFilter;
                 }
 
                 // We optimize only single expressions
-                if (isset($child->metaData) && $child instanceof FilterExpression) {
-                    $relationPath = $child->metaData['relationPath'];
+                if (isset($child->relationPath) && $child instanceof Filter\Condition) {
+                    $relationPath = $child->relationPath;
                     if (
                         $relationPath !== $query->getModel()->getTableName()
                         && ! isset($query->getWith()[$relationPath])
                     ) {
                         if (! $query->getResolver()->isDistinctRelation($relationPath)) {
-                            if (isset($child->metaData['original'])) {
-                                $column = $child->metaData['original']->metaData['column'];
-                                $sign = $child->metaData['original']->getSign();
+                            if (isset($child->original)) {
+                                $column = $child->original->columnPath;
+                                $child = $child->original;
                             } else {
                                 $column = $child->getColumn();
-                                $sign = $child->getSign();
                             }
 
-                            $subQueryFilters[$sign][$column][] = $child;
+                            $subQueryFilters[get_class($child)][$column][] = $child;
                         }
                     }
                 }
             }
 
-            foreach ($subQueryFilters as $sign => $filterCombinations) {
+            foreach ($subQueryFilters as $conditionClass => $filterCombinations) {
                 foreach ($filterCombinations as $column => $filters) {
                     // The relation path must be the same for all entries
-                    $relationPath = $filters[0]->metaData['relationPath'];
+                    $relationPath = $filters[0]->relationPath;
 
                     // In case the parent query also selects the relation we may not require a subquery.
                     // Otherwise we form a cartesian product and get unwanted results back.
                     $selectedByParent = isset($query->getWith()[$relationPath]);
 
                     // Though, only single equal comparisons or those chained with an OR may be evaluated on the base
-                    if ($selectedByParent && $sign !== '!=' && (count($filters) === 1 || $filter instanceof FilterOr)) {
+                    if (
+                        $selectedByParent && $conditionClass !== Filter\Unequal::class
+                        && (count($filters) === 1 || $filter instanceof Filter\Any)
+                    ) {
                         continue;
                     }
 
@@ -162,7 +162,7 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
                     $subQuery = $query->createSubQuery($relation->getTarget(), $relationPath);
                     $subQuery->columns([new Expression('1')]);
 
-                    if ($sign === '!=' || $filter instanceof FilterAnd) {
+                    if ($conditionClass === Filter\Unequal::class || $filter instanceof Filter\All) {
                         $targetKeys = join(',', array_values(
                             $subQuery->getResolver()->qualifyColumns(
                                 (array) $subQuery->getModel()->getKeyName(),
@@ -170,10 +170,10 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
                             )
                         ));
 
-                        if ($sign !== '!=' || $filter instanceof FilterOr) {
+                        if ($conditionClass !== Filter\Unequal::class || $filter instanceof Filter\Any) {
                             // Unequal (!=) comparisons chained with an OR are considered an XOR
-                            $count = count(array_unique(array_map(function (FilterExpression $f) {
-                                return $f->getExpression();
+                            $count = count(array_unique(array_map(function (Filter\Condition $f) {
+                                return $f->getValue();
                             }, $filters)));
                         } else {
                             // Unequal (!=) comparisons are transformed to equal (=) ones. If chained with an AND
@@ -186,22 +186,24 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
                     }
 
                     foreach ($filters as $i => $child) {
-                        if ($sign === '!=') {
+                        if ($conditionClass === Filter\Unequal::class) {
                             // Unequal comparisons must be negated since the sub-query is an inverse of the outer one
-                            if ($child->isExpression()) {
-                                $filters[$i] = $child->setSign('=');
-                                $filters[$i]->metaData = $child->metaData;
+                            if ($child instanceof Filter\Condition) {
+                                $negation = Filter::equal($child->getColumn(), $child->getValue());
+                                $negation->relationCol = $child->relationCol;
+                                $negation->columnPath = $child->columnPath;
+                                $negation->relationPath = $child->relationPath;
+                                $filters[$i] = $negation;
                             } else {
-                                $childId = $child->getId(); // Gets re-indexed otherwise
-                                $filters[$i] = Filter::not($child)->setId($childId);
+                                $filters[$i] = Filter::none($child);
                             }
                         }
 
                         // Remove joins solely used for filter conditions
                         foreach ($this->madeJoins as $joinPath => &$madeBy) {
                             $madeBy = array_filter($madeBy, function ($relationFilter) use ($child) {
-                                return $child->getId() !== $relationFilter->getId()
-                                    && ! $child->hasId($relationFilter->getId());
+                                return $child !== $relationFilter
+                                    && ($child instanceof Filter\Condition || ! $child->has($relationFilter));
                             });
 
                             if (empty($madeBy)) {
@@ -213,16 +215,16 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
                             }
                         }
 
-                        $filter->removeId($child->getId());
+                        $filter->remove($child);
                     }
 
-                    static::apply(Filter::matchAny($filters), $subQuery);
+                    static::apply(Filter::any(...$filters), $subQuery);
 
-                    $filter->addFilter(new FilterExpression(
-                        '',
-                        ($sign === '!=' ? 'NOT ' : '') . 'EXISTS',
-                        $subQuery->assembleSelect()->resetOrderBy()
-                    ));
+                    if ($conditionClass === Filter\Unequal::class) {
+                        $filter->add(new NotExists($subQuery->assembleSelect()->resetOrderBy()));
+                    } else {
+                        $filter->add(new Exists($subQuery->assembleSelect()->resetOrderBy()));
+                    }
                 }
             }
         }
