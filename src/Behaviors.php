@@ -3,12 +3,11 @@
 namespace ipl\Orm;
 
 use ArrayIterator;
-use Icinga\Data\Filter\Filter;
-use Icinga\Data\Filter\FilterExpression;
 use ipl\Orm\Contract\PersistBehavior;
 use ipl\Orm\Contract\PropertyBehavior;
 use ipl\Orm\Contract\RetrieveBehavior;
 use ipl\Orm\Contract\RewriteFilterBehavior;
+use ipl\Stdlib\Filter;
 use IteratorAggregate;
 
 class Behaviors implements IteratorAggregate
@@ -125,18 +124,18 @@ class Behaviors implements IteratorAggregate
     }
 
     /**
-     * Rewrite the given filter expression
+     * Rewrite the given filter condition
      *
-     * @param FilterExpression $expression
+     * @param Filter\Condition $condition
      * @param string           $relation Absolute path of the model
      *
-     * @return Filter|null
+     * @return Filter\Rule|null
      */
-    public function rewriteCondition(FilterExpression $expression, $relation = null)
+    public function rewriteCondition(Filter\Condition $condition, $relation = null)
     {
         $filter = null;
         foreach ($this->rewriteFilterBehaviors as $behavior) {
-            $replacement = $behavior->rewriteCondition($filter ?: $expression, $relation);
+            $replacement = $behavior->rewriteCondition($filter ?: $condition, $relation);
             if ($replacement !== null) {
                 $filter = $replacement;
             }
