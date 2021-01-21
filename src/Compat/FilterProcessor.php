@@ -124,7 +124,8 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
         } else {
             /** @var Filter\Chain $filter */
 
-            $subQueryFilters = [];
+            $subQueryGroups = [];
+            $outsourcedRules = [];
             foreach ($filter as $child) {
                 /** @var Filter\Rule $child */
                 $rewrittenFilter = $this->requireAndResolveFilterColumns($child, $query);
@@ -133,105 +134,164 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
                     $child = $rewrittenFilter;
                 }
 
-                // We optimize only single expressions
+                // We only optimize rules in a single level, nested chains are ignored
                 if ($child instanceof Filter\Condition) {
                     $relationPath = $child->metaData()->get('relationPath');
                     if (
                         $relationPath !== null
-                        && $relationPath !== $query->getModel()->getTableName()
-                        && ! isset($query->getWith()[$relationPath])
+                        && $relationPath !== $query->getModel()->getTableName() // Not the base table
+                        && ! isset($query->getWith()[$relationPath]) // Not a selected join
+                        && ! $query->getResolver()->isDistinctRelation($relationPath) // Not a to-one relation
                     ) {
-                        if (! $query->getResolver()->isDistinctRelation($relationPath)) {
-                            $subQueryFilters[get_class($child)][$child->getColumn()][] = $child;
-                        }
+                        $subQueryGroups[$relationPath][$child->getColumn()][get_class($child)][] = $child;
+
+                        // Register all rules that are going to be put into sub queries, for later cleanup
+                        $outsourcedRules[] = $child;
                     }
                 }
             }
 
-            foreach ($subQueryFilters as $conditionClass => $filterCombinations) {
-                foreach ($filterCombinations as $column => $filters) {
-                    // The relation path must be the same for all entries
-                    $relationPath = $filters[0]->metaData()->get('relationPath');
-
-                    // In case the parent query also selects the relation we may not require a subquery.
-                    // Otherwise we form a cartesian product and get unwanted results back.
-                    $selectedByParent = isset($query->getWith()[$relationPath]);
-
-                    // Though, only single equal comparisons or those chained with an OR may be evaluated on the base
-                    if (
-                        $selectedByParent && $conditionClass !== Filter\Unequal::class
-                        && (count($filters) === 1 || $filter instanceof Filter\Any)
-                    ) {
+            foreach ($subQueryGroups as $relationPath => $columns) {
+                $generalRules = [];
+                foreach ($columns as $column => & $comparisons) {
+                    if (isset($comparisons[Filter\Unequal::class])) {
+                        // If there's a unequal (!=) comparison for any column, all other comparisons (for the same
+                        // column) also need to be outsourced to their own sub query. Regardless of their amount of
+                        // occurrence. This is because `$generalRules` apply to all comparisons of such a column and
+                        // need to be applied to all sub queries.
                         continue;
+                    }
+
+                    // Single occurring columns don't need their own sub query
+                    foreach ($comparisons as $conditionClass => $rules) {
+                        if (count($rules) === 1) {
+                            $generalRules[] = $rules[0];
+                            unset($comparisons[$conditionClass]);
+                        }
+                    }
+
+                    if (empty($comparisons)) {
+                        unset($columns[$column]);
+                    }
+                }
+
+                $count = null;
+                $baseFilters = null;
+                $subQueryFilters = [];
+                foreach ($columns as $column => $comparisons) {
+                    foreach ($comparisons as $conditionClass => $rules) {
+                        if ($conditionClass === Filter\Unequal::class) {
+                            // Unequal comparisons are always put into their own sub query
+                            $subQueryFilters[] = [$rules, count($rules), true];
+                        } elseif (count($rules) > $count) {
+                            // If there are multiple columns used multiple times in the same relation, we have to decide
+                            // which to use as the primary comparison. That is the column that is used most often.
+                            if (! empty($baseFilters)) {
+                                array_push($generalRules, ...$baseFilters);
+                            }
+
+                            $count = count($rules);
+                            $baseFilters = $rules;
+                        } else {
+                            array_push($generalRules, ...$rules);
+                        }
+                    }
+                }
+
+                if (! empty($baseFilters) || ! empty($generalRules)) {
+                    $subQueryFilters[] = [$baseFilters ?: $generalRules, $count, false];
+                }
+
+                foreach ($subQueryFilters as list($filters, $count, $negate)) {
+                    $subQueryFilter = null;
+                    if ($count !== null) {
+                        $aggregateFilter = Filter::any();
+                        foreach ($filters as $condition) {
+                            if ($negate && $condition instanceof Filter\Unequal) {
+                                $negation = Filter::equal($condition->getColumn(), $condition->getValue());
+                                $negation->metaData()->merge($condition->metaData());
+                                $condition = $negation;
+                                $count = 1;
+                            }
+
+                            switch (true) {
+                                case $filter instanceof Filter\All:
+                                    $aggregateFilter->add(Filter::all($condition, ...$generalRules));
+                                    break;
+                                case $filter instanceof Filter\Any:
+                                    $aggregateFilter->add(Filter::any($condition, ...$generalRules));
+                                    break;
+                                case $filter instanceof Filter\None:
+                                    $aggregateFilter->add(Filter::none($condition, ...$generalRules));
+                                    break;
+                            }
+                        }
+
+                        $subQueryFilter = $aggregateFilter;
+                    } else {
+                        switch (true) {
+                            case $filter instanceof Filter\All:
+                                $subQueryFilter = Filter::all(...$filters);
+                                break;
+                            case $filter instanceof Filter\Any:
+                                $subQueryFilter = Filter::any(...$filters);
+                                break;
+                            case $filter instanceof Filter\None:
+                                $subQueryFilter = Filter::none(...$filters);
+                                break;
+                        }
                     }
 
                     $relation = $query->getResolver()->resolveRelation($relationPath);
                     $subQuery = $query->createSubQuery($relation->getTarget(), $relationPath);
                     $subQuery->columns([new Expression('1')]);
 
-                    if ($conditionClass === Filter\Unequal::class || $filter instanceof Filter\All) {
-                        $targetKeys = join(',', array_values(
-                            $subQuery->getResolver()->qualifyColumnsAndAliases(
-                                (array) $subQuery->getModel()->getKeyName(),
-                                $subQuery->getModel(),
-                                false
+                    if ($count !== null && ($negate || $filter instanceof Filter\All)) {
+                        $targetKeys = join(
+                            ',',
+                            array_values(
+                                $subQuery->getResolver()->qualifyColumnsAndAliases(
+                                    (array) $subQuery->getModel()->getKeyName(),
+                                    $subQuery->getModel(),
+                                    false
+                                )
                             )
-                        ));
-
-                        if ($conditionClass !== Filter\Unequal::class || $filter instanceof Filter\Any) {
-                            // Unequal (!=) comparisons chained with an OR are considered an XOR
-                            $count = count(array_unique(array_map(function (Filter\Condition $f) {
-                                return $f->getValue();
-                            }, $filters)));
-                        } else {
-                            // Unequal (!=) comparisons are transformed to equal (=) ones. If chained with an AND
-                            // we just have to check for a single result as an object must not match any of these
-                            // comparisons
-                            $count = 1;
-                        }
+                        );
 
                         $subQuery->getSelectBase()->having(["COUNT(DISTINCT $targetKeys) >= ?" => $count]);
                     }
 
-                    foreach ($filters as $i => $child) {
-                        if ($conditionClass === Filter\Unequal::class) {
-                            // Unequal comparisons must be negated since the sub-query is an inverse of the outer one
-                            if ($child instanceof Filter\Condition) {
-                                $negation = Filter::equal($child->getColumn(), $child->getValue());
-                                $negation->metaData()->merge($child->metaData());
-                                $filters[$i] = $negation;
-                            } else {
-                                $filters[$i] = Filter::none($child);
-                            }
-                        }
+                    $subQuery->filter($subQueryFilter);
 
-                        // Remove joins solely used for filter conditions
-                        foreach ($this->madeJoins as $joinPath => &$madeBy) {
-                            $madeBy = array_filter($madeBy, function ($relationFilter) use ($child) {
-                                return $child !== $relationFilter
-                                    && ($child instanceof Filter\Condition || ! $child->has($relationFilter));
-                            });
-
-                            if (empty($madeBy)) {
-                                if (! isset($this->baseJoins[$joinPath])) {
-                                    $query->omit($joinPath);
-                                }
-
-                                unset($this->madeJoins[$joinPath]);
-                            }
-                        }
-
-                        $filter->remove($child);
-                    }
-
-                    $subQuery->filter(Filter::any(...$filters));
-
-                    if ($conditionClass === Filter\Unequal::class) {
+                    if ($negate) {
                         $filter->add(new NotExists($subQuery->assembleSelect()->resetOrderBy()));
                     } else {
                         $filter->add(new Exists($subQuery->assembleSelect()->resetOrderBy()));
                     }
                 }
+            }
+
+            foreach ($outsourcedRules as $rule) {
+                // Remove joins solely used for filter conditions
+                foreach ($this->madeJoins as $joinPath => & $madeBy) {
+                    $madeBy = array_filter(
+                        $madeBy,
+                        function ($relationFilter) use ($rule) {
+                            return $rule !== $relationFilter
+                                && ($rule instanceof Filter\Condition || ! $rule->has($relationFilter));
+                        }
+                    );
+
+                    if (empty($madeBy)) {
+                        if (! isset($this->baseJoins[$joinPath])) {
+                            $query->omit($joinPath);
+                        }
+
+                        unset($this->madeJoins[$joinPath]);
+                    }
+                }
+
+                $filter->remove($rule);
             }
         }
     }
