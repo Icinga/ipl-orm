@@ -79,6 +79,10 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
     protected function requireAndResolveFilterColumns(Filter\Rule $filter, Query $query)
     {
         if ($filter instanceof Filter\Condition) {
+            if ($filter instanceof Exists || $filter instanceof NotExists) {
+                return;
+            }
+
             $resolver = $query->getResolver();
             $baseTable = $query->getModel()->getTableName();
             $column = $resolver->qualifyPath(
