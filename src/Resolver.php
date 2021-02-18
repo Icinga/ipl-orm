@@ -531,8 +531,18 @@ class Resolver
      */
     protected function collectMetaData(Model $subject)
     {
-        $models = [$subject->getTableName() => $subject];
-        $this->collectDirectRelations($subject, $models, []);
+        if ($subject instanceof UnionModel) {
+            $models = [];
+            foreach ($subject->getUnions() as $union) {
+                /** @var Model $unionModel */
+                $unionModel = new $union[0]();
+                $models[$unionModel->getTableName()] = $unionModel;
+                $this->collectDirectRelations($unionModel, $models, []);
+            }
+        } else {
+            $models = [$subject->getTableName() => $subject];
+            $this->collectDirectRelations($subject, $models, []);
+        }
 
         $columns = [];
         foreach ($models as $path => $model) {
