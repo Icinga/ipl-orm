@@ -569,8 +569,14 @@ class Resolver
     {
         foreach ($this->getRelations($subject) as $name => $relation) {
             /** @var Relation $relation */
-            if (empty($path) || $relation instanceof HasOne) {
-                $relationPath = array_merge($path, [$name]);
+            $isOne = $relation instanceof HasOne;
+            if (empty($path) || $isOne) {
+                $relationPath = [$name];
+                if ($isOne && empty($path)) {
+                    array_unshift($relationPath, $subject->getTableName());
+                }
+
+                $relationPath = array_merge($path, $relationPath);
                 $models[join('.', $relationPath)] = $relation->getTarget();
                 $this->collectDirectRelations($relation->getTarget(), $models, $relationPath);
             }
