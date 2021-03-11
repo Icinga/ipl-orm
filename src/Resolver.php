@@ -452,6 +452,12 @@ class Resolver
         $tableName = $model->getTableName();
 
         foreach ($columns as $alias => $column) {
+            if ($column instanceof ExpressionInterface) {
+                foreach ($this->requireAndResolveColumns($column->getColumns()) as $_) {
+                    // Only the expression itself is part of the select
+                }
+            }
+
             if ($column === '*' || $column instanceof ExpressionInterface) {
                 yield [$model, $alias, $column];
 
