@@ -111,6 +111,20 @@ class Query implements LimitOffsetInterface, OrderByInterface, Paginatable, Iter
     }
 
     /**
+     * Set the columns to select from the model
+     *
+     * @param array $columns
+     *
+     * @return $this
+     */
+    public function setColumns(array $columns)
+    {
+        $this->columns = $columns;
+
+        return $this;
+    }
+
+    /**
      * Set columns to select from the model
      *
      * Multiple calls to this method will not overwrite the previous set columns but append the columns to the query.
