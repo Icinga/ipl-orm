@@ -700,4 +700,14 @@ class Query implements LimitOffsetInterface, OrderByInterface, Paginatable, Iter
 
         return $this;
     }
+
+    public function __clone()
+    {
+        $this->resolver = clone $this->resolver;
+        $this->resolver->setQuery($this);
+
+        if ($this->selectBase !== null) {
+            $this->selectBase = clone $this->selectBase;
+        }
+    }
 }
