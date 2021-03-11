@@ -271,8 +271,9 @@ class Query implements LimitOffsetInterface, OrderByInterface, Paginatable, Iter
         $select = clone $this->getSelectBase();
         $resolver = $this->getResolver();
 
+        $allColumns = false;
         if (! empty($columns)) {
-            $resolved = $this->groupColumnsByTarget($resolver->requireAndResolveColumns($columns));
+            list($resolved, $allColumns) = $this->groupColumnsByTarget($resolver->requireAndResolveColumns($columns));
 
             if ($resolved->contains($model)) {
                 $select->columns(
@@ -289,15 +290,25 @@ class Query implements LimitOffsetInterface, OrderByInterface, Paginatable, Iter
                     )
                 );
             }
-        } else {
+        }
+
+        if (empty($columns) || $allColumns) {
             $select->columns(
-                $resolver->qualifyColumnsAndAliases($resolver->getSelectColumns($model), $model, false)
+                $resolver->qualifyColumnsAndAliases(
+                    $allColumns
+                        ? $resolver->requireRemainingColumns($select->getColumns(), $model)
+                        : $resolver->getSelectColumns($model),
+                    $model,
+                    false
+                )
             );
 
             foreach ($this->getWith() as $relation) {
                 $select->columns(
                     $resolver->qualifyColumnsAndAliases(
-                        $resolver->getSelectColumns($relation->getTarget()),
+                        $allColumns
+                            ? $resolver->requireRemainingColumns($select->getColumns(), $relation->getTarget())
+                            : $resolver->getSelectColumns($relation->getTarget()),
                         $relation->getTarget()
                     )
                 );
@@ -605,13 +616,19 @@ class Query implements LimitOffsetInterface, OrderByInterface, Paginatable, Iter
      *
      * @param Generator $columns
      *
-     * @return SplObjectStorage
+     * @return [SplObjectStorage, bool]
      */
     protected function groupColumnsByTarget(Generator $columns)
     {
         $columnStorage = new SplObjectStorage();
 
+        $allColumns = false;
         foreach ($columns as list($target, $alias, $column)) {
+            if ($column === '*') {
+                $allColumns = true;
+                continue;
+            }
+
             if (! $columnStorage->contains($target)) {
                 $resolved = new ArrayObject();
                 $columnStorage->attach($target, $resolved);
@@ -626,7 +643,7 @@ class Query implements LimitOffsetInterface, OrderByInterface, Paginatable, Iter
             }
         }
 
-        return $columnStorage;
+        return [$columnStorage, $allColumns];
     }
 
     /**
