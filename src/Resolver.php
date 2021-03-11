@@ -261,46 +261,41 @@ class Resolver
     }
 
     /**
-     * Qualify the given columns by the specified table name
+     * Qualify the given columns and aliases by the specified model
      *
-     * @param array  $columns
-     * @param string $tableName
-     *
-     * @return array
-     */
-    public function qualifyColumns(array $columns, $tableName)
-    {
-        $qualified = [];
-
-        foreach ($columns as $alias => $column) {
-            if (! $column instanceof ExpressionInterface) {
-                $column = $this->qualifyColumn($column, $tableName);
-            }
-
-            $qualified[$alias] = $column;
-        }
-
-        return $qualified;
-    }
-
-    /**
-     * Qualify the given columns and aliases by the specified table name
-     *
-     * @param array  $columns
-     * @param string $tableName
+     * @param array $columns
+     * @param Model $model
+     * @param bool $autoAlias Set an alias for columns which have none
      *
      * @return array
      */
-    public function qualifyColumnsAndAliases(array $columns, $tableName)
+    public function qualifyColumnsAndAliases(array $columns, Model $model, $autoAlias = true)
     {
-        $qualified = [];
+        $modelAlias = $this->getAlias($model);
 
+        $qualified = [];
         foreach ($columns as $alias => $column) {
             if (is_int($alias)) {
-                $alias = $this->qualifyColumnAlias($column, $tableName);
-                $column = $this->qualifyColumn($column, $tableName);
-            } elseif (! $column instanceof ExpressionInterface) {
-                $column = $this->qualifyColumn($column, $tableName);
+                // TODO: Provide an alias for expressions nonetheless? (One without won't be hydrated)
+                if ($autoAlias && ! $column instanceof ExpressionInterface) {
+                    $alias = $this->qualifyColumnAlias($column, $modelAlias);
+                }
+            } elseif (($dot = strrpos($alias, '.')) !== false) {
+                $modelAlias = $this->getAlias(
+                    $this->resolveRelation(substr($alias, 0, $dot), $model)->getTarget()
+                );
+                $alias = $this->qualifyColumnAlias(substr($alias, $dot + 1), $modelAlias);
+            }
+
+            if ($column instanceof ExpressionInterface) {
+                $column->setColumns($this->qualifyColumnsAndAliases($column->getColumns(), $model, $autoAlias));
+            } elseif (($dot = strrpos($column, '.')) !== false) {
+                $modelAlias = $this->getAlias(
+                    $this->resolveRelation(substr($column, 0, $dot), $model)->getTarget()
+                );
+                $column = $this->qualifyColumn(substr($column, $dot + 1), $modelAlias);
+            } else {
+                $column = $this->qualifyColumn($column, $modelAlias);
             }
 
             $qualified[$alias] = $column;

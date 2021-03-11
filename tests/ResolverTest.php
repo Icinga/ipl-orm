@@ -84,19 +84,33 @@ class ResolverTest extends TestCase
 
     public function testQualifyColumnsReturnsTheColumnsAndAliasesPrefixedWithTheGivenTableName()
     {
-        $tableName = 'profile';
+        $model = new Profile();
         $columns = [
             'user_id',
             'given_name',
             'surname'
         ];
         $qualified = [
-            'profile_user_id'    => 'profile.user_id',
-            'profile_given_name' => 'profile.given_name',
-            'profile_surname'    => 'profile.surname'
+            'profile.user_id',
+            'profile.given_name',
+            'profile.surname'
         ];
-        $resolver = new Resolver();
+        $query = (new Query())
+            ->setModel($model)
+            ->with('user');
 
-        $this->assertSame($qualified, $resolver->qualifyColumnsAndAliases($columns, $tableName));
+        $this->assertSame($qualified, $query->getResolver()->qualifyColumnsAndAliases($columns, $model, false));
+
+        $model = $query->getWith()['profile.user']->getTarget();
+        $columns = [
+            'username',
+            'password'
+        ];
+        $qualified = [
+            'profile_user_username' => 'profile_user.username',
+            'profile_user_password' => 'profile_user.password'
+        ];
+
+        $this->assertSame($qualified, $query->getResolver()->qualifyColumnsAndAliases($columns, $model));
     }
 }

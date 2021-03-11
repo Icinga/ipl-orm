@@ -262,7 +262,7 @@ class Query implements LimitOffsetInterface, OrderByInterface, Paginatable, Iter
 
             if ($resolved->contains($model)) {
                 $select->columns(
-                    $resolver->qualifyColumns($resolved[$model]->getArrayCopy(), $resolver->getAlias($model))
+                    $resolver->qualifyColumnsAndAliases($resolved[$model]->getArrayCopy(), $model, false)
                 );
                 $resolved->detach($model);
             }
@@ -271,20 +271,20 @@ class Query implements LimitOffsetInterface, OrderByInterface, Paginatable, Iter
                 $select->columns(
                     $resolver->qualifyColumnsAndAliases(
                         $resolved[$target]->getArrayCopy(),
-                        $resolver->getAlias($target)
+                        $target
                     )
                 );
             }
         } else {
             $select->columns(
-                $resolver->qualifyColumns($resolver->getSelectColumns($model), $resolver->getAlias($model))
+                $resolver->qualifyColumnsAndAliases($resolver->getSelectColumns($model), $model, false)
             );
 
             foreach ($this->getWith() as $relation) {
                 $select->columns(
                     $resolver->qualifyColumnsAndAliases(
                         $resolver->getSelectColumns($relation->getTarget()),
-                        $resolver->getAlias($relation->getTarget())
+                        $relation->getTarget()
                     )
                 );
             }
@@ -293,14 +293,14 @@ class Query implements LimitOffsetInterface, OrderByInterface, Paginatable, Iter
         $aggregateColumns = $model->getAggregateColumns();
         if ($aggregateColumns === true) {
             $select->groupBy(
-                $resolver->qualifyColumns((array) $model->getKeyName(), $resolver->getAlias($model))
+                $resolver->qualifyColumnsAndAliases((array) $model->getKeyName(), $model, false)
             );
         } elseif (! empty($aggregateColumns)) {
             $aggregateColumns = array_flip($aggregateColumns);
             foreach ($select->getColumns() as $alias => $column) {
                 if (isset($aggregateColumns[$alias])) {
                     $select->groupBy(
-                        $resolver->qualifyColumns((array) $model->getKeyName(), $resolver->getAlias($model))
+                        $resolver->qualifyColumnsAndAliases((array) $model->getKeyName(), $model, false)
                     );
 
                     break;
@@ -410,7 +410,7 @@ class Query implements LimitOffsetInterface, OrderByInterface, Paginatable, Iter
                 array_combine(
                     array_keys($resolver->qualifyColumnsAndAliases(
                         $targetColumns,
-                        $resolver->getAlias($relation->getTarget())
+                        $relation->getTarget()
                     )),
                     $targetColumns
                 ),

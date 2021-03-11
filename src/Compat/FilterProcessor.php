@@ -159,9 +159,10 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
 
                     if ($conditionClass === Filter\Unequal::class || $filter instanceof Filter\All) {
                         $targetKeys = join(',', array_values(
-                            $subQuery->getResolver()->qualifyColumns(
+                            $subQuery->getResolver()->qualifyColumnsAndAliases(
                                 (array) $subQuery->getModel()->getKeyName(),
-                                $subQuery->getResolver()->getAlias($subQuery->getModel())
+                                $subQuery->getModel(),
+                                false
                             )
                         ));
 
