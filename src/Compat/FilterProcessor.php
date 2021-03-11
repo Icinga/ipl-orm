@@ -59,11 +59,6 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
     protected function requireAndResolveFilterColumns(Filter\Rule $filter, Query $query)
     {
         if ($filter instanceof Filter\Condition) {
-            if ($filter->getValue() === '*') {
-                // Wildcard only filters are ignored so stop early here to avoid joining a table for nothing
-                return;
-            }
-
             $column = $filter->getColumn();
             if (isset($filter->relationCol)) {
                 $column = $filter->relationCol;
