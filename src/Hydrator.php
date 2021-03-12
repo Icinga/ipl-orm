@@ -143,6 +143,9 @@ class Hydrator
             $subject[$propertyName] = $target;
         }
 
+        // If there are any columns left, add them to the base model's properties
+        $properties += $data;
+
         if ($this->defaults !== null) {
             $properties += $this->defaults;
         }
@@ -162,11 +165,14 @@ class Hydrator
      *
      * @return array
      */
-    protected function extractAndMap(array $data, array $columnToPropertyMap)
+    protected function extractAndMap(array &$data, array $columnToPropertyMap)
     {
-        return array_combine(
-            array_intersect_key($columnToPropertyMap, $data),
-            array_intersect_key($data, $columnToPropertyMap)
-        );
+        $extracted = [];
+        foreach (array_intersect_key($columnToPropertyMap, $data) as $column => $property) {
+            $extracted[$property] = $data[$column];
+            unset($data[$column]);
+        }
+
+        return $extracted;
     }
 }
