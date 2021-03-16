@@ -224,7 +224,7 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
                         $filter->remove($child);
                     }
 
-                    static::apply(Filter::any(...$filters), $subQuery);
+                    $subQuery->filter(Filter::any(...$filters));
 
                     if ($conditionClass === Filter\Unequal::class) {
                         $filter->add(new NotExists($subQuery->assembleSelect()->resetOrderBy()));
