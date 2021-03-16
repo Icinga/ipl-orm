@@ -10,6 +10,7 @@ use ipl\Orm\UnionQuery;
 use ipl\Sql\Expression;
 use ipl\Sql\Filter\Exists;
 use ipl\Sql\Filter\NotExists;
+use ipl\Stdlib\Contract\Filterable;
 use ipl\Stdlib\Filter;
 
 class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
@@ -18,6 +19,16 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
 
     protected $madeJoins = [];
 
+    /**
+     * Require and resolve the filter rule and apply it on the query
+     *
+     * Note that this applies the filter to {@see Query::$selectBase}
+     * directly and bypasses {@see Query::$filter}. If this is not
+     * desired, utilize the {@see Filterable} functions of the query.
+     *
+     * @param Filter\Rule $filter
+     * @param Query $query
+     */
     public static function apply(Filter\Rule $filter, Query $query)
     {
         if ($query instanceof UnionQuery) {
@@ -31,19 +42,10 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
         if ($filter instanceof Filter\Condition || ! $filter->isEmpty()) {
             $filter = clone $filter;
             if (! $filter instanceof Filter\Chain) {
-                // TODO: Quickfix, there's probably a better solution?
                 $filter = Filter::all($filter);
             }
 
-            $processor = new static();
-            foreach ($query->getUtilize() as $path => $_) {
-                $processor->baseJoins[$path] = true;
-            }
-
-            $rewrittenFilter = $processor->requireAndResolveFilterColumns($filter, $query);
-            if ($rewrittenFilter !== null) {
-                $filter = $rewrittenFilter;
-            }
+            static::resolveFilter($filter, $query);
 
             $where = static::assembleFilter($filter);
 
@@ -54,6 +56,24 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
                 $query->getSelectBase()->where($conditions, $operator);
             }
         }
+    }
+
+    /**
+     * Resolve the filter in order to apply it on the query
+     *
+     * @param Filter\Chain $filter
+     * @param Query $query
+     *
+     * @return void
+     */
+    public static function resolveFilter(Filter\Chain $filter, Query $query)
+    {
+        $processor = new static();
+        foreach ($query->getUtilize() as $path => $_) {
+            $processor->baseJoins[$path] = true;
+        }
+
+        $processor->requireAndResolveFilterColumns($filter, $query);
     }
 
     protected function requireAndResolveFilterColumns(Filter\Rule $filter, Query $query)
