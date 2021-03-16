@@ -6,13 +6,13 @@ use ipl\Sql\Select;
 
 class UnionQuery extends Query
 {
-    /** @var array Underlying queries */
+    /** @var Query[] Underlying queries */
     private $unions;
 
     /**
      * Get the underlying queries
      *
-     * @return array
+     * @return Query[]
      */
     public function getUnions()
     {
