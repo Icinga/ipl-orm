@@ -11,6 +11,7 @@ use ipl\Sql\Expression;
 use ipl\Sql\Filter\Exists;
 use ipl\Sql\Filter\NotExists;
 use ipl\Stdlib\Contract\Filterable;
+use ipl\Stdlib\Filter\MetaDataProvider;
 use ipl\Stdlib\Filter;
 
 class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
@@ -76,7 +77,7 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
         $processor->requireAndResolveFilterColumns($filter, $query);
     }
 
-    protected function requireAndResolveFilterColumns(Filter\Rule $filter, Query $query)
+    protected function requireAndResolveFilterColumns(Filter\Rule $filter, Query $query, $forceOptimization = null)
     {
         if ($filter instanceof Filter\Condition) {
             if ($filter instanceof Exists || $filter instanceof NotExists) {
@@ -117,7 +118,8 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
 
                 $rewrittenFilter = $subjectBehaviors->rewriteCondition($filter, $path . '.');
                 if ($rewrittenFilter !== null) {
-                    return $this->requireAndResolveFilterColumns($rewrittenFilter, $query) ?: $rewrittenFilter;
+                    return $this->requireAndResolveFilterColumns($rewrittenFilter, $query, $forceOptimization)
+                        ?: $rewrittenFilter;
                 }
             }
 
@@ -128,24 +130,38 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
         } else {
             /** @var Filter\Chain $filter */
 
+            if ($filter->metaData()->has('forceOptimization')) {
+                // Rules can override the default behavior how it's determined that they need to be
+                // optimized. If it's done by a chain, it applies to all of its children.
+                $forceOptimization = $filter->metaData()->get('forceOptimization');
+            }
+
             $subQueryGroups = [];
             $outsourcedRules = [];
             foreach ($filter as $child) {
                 /** @var Filter\Rule $child */
-                $rewrittenFilter = $this->requireAndResolveFilterColumns($child, $query);
+                $rewrittenFilter = $this->requireAndResolveFilterColumns($child, $query, $forceOptimization);
                 if ($rewrittenFilter !== null) {
                     $filter->replace($child, $rewrittenFilter);
                     $child = $rewrittenFilter;
                 }
 
+                $optimizeChild = $forceOptimization;
+                if ($child instanceof MetaDataProvider && $child->metaData()->has('forceOptimization')) {
+                    $optimizeChild = $child->metaData()->get('forceOptimization');
+                }
+
                 // We only optimize rules in a single level, nested chains are ignored
-                if ($child instanceof Filter\Condition) {
+                if ($child instanceof Filter\Condition && $child->metaData()->has('relationPath')) {
                     $relationPath = $child->metaData()->get('relationPath');
                     if (
-                        $relationPath !== null
-                        && $relationPath !== $query->getModel()->getTableName() // Not the base table
-                        && ! isset($query->getWith()[$relationPath]) // Not a selected join
-                        && ! $query->getResolver()->isDistinctRelation($relationPath) // Not a to-one relation
+                        $optimizeChild !== null && $optimizeChild
+                        || (
+                            $optimizeChild === null
+                            && $relationPath !== $query->getModel()->getTableName() // Not the base table
+                            && ! isset($query->getWith()[$relationPath]) // Not a selected join
+                            && ! $query->getResolver()->isDistinctRelation($relationPath) // Not a to-one relation
+                        )
                     ) {
                         $subQueryGroups[$relationPath][$child->getColumn()][get_class($child)][] = $child;
 
