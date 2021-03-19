@@ -6,21 +6,26 @@ use ArrayObject;
 use Generator;
 use InvalidArgumentException;
 use ipl\Orm\Common\SortUtil;
+use ipl\Orm\Compat\FilterProcessor;
 use ipl\Sql\Connection;
 use ipl\Sql\LimitOffset;
 use ipl\Sql\LimitOffsetInterface;
 use ipl\Sql\OrderBy;
 use ipl\Sql\OrderByInterface;
 use ipl\Sql\Select;
+use ipl\Stdlib\Contract\Filterable;
 use ipl\Stdlib\Contract\Paginatable;
+use ipl\Stdlib\Filter;
+use ipl\Stdlib\Filters;
 use IteratorAggregate;
 use SplObjectStorage;
 
 /**
  * Represents a database query which is associated to a model and a database connection.
  */
-class Query implements LimitOffsetInterface, OrderByInterface, Paginatable, IteratorAggregate
+class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Paginatable, IteratorAggregate
 {
+    use Filters;
     use LimitOffset;
     use OrderBy;
 
@@ -120,6 +125,20 @@ class Query implements LimitOffsetInterface, OrderByInterface, Paginatable, Iter
     public function setColumns(array $columns)
     {
         $this->columns = $columns;
+
+        return $this;
+    }
+
+    /**
+     * Set the filter of the query
+     *
+     * @param Filter\Chain $filter
+     *
+     * @return $this
+     */
+    public function setFilter(Filter\Chain $filter)
+    {
+        $this->filter = $filter;
 
         return $this;
     }
@@ -331,6 +350,13 @@ class Query implements LimitOffsetInterface, OrderByInterface, Paginatable, Iter
                     break;
                 }
             }
+        }
+
+        $filter = clone $this->getFilter();
+        FilterProcessor::resolveFilter($filter, $this);
+        $where = FilterProcessor::assembleFilter($filter);
+        if ($where) {
+            $select->where(...array_reverse($where));
         }
 
         $joinedRelations = [];
@@ -705,6 +731,10 @@ class Query implements LimitOffsetInterface, OrderByInterface, Paginatable, Iter
     {
         $this->resolver = clone $this->resolver;
         $this->resolver->setQuery($this);
+
+        if ($this->filter !== null) {
+            $this->filter = clone $this->filter;
+        }
 
         if ($this->selectBase !== null) {
             $this->selectBase = clone $this->selectBase;
