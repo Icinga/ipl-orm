@@ -59,16 +59,14 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
     protected function requireAndResolveFilterColumns(Filter\Rule $filter, Query $query)
     {
         if ($filter instanceof Filter\Condition) {
-            $column = $filter->getColumn();
-            if (isset($filter->relationCol)) {
-                $column = $filter->relationCol;
-            }
-
             $resolver = $query->getResolver();
             $baseTable = $query->getModel()->getTableName();
-            $column = $resolver->qualifyPath($column, $baseTable);
+            $column = $resolver->qualifyPath(
+                $filter->metaData()->get('columnName', $filter->getColumn()),
+                $baseTable
+            );
 
-            $filter->columnPath = $column;
+            $filter->metaData()->set('columnPath', $column);
 
             list($relationPath, $columnName) = preg_split('/\.(?=[^.]+$)/', $column);
 
@@ -90,8 +88,8 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
                 // Prepare filter as if it were final to allow full control for rewrite filter behaviors
                 $filter->setValue($subjectBehaviors->persistProperty($filter->getValue(), $columnName));
                 $filter->setColumn($resolver->getAlias($subject) . '.' . $columnName);
-                $filter->relationCol = $columnName;
-                $filter->relationPath = $path;
+                $filter->metaData()->set('columnName', $columnName);
+                $filter->metaData()->set('relationPath', $path);
 
                 $rewrittenFilter = $subjectBehaviors->rewriteCondition($filter, $path . '.');
                 if ($rewrittenFilter !== null) {
@@ -116,21 +114,15 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
                 }
 
                 // We optimize only single expressions
-                if (isset($child->relationPath) && $child instanceof Filter\Condition) {
-                    $relationPath = $child->relationPath;
+                if ($child instanceof Filter\Condition) {
+                    $relationPath = $child->metaData()->get('relationPath');
                     if (
-                        $relationPath !== $query->getModel()->getTableName()
+                        $relationPath !== null
+                        && $relationPath !== $query->getModel()->getTableName()
                         && ! isset($query->getWith()[$relationPath])
                     ) {
                         if (! $query->getResolver()->isDistinctRelation($relationPath)) {
-                            if (isset($child->original)) {
-                                $column = $child->original->columnPath;
-                                $child = $child->original;
-                            } else {
-                                $column = $child->getColumn();
-                            }
-
-                            $subQueryFilters[get_class($child)][$column][] = $child;
+                            $subQueryFilters[get_class($child)][$child->getColumn()][] = $child;
                         }
                     }
                 }
@@ -139,7 +131,7 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
             foreach ($subQueryFilters as $conditionClass => $filterCombinations) {
                 foreach ($filterCombinations as $column => $filters) {
                     // The relation path must be the same for all entries
-                    $relationPath = $filters[0]->relationPath;
+                    $relationPath = $filters[0]->metaData()->get('relationPath');
 
                     // In case the parent query also selects the relation we may not require a subquery.
                     // Otherwise we form a cartesian product and get unwanted results back.
@@ -186,9 +178,7 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
                             // Unequal comparisons must be negated since the sub-query is an inverse of the outer one
                             if ($child instanceof Filter\Condition) {
                                 $negation = Filter::equal($child->getColumn(), $child->getValue());
-                                $negation->relationCol = $child->relationCol;
-                                $negation->columnPath = $child->columnPath;
-                                $negation->relationPath = $child->relationPath;
+                                $negation->metaData()->merge($child->metaData());
                                 $filters[$i] = $negation;
                             } else {
                                 $filters[$i] = Filter::none($child);
