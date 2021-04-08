@@ -12,6 +12,8 @@ class SqlTest extends \PHPUnit\Framework\TestCase
 
     public function testSelectFromModelWithJustAPrimaryKey()
     {
+        $this->setupTest();
+
         $model = new TestModelWithPrimaryKey();
         $query = (new Query())->setModel($model);
 
@@ -23,6 +25,8 @@ class SqlTest extends \PHPUnit\Framework\TestCase
 
     public function testSelectFromModelWithJustColumns()
     {
+        $this->setupTest();
+
         $model = new TestModelWithColumns();
         $query = (new Query())->setModel($model);
 
@@ -34,6 +38,8 @@ class SqlTest extends \PHPUnit\Framework\TestCase
 
     public function testSelectFromModelWithCompoundPrimaryKey()
     {
+        $this->setupTest();
+
         $model = new TestModelWithCompoundPrimaryKey();
         $query = (new Query())->setModel($model);
 
@@ -45,6 +51,8 @@ class SqlTest extends \PHPUnit\Framework\TestCase
 
     public function testSelectFromModelWithPrimaryKeyAndColumns()
     {
+        $this->setupTest();
+
         $model = new TestModelWithPrimaryKeyAndColumns();
         $query = (new Query())->setModel($model);
 
@@ -56,6 +64,8 @@ class SqlTest extends \PHPUnit\Framework\TestCase
 
     public function testSelectFromModelWithCompoundPrimaryKeyAndColumns()
     {
+        $this->setupTest();
+
         $model = new TestModelWithCompoundPrimaryKeyAndColumns();
         $query = (new Query())->setModel($model);
 
@@ -67,6 +77,8 @@ class SqlTest extends \PHPUnit\Framework\TestCase
 
     public function testSelectFromModelWithExplicitColumns()
     {
+        $this->setupTest();
+
         $model = new TestModelWithColumns();
         $query = (new Query())
             ->setModel($model)
@@ -80,6 +92,8 @@ class SqlTest extends \PHPUnit\Framework\TestCase
 
     public function testSelectFromModelWithExplicitAliasedColumns()
     {
+        $this->setupTest();
+
         $model = new TestModelWithColumns();
         $query = (new Query())
             ->setModel($model)
@@ -93,6 +107,8 @@ class SqlTest extends \PHPUnit\Framework\TestCase
 
     public function testSelectFromModelWithLimit()
     {
+        $this->setupTest();
+
         $model = new TestModelWithColumns();
         $query = (new Query())
             ->setModel($model)
@@ -107,6 +123,8 @@ class SqlTest extends \PHPUnit\Framework\TestCase
 
     public function testSelectFromModelWithOffset()
     {
+        $this->setupTest();
+
         $model = new TestModelWithColumns();
         $query = (new Query())
             ->setModel($model)
@@ -121,6 +139,8 @@ class SqlTest extends \PHPUnit\Framework\TestCase
 
     public function testSelectFromModelWithLimitAndOffset()
     {
+        $this->setupTest();
+
         $model = new TestModelWithColumns();
         $query = (new Query())
             ->setModel($model)
@@ -136,6 +156,8 @@ class SqlTest extends \PHPUnit\Framework\TestCase
 
     public function testSelectFromModelWithEagerLoadingOfASingleOneToOneRelation()
     {
+        $this->setupTest();
+
         $user = new User();
         $query = (new Query())
             ->setModel($user)
@@ -160,6 +182,8 @@ SQL;
 
     public function testSelectFromModelWithEagerLoadingOfASingleOneToOneRelationAndExplicitColumnsToSelect()
     {
+        $this->setupTest();
+
         $user = new User();
         $query = (new Query())
             ->setModel($user)
@@ -174,6 +198,8 @@ SQL;
 
     public function testSelectFromModelWithEagerLoadingOfASingleOneToOneRelationInversed()
     {
+        $this->setupTest();
+
         $profile = new Profile();
         $query = (new Query())
             ->setModel($profile)
@@ -198,6 +224,8 @@ SQL;
 
     public function testSelectFromModelWithEagerLoadingOfASingleManyToManyRelation()
     {
+        $this->setupTest();
+
         $user = new User();
         $query = (new Query())
             ->setModel($user)
@@ -223,6 +251,8 @@ SQL;
 
     public function testSelectFromModelWithExplicitColumnsToSelectAutomaticallyEagerLoadsTheCorrespondingRelation()
     {
+        $this->setupTest();
+
         $user = new User();
         $query = (new Query())
             ->setModel($user)
@@ -246,6 +276,8 @@ SQL;
 
     public function testSelectFromModelWithNestedWith()
     {
+        $this->setupTest();
+
         $group = new Group();
         $query = (new Query())
             ->setModel($group)
@@ -277,7 +309,7 @@ SQL;
         );
     }
 
-    public function setUp()
+    public function setupTest()
     {
         $this->queryBuilder = new QueryBuilder(new TestAdapter());
     }
