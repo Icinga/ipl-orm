@@ -8,6 +8,8 @@ class FixturesTest extends \PHPUnit\Framework\TestCase
 {
     public function testHydratedModelClassIsCorrect()
     {
+        $this->setupTest();
+
         foreach (User::on($this->db)->execute() as $user) {
             /** @noinspection PhpParamsInspection */
             $this->assertInstanceOf(User::class, $user);
@@ -16,6 +18,8 @@ class FixturesTest extends \PHPUnit\Framework\TestCase
 
     public function testHydratedRelationClassIsCorrect()
     {
+        $this->setupTest();
+
         foreach (User::on($this->db)->with('profile')->execute() as $user) {
             /** @noinspection PhpParamsInspection */
             $this->assertInstanceOf(Profile::class, $user->profile);
@@ -25,7 +29,7 @@ class FixturesTest extends \PHPUnit\Framework\TestCase
     /** @var Connection */
     protected $db;
 
-    public function setUp()
+    public function setupTest()
     {
         $db = new Connection([
             'db'     => 'sqlite',
