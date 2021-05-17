@@ -155,12 +155,14 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
                 if ($child instanceof Filter\Condition && $child->metaData()->has('relationPath')) {
                     $relationPath = $child->metaData()->get('relationPath');
                     if (
-                        $optimizeChild !== null && $optimizeChild
-                        || (
-                            $optimizeChild === null
-                            && $relationPath !== $query->getModel()->getTableName() // Not the base table
-                            && ! isset($query->getWith()[$relationPath]) // Not a selected join
-                            && ! $query->getResolver()->isDistinctRelation($relationPath) // Not a to-one relation
+                        $relationPath !== $query->getModel()->getTableName() // Not the base table
+                        && (
+                            $optimizeChild !== null && $optimizeChild
+                            || (
+                                $optimizeChild === null
+                                && ! isset($query->getWith()[$relationPath]) // Not a selected join
+                                && ! $query->getResolver()->isDistinctRelation($relationPath) // Not a to-one relation
+                            )
                         )
                     ) {
                         $subQueryGroups[$relationPath][$child->getColumn()][get_class($child)][] = $child;
