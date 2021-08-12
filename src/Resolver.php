@@ -285,6 +285,8 @@ class Resolver
                     $this->resolveRelation(substr($alias, 0, $dot), $model)->getTarget()
                 );
                 $alias = $this->qualifyColumnAlias(substr($alias, $dot + 1), $modelAlias);
+            } elseif ($model !== $this->query->getModel()) {
+                $alias = $this->qualifyColumnAlias($alias, $modelAlias);
             }
 
             if ($column instanceof ExpressionInterface) {
