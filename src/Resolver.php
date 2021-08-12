@@ -261,6 +261,38 @@ class Resolver
     }
 
     /**
+     * Qualify the given columns by the specified model
+     *
+     * @param array $columns
+     * @param Model $model
+     *
+     * @return array
+     */
+    public function qualifyColumns(array $columns, Model $model)
+    {
+        $modelAlias = $this->getAlias($model);
+
+        $qualified = [];
+        foreach ($columns as $alias => $column) {
+            if ($column instanceof ExpressionInterface) {
+                $column = clone $column; // The expression may be part of a model and those shouldn't change implicitly
+                $column->setColumns($this->qualifyColumns($column->getColumns(), $model));
+            } elseif (($dot = strrpos($column, '.')) !== false) {
+                $modelAlias = $this->getAlias(
+                    $this->resolveRelation(substr($column, 0, $dot), $model)->getTarget()
+                );
+                $column = $this->qualifyColumn(substr($column, $dot + 1), $modelAlias);
+            } else {
+                $column = $this->qualifyColumn($column, $modelAlias);
+            }
+
+            $qualified[$alias] = $column;
+        }
+
+        return $qualified;
+    }
+
+    /**
      * Qualify the given columns and aliases by the specified model
      *
      * @param array $columns

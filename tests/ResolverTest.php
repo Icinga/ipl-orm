@@ -99,6 +99,7 @@ class ResolverTest extends TestCase
             ->setModel($model)
             ->with('user');
 
+        $this->assertSame($qualified, $query->getResolver()->qualifyColumns($columns, $model));
         $this->assertSame($qualified, $query->getResolver()->qualifyColumnsAndAliases($columns, $model, false));
 
         $model = $query->getWith()['profile.user']->getTarget();
