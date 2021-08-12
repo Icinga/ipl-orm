@@ -322,7 +322,8 @@ class Resolver
             }
 
             if ($column instanceof ExpressionInterface) {
-                $column->setColumns($this->qualifyColumnsAndAliases($column->getColumns(), $model, $autoAlias));
+                $column = clone $column; // The expression may be part of a model and those shouldn't change implicitly
+                $column->setColumns($this->qualifyColumns($column->getColumns(), $model));
             } elseif (($dot = strrpos($column, '.')) !== false) {
                 $modelAlias = $this->getAlias(
                     $this->resolveRelation(substr($column, 0, $dot), $model)->getTarget()
