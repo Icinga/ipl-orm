@@ -293,21 +293,43 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
         $allColumns = false;
         if (! empty($columns)) {
             list($resolved, $allColumns) = $this->groupColumnsByTarget($resolver->requireAndResolveColumns($columns));
+            $customAliases = array_flip(array_filter(array_keys($columns), 'is_string'));
 
             if ($resolved->contains($model)) {
-                $select->columns(
-                    $resolver->qualifyColumnsAndAliases($resolved[$model]->getArrayCopy(), $model, false)
-                );
+                $modelColumns = $resolved[$model]->getArrayCopy();
+                if (! empty($customAliases)) {
+                    $customColumns = array_intersect_key($modelColumns, $customAliases);
+                    $modelColumns = array_diff_key($modelColumns, $customAliases);
+
+                    $select->columns($resolver->qualifyColumns($customColumns, $model));
+                }
+
+                if (! empty($modelColumns)) {
+                    $select->columns(
+                        $resolver->qualifyColumnsAndAliases($modelColumns, $model, false)
+                    );
+                }
+
                 $resolved->detach($model);
             }
 
             foreach ($resolved as $target) {
-                $select->columns(
-                    $resolver->qualifyColumnsAndAliases(
-                        $resolved[$target]->getArrayCopy(),
-                        $target
-                    )
-                );
+                $targetColumns = $resolved[$target]->getArrayCopy();
+                if (! empty($customAliases)) {
+                    $customColumns = array_intersect_key($targetColumns, $customAliases);
+                    $targetColumns = array_diff_key($targetColumns, $customAliases);
+
+                    $select->columns($resolver->qualifyColumns($customColumns, $target));
+                }
+
+                if (! empty($targetColumns)) {
+                    $select->columns(
+                        $resolver->qualifyColumnsAndAliases(
+                            $targetColumns,
+                            $target
+                        )
+                    );
+                }
             }
         }
 
