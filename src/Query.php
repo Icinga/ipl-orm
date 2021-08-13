@@ -336,10 +336,10 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
         if (empty($columns) || $allColumns) {
             $select->columns(
                 $resolver->qualifyColumnsAndAliases(
-                    $allColumns
+                    $resolver->requireAndResolveColumns($allColumns
                         ? $resolver->requireRemainingColumns($select->getColumns(), $model)
-                        : $resolver->getSelectColumns($model),
-                    $model,
+                        : $resolver->getSelectColumns($model)),
+                    null,
                     false
                 )
             );
@@ -347,10 +347,12 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
             foreach ($this->getWith() as $relation) {
                 $select->columns(
                     $resolver->qualifyColumnsAndAliases(
-                        $allColumns
-                            ? $resolver->requireRemainingColumns($select->getColumns(), $relation->getTarget())
-                            : $resolver->getSelectColumns($relation->getTarget()),
-                        $relation->getTarget()
+                        $resolver->requireAndResolveColumns(
+                            $allColumns
+                                ? $resolver->requireRemainingColumns($select->getColumns(), $relation->getTarget())
+                                : $resolver->getSelectColumns($relation->getTarget()),
+                            $relation->getTarget()
+                        )
                     )
                 );
             }
