@@ -272,10 +272,9 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
                         $targetKeys = join(
                             ',',
                             array_values(
-                                $subQuery->getResolver()->qualifyColumnsAndAliases(
+                                $subQuery->getResolver()->qualifyColumns(
                                     (array) $subQuery->getModel()->getKeyName(),
-                                    $subQuery->getModel(),
-                                    false
+                                    $subQuery->getModel()
                                 )
                             )
                         );

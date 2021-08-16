@@ -11,6 +11,8 @@ use OutOfBoundsException;
 use RuntimeException;
 use SplObjectStorage;
 
+use function ipl\Stdlib\get_php_type;
+
 /**
  * Column and relation resolver. Acts as glue between queries and models
  */
@@ -261,41 +263,113 @@ class Resolver
     }
 
     /**
-     * Qualify the given columns and aliases by the specified model
+     * Qualify the given columns by the specified model
      *
-     * @param array $columns
-     * @param Model $model
-     * @param bool $autoAlias Set an alias for columns which have none
+     * @param iterable $columns
+     * @param Model $model Leave null in case $columns is {@see Resolver::requireAndResolveColumns()}
      *
      * @return array
+     *
+     * @throws InvalidArgumentException If $columns is not iterable
+     * @throws InvalidArgumentException If $model is not passed and $columns is not a generator
      */
-    public function qualifyColumnsAndAliases(array $columns, Model $model, $autoAlias = true)
+    public function qualifyColumns($columns, Model $model = null)
     {
-        $modelAlias = $this->getAlias($model);
+        $target = $model ?: $this->query->getModel();
+        $targetAlias = $this->getAlias($target);
+
+        if (! is_iterable($columns)) {
+            throw new InvalidArgumentException(
+                sprintf('$columns is not iterable, got %s instead', get_php_type($columns))
+            );
+        }
 
         $qualified = [];
         foreach ($columns as $alias => $column) {
+            if (is_int($alias) && is_array($column)) {
+                // $columns is $this->requireAndResolveColumns()
+                list($target, $alias, $columnName) = $column;
+                $targetAlias = $this->getAlias($target);
+
+                // Thanks to PHP 5.6 where `list` is evaluated from right to left. It will extract
+                // the values for `$target` and `$alias` then from the third argument (`$column`).
+                $column = $columnName;
+            } elseif ($target === null) {
+                throw new InvalidArgumentException(
+                    'Passing no model is only possible if $columns is a generator'
+                );
+            }
+
+            if ($column instanceof ResolvedExpression) {
+                $column->setColumns($this->qualifyColumns($column->getResolvedColumns()));
+            } elseif ($column instanceof ExpressionInterface) {
+                $column = clone $column; // The expression may be part of a model and those shouldn't change implicitly
+                $column->setColumns($this->qualifyColumns($column->getResolvedColumns(), $target));
+            } else {
+                $column = $this->qualifyColumn($column, $targetAlias);
+            }
+
+            $qualified[$alias] = $column;
+        }
+
+        return $qualified;
+    }
+
+    /**
+     * Qualify the given columns and aliases by the specified model
+     *
+     * @param iterable $columns
+     * @param Model $model Leave null in case $columns is {@see Resolver::requireAndResolveColumns()}
+     * @param bool $autoAlias Set an alias for columns which have none
+     *
+     * @return array
+     *
+     * @throws InvalidArgumentException If $columns is not iterable
+     * @throws InvalidArgumentException If $model is not passed and $columns is not a generator
+     */
+    public function qualifyColumnsAndAliases($columns, Model $model = null, $autoAlias = true)
+    {
+        $target = $model ?: $this->query->getModel();
+        $targetAlias = $this->getAlias($target);
+
+        if (! is_iterable($columns)) {
+            throw new InvalidArgumentException(
+                sprintf('$columns is not iterable, got %s instead', get_php_type($columns))
+            );
+        }
+
+        $qualified = [];
+        foreach ($columns as $alias => $column) {
+            if (is_int($alias) && is_array($column)) {
+                // $columns is $this->requireAndResolveColumns()
+                list($target, $alias, $columnName) = $column;
+                $targetAlias = $this->getAlias($target);
+
+                // Thanks to PHP 5.6 where `list` is evaluated from right to left. It will extract
+                // the values for `$target` and `$alias` then from the third argument (`$column`).
+                $column = $columnName;
+            } elseif ($target === null) {
+                throw new InvalidArgumentException(
+                    'Passing no model is only possible if $columns is a generator'
+                );
+            }
+
             if (is_int($alias)) {
                 // TODO: Provide an alias for expressions nonetheless? (One without won't be hydrated)
                 if ($autoAlias && ! $column instanceof ExpressionInterface) {
-                    $alias = $this->qualifyColumnAlias($column, $modelAlias);
+                    $alias = $this->qualifyColumnAlias($column, $targetAlias);
                 }
-            } elseif (($dot = strrpos($alias, '.')) !== false) {
-                $modelAlias = $this->getAlias(
-                    $this->resolveRelation(substr($alias, 0, $dot), $model)->getTarget()
-                );
-                $alias = $this->qualifyColumnAlias(substr($alias, $dot + 1), $modelAlias);
+            } elseif ($target !== $this->query->getModel()) {
+                $alias = $this->qualifyColumnAlias($alias, $targetAlias);
             }
 
-            if ($column instanceof ExpressionInterface) {
-                $column->setColumns($this->qualifyColumnsAndAliases($column->getColumns(), $model, $autoAlias));
-            } elseif (($dot = strrpos($column, '.')) !== false) {
-                $modelAlias = $this->getAlias(
-                    $this->resolveRelation(substr($column, 0, $dot), $model)->getTarget()
-                );
-                $column = $this->qualifyColumn(substr($column, $dot + 1), $modelAlias);
+            if ($column instanceof ResolvedExpression) {
+                $column->setColumns($this->qualifyColumns($column->getResolvedColumns()));
+            } elseif ($column instanceof ExpressionInterface) {
+                $column = clone $column; // The expression may be part of a model and those shouldn't change implicitly
+                $column->setColumns($this->qualifyColumns($column->getColumns(), $target));
             } else {
-                $column = $this->qualifyColumn($column, $modelAlias);
+                $column = $this->qualifyColumn($column, $targetAlias);
             }
 
             $qualified[$alias] = $column;
@@ -441,36 +515,46 @@ class Resolver
      * Related models will be automatically added for eager-loading.
      *
      * @param array $columns
+     * @param Model $model
      *
      * @return Generator
      *
      * @throws RuntimeException If a column does not exist
      */
-    public function requireAndResolveColumns(array $columns)
+    public function requireAndResolveColumns(array $columns, Model $model = null)
     {
-        $model = $this->query->getModel();
+        $model = $model ?: $this->query->getModel();
         $tableName = $model->getTableName();
 
         foreach ($columns as $alias => $column) {
+            $columnPath = &$column;
             if ($column instanceof ExpressionInterface) {
-                foreach ($this->requireAndResolveColumns($column->getColumns()) as $_) {
-                    // Only the expression itself is part of the select
-                }
-            }
+                $column = new ResolvedExpression(
+                    $column,
+                    $this->requireAndResolveColumns($column->getColumns(), $model)
+                );
 
-            if ($column === '*' || $column instanceof ExpressionInterface) {
+                if (is_int($alias)) {
+                    // Scalar queries and such
+                    yield [$model, $alias, $column];
+
+                    continue;
+                }
+
+                $columnPath = &$alias;
+            } elseif ($column === '*') {
                 yield [$model, $alias, $column];
 
                 continue;
             }
 
-            $dot = strrpos($column, '.');
+            $dot = strrpos($columnPath, '.');
 
             switch (true) {
                 /** @noinspection PhpMissingBreakStatementInspection */
                 case $dot !== false:
-                    $relation = substr($column, 0, $dot);
-                    $column = substr($column, $dot + 1);
+                    $relation = substr($columnPath, 0, $dot);
+                    $columnPath = substr($columnPath, $dot + 1); // Updates also $column or $alias
 
                     if ($relation !== $tableName) {
                         $relation = $this->qualifyPath($relation, $tableName);
@@ -486,10 +570,14 @@ class Resolver
                     $target = $model;
             }
 
-            if (! $this->hasSelectableColumn($target, $column)) {
+            if (
+                ! $column instanceof ExpressionInterface
+                && ! $this->hasSelectableColumn($target, $columnPath)
+                && ! $this->hasSelectableColumn($target, $alias)
+            ) {
                 throw new RuntimeException(sprintf(
                     "Can't require column '%s' in model '%s'. Column not found.",
-                    $column,
+                    $columnPath,
                     get_class($target)
                 ));
             }

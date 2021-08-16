@@ -139,4 +139,30 @@ class QueryTest extends \PHPUnit\Framework\TestCase
             ->setModel(new User())
             ->with('invalid');
     }
+
+    public function testModelAliasesAreQualifiedButCustomAliasesAreNot()
+    {
+        $query = (new Query())
+            ->setModel(new Car())
+            ->with('passenger')
+            ->columns([
+                'gender' => 'manufacturer', // Collided previously with car_passenger_gender
+                'model_name_lowered' => 'model_name', // Only persists if custom aliases have preference
+                '*'
+            ]);
+
+        $this->assertSame(
+            [
+                'gender' => 'car.manufacturer',
+                'model_name_lowered' => 'car.model_name',
+                'car.id',
+                'car.model_name',
+                'car_passenger_id' => 'car_passenger.id',
+                'car_passenger_car_id' => 'car_passenger.car_id',
+                'car_passenger_name' => 'car_passenger.name',
+                'car_passenger_gender' => 'car_passenger.sex'
+            ],
+            $query->assembleSelect()->getColumns()
+        );
+    }
 }
