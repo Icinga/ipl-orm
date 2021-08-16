@@ -4,6 +4,8 @@ namespace ipl\Tests\Orm;
 
 use ipl\Orm\Query;
 use ipl\Orm\Resolver;
+use ipl\Sql\Expression;
+use ipl\Sql\QueryBuilder;
 use PHPUnit\Framework\TestCase;
 
 class ResolverTest extends TestCase
@@ -113,5 +115,24 @@ class ResolverTest extends TestCase
         ];
 
         $this->assertSame($qualified, $query->getResolver()->qualifyColumnsAndAliases($columns, $model));
+    }
+
+    public function testExpressionsCanBeResolvedAndQualified()
+    {
+        $model = new Car();
+        $columns = [
+            'expr1' => new Expression('COLLATE(%s, %s)', ['model_name', 'manufacturer']),
+            'expr2' => new Expression('SUM(CASE WHEN %s IS NULL THEN 0 ELSE 1 END)', ['passenger.name'])
+        ];
+        $query = (new Query())
+            ->setModel($model)
+            ->columns($columns);
+
+        $this->assertSame(
+            'SELECT (COLLATE(car.model_name, car.manufacturer)) AS expr1'
+            . ', (SUM(CASE WHEN car_passenger.name IS NULL THEN 0 ELSE 1 END)) AS expr2'
+            . ' FROM car INNER JOIN passenger car_passenger ON car_passenger.car_id = car.id',
+            (new QueryBuilder(new TestAdapter()))->assembleSelect($query->assembleSelect())[0]
+        );
     }
 }
