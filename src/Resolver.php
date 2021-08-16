@@ -570,7 +570,11 @@ class Resolver
                     $target = $model;
             }
 
-            if (! $column instanceof ExpressionInterface && ! $this->hasSelectableColumn($target, $columnPath)) {
+            if (
+                ! $column instanceof ExpressionInterface
+                && ! $this->hasSelectableColumn($target, $columnPath)
+                && ! $this->hasSelectableColumn($target, $alias)
+            ) {
                 throw new RuntimeException(sprintf(
                     "Can't require column '%s' in model '%s'. Column not found.",
                     $columnPath,
