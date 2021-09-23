@@ -15,7 +15,7 @@ abstract class Model implements \ArrayAccess
 
     final public function __construct(array $properties = null)
     {
-        if (! empty($this->properties)) {
+        if ($this->hasProperties()) {
             $this->setProperties($properties);
         }
 
