@@ -10,6 +10,9 @@ class ResultSet implements Iterator
 {
     protected $cache;
 
+    /** @var bool Whether cache is disabled */
+    protected $isCacheDisabled = false;
+
     protected $generator;
 
     protected $limit;
@@ -21,6 +24,20 @@ class ResultSet implements Iterator
         $this->cache = new ArrayIterator();
         $this->generator = $this->yieldTraversable($traversable);
         $this->limit = $limit;
+    }
+
+    /**
+     * Do not cache query result
+     *
+     * ResultSet instance can only be iterated once
+     *
+     * @return $this
+     */
+    public function disableCache()
+    {
+        $this->isCacheDisabled = true;
+
+        return $this;
     }
 
     public function hasMore()
@@ -39,14 +56,16 @@ class ResultSet implements Iterator
             $this->advance();
         }
 
-        return $this->cache->current();
+        return $this->isCacheDisabled ? $this->generator->current() : $this->cache->current();
     }
 
     public function next()
     {
-        $this->cache->next();
+        if (! $this->isCacheDisabled) {
+            $this->cache->next();
+        }
 
-        if (! $this->cache->valid()) {
+        if ($this->isCacheDisabled || ! $this->cache->valid()) {
             $this->generator->next();
             $this->advance();
         }
@@ -58,7 +77,7 @@ class ResultSet implements Iterator
             $this->advance();
         }
 
-        return $this->cache->key();
+        return $this->isCacheDisabled ? $this->generator->key() : $this->cache->key();
     }
 
     public function valid()
@@ -72,7 +91,9 @@ class ResultSet implements Iterator
 
     public function rewind()
     {
-        $this->cache->rewind();
+        if (! $this->isCacheDisabled) {
+            $this->cache->rewind();
+        }
 
         if ($this->position === null) {
             $this->advance();
@@ -87,10 +108,12 @@ class ResultSet implements Iterator
             return;
         }
 
-        $this->cache[$this->generator->key()] = $this->generator->current();
+        if (! $this->isCacheDisabled) {
+            $this->cache[$this->generator->key()] = $this->generator->current();
 
-        // Only required on PHP 5.6, 7+ does it automatically
-        $this->cache->seek($this->generator->key());
+            // Only required on PHP 5.6, 7+ does it automatically
+            $this->cache->seek($this->generator->key());
+        }
 
         if ($this->position === null) {
             $this->position = 0;
