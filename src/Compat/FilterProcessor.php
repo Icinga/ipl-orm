@@ -118,14 +118,19 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
 
                 $rewrittenFilter = $subjectBehaviors->rewriteCondition($filter, $path . '.');
                 if ($rewrittenFilter !== null) {
+                    $rewrittenFilter->metaData()->set(
+                        'originalRelationPath',
+                        substr($column, 0, strrpos($column, '.'))
+                    );
                     return $this->requireAndResolveFilterColumns($rewrittenFilter, $query, $forceOptimization)
                         ?: $rewrittenFilter;
                 }
             }
 
             if ($relationPath !== $baseTable) {
-                $query->utilize($relationPath);
-                $this->madeJoins[$relationPath][] = $filter;
+                $selectedPath = $filter->metaData()->get('originalRelationPath', $relationPath);
+                $query->utilize($selectedPath);
+                $this->madeJoins[$selectedPath][] = $filter;
             }
         } else {
             /** @var Filter\Chain $filter */
@@ -154,14 +159,15 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
                 // We only optimize rules in a single level, nested chains are ignored
                 if ($child instanceof Filter\Condition && $child->metaData()->has('relationPath')) {
                     $relationPath = $child->metaData()->get('relationPath');
+                    $selectedPath = $child->metaData()->get('originalRelationPath', $relationPath);
                     if (
                         $relationPath !== $query->getModel()->getTableName() // Not the base table
                         && (
                             $optimizeChild !== null && $optimizeChild
                             || (
                                 $optimizeChild === null
-                                && ! isset($query->getWith()[$relationPath]) // Not a selected join
-                                && ! $query->getResolver()->isDistinctRelation($relationPath) // Not a to-one relation
+                                && ! isset($query->getWith()[$selectedPath]) // Not a selected join
+                                && ! $query->getResolver()->isDistinctRelation($selectedPath) // Not a to-one relation
                             )
                         )
                     ) {

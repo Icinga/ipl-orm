@@ -6,6 +6,7 @@ use ArrayIterator;
 use ipl\Orm\Contract\PersistBehavior;
 use ipl\Orm\Contract\PropertyBehavior;
 use ipl\Orm\Contract\RetrieveBehavior;
+use ipl\Orm\Contract\RewriteBehavior;
 use ipl\Orm\Contract\RewriteFilterBehavior;
 use ipl\Stdlib\Filter;
 use IteratorAggregate;
@@ -26,6 +27,9 @@ class Behaviors implements IteratorAggregate
 
     /** @var RewriteFilterBehavior[] Registered rewrite filter behaviors */
     protected $rewriteFilterBehaviors = [];
+
+    /** @var RewriteBehavior[] Registered rewrite behaviors */
+    protected $rewriteBehaviors = [];
 
     /**
      * Add a behavior
@@ -52,6 +56,10 @@ class Behaviors implements IteratorAggregate
 
         if ($behavior instanceof RewriteFilterBehavior) {
             $this->rewriteFilterBehaviors[] = $behavior;
+        }
+
+        if ($behavior instanceof RewriteBehavior) {
+            $this->rewriteBehaviors[] = $behavior;
         }
     }
 
@@ -134,7 +142,7 @@ class Behaviors implements IteratorAggregate
     public function rewriteCondition(Filter\Condition $condition, $relation = null)
     {
         $filter = null;
-        foreach ($this->rewriteFilterBehaviors as $behavior) {
+        foreach (array_merge($this->rewriteFilterBehaviors, $this->rewriteBehaviors) as $behavior) {
             $replacement = $behavior->rewriteCondition($filter ?: $condition, $relation);
             if ($replacement !== null) {
                 $filter = $replacement;
@@ -142,5 +150,26 @@ class Behaviors implements IteratorAggregate
         }
 
         return $filter;
+    }
+
+    /**
+     * Rewrite the given column path
+     *
+     * @param string $path
+     * @param string $relation Absolute path of the model
+     *
+     * @return string|null
+     */
+    public function rewritePath($path, $relation = null)
+    {
+        $newPath = null;
+        foreach ($this->rewriteBehaviors as $behavior) {
+            $replacement = $behavior->rewritePath($newPath ?: $path, $relation);
+            if ($replacement !== null) {
+                $newPath = $replacement;
+            }
+        }
+
+        return $newPath;
     }
 }

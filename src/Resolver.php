@@ -5,6 +5,7 @@ namespace ipl\Orm;
 use Generator;
 use InvalidArgumentException;
 use ipl\Orm\Relation\BelongsToMany;
+use ipl\Orm\Relation\BelongsToMuchMore;
 use ipl\Orm\Relation\HasOne;
 use ipl\Sql\ExpressionInterface;
 use OutOfBoundsException;
@@ -107,6 +108,11 @@ class Resolver
         }
 
         return $this->behaviors[$model];
+    }
+
+    public function hasAlias(Model $model)
+    {
+        return $this->aliases->contains($model);
     }
 
     /**
@@ -469,7 +475,9 @@ class Resolver
 
         $target = $subject;
         $segments = [array_shift($relations)];
-        foreach ($relations as $relationName) {
+        while (! empty($relations)) {
+            $relationName = array_shift($relations);
+
             $segments[] = $relationName;
             $relationPath = join('.', $segments);
 
@@ -478,27 +486,42 @@ class Resolver
             } else {
                 $targetRelations = $this->getRelations($target);
                 if (! $targetRelations->has($relationName)) {
-                    throw new InvalidArgumentException(sprintf(
-                        'Cannot join relation "%s" in model "%s". Relation not found.',
-                        $relationName,
-                        get_class($target)
-                    ));
-                }
+                    $redirect = $this->getBehaviors($target)->rewritePath(
+                        $relationName . (empty($relations) ? '' : '.' . join('.', $relations))
+                    );
+                    if ($redirect !== null) {
+                        $basePath = join('.', array_slice($segments, 0, -1));
+                        $path = $basePath . '.' . $redirect;
+                        $relation = new BelongsToMuchMore();
+                        $relation->setSource($target);
+                        $relation->setRelations($this->resolveRelations($path, $subject), $basePath);
+                        $relation->setTarget($this->resolveRelation($path, $subject)->getTarget());
+                        $this->setAlias($relation->getTarget(), join('_', $segments));
+                    } else {
+                        throw new InvalidArgumentException(sprintf(
+                            'Cannot join relation "%s" in model "%s". Relation not found.',
+                            $relationName,
+                            get_class($target)
+                        ));
+                    }
+                } else {
+                    $relation = $targetRelations->get($relationName);
+                    $relation->setSource($target);
 
-                $relation = $targetRelations->get($relationName);
-                $relation->setSource($target);
+                    if ($relation instanceof BelongsToMany) {
+                        $through = $relation->getThrough();
+                        $this->setAlias($through, join('_', array_merge(
+                            array_slice($segments, 0, -1),
+                            [$through->getTableName()]
+                        )));
+                    }
+
+                    if (! $this->hasAlias($relation->getTarget())) {
+                        $this->setAlias($relation->getTarget(), join('_', $segments));
+                    }
+                }
 
                 $resolvedRelations[$relationPath] = $relation;
-
-                if ($relation instanceof BelongsToMany) {
-                    $through = $relation->getThrough();
-                    $this->setAlias($through, join('_', array_merge(
-                        array_slice($segments, 0, -1),
-                        [$through->getTableName()]
-                    )));
-                }
-
-                $this->setAlias($relation->getTarget(), join('_', $segments));
             }
 
             yield $relationPath => $relation;
