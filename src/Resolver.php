@@ -5,7 +5,6 @@ namespace ipl\Orm;
 use Generator;
 use InvalidArgumentException;
 use ipl\Orm\Relation\BelongsToMany;
-use ipl\Orm\Relation\BelongsToMuchMore;
 use ipl\Orm\Relation\HasOne;
 use ipl\Sql\ExpressionInterface;
 use OutOfBoundsException;
@@ -108,11 +107,6 @@ class Resolver
         }
 
         return $this->behaviors[$model];
-    }
-
-    public function hasAlias(Model $model)
-    {
-        return $this->aliases->contains($model);
     }
 
     /**
@@ -366,7 +360,12 @@ class Resolver
                     $alias = $this->qualifyColumnAlias($column, $targetAlias);
                 }
             } elseif ($target !== $this->query->getModel()) {
-                $alias = $this->qualifyColumnAlias($alias, $targetAlias);
+                if (strpos($alias, '.') !== false) {
+                    // This is safe, because custom aliases won't be qualified
+                    $alias = str_replace('.', '_', $alias);
+                } else {
+                    $alias = $this->qualifyColumnAlias($alias, $targetAlias);
+                }
             }
 
             if ($column instanceof ResolvedExpression) {
@@ -474,10 +473,17 @@ class Resolver
         }
 
         $target = $subject;
+        $pathBeingResolved = null;
         $segments = [array_shift($relations)];
         while (! empty($relations)) {
-            $relationName = array_shift($relations);
+            $newPath = $this->getBehaviors($target)
+                ->rewritePath(join('.', $relations), join('.', $segments));
+            if ($newPath !== null) {
+                $relations = explode('.', $newPath);
+                $pathBeingResolved = $path;
+            }
 
+            $relationName = array_shift($relations);
             $segments[] = $relationName;
             $relationPath = join('.', $segments);
 
@@ -486,47 +492,36 @@ class Resolver
             } else {
                 $targetRelations = $this->getRelations($target);
                 if (! $targetRelations->has($relationName)) {
-                    $redirect = $this->getBehaviors($target)->rewritePath(
-                        $relationName . (empty($relations) ? '' : '.' . join('.', $relations))
-                    );
-                    if ($redirect !== null) {
-                        $basePath = join('.', array_slice($segments, 0, -1));
-                        $path = $basePath . '.' . $redirect;
-                        $relation = new BelongsToMuchMore();
-                        $relation->setSource($target);
-                        $relation->setRelations($this->resolveRelations($path, $subject), $basePath);
-                        $relation->setTarget($this->resolveRelation($path, $subject)->getTarget());
-                        $this->setAlias($relation->getTarget(), join('_', $segments));
-                    } else {
-                        throw new InvalidArgumentException(sprintf(
-                            'Cannot join relation "%s" in model "%s". Relation not found.',
-                            $relationName,
-                            get_class($target)
-                        ));
-                    }
-                } else {
-                    $relation = $targetRelations->get($relationName);
-                    $relation->setSource($target);
-
-                    if ($relation instanceof BelongsToMany) {
-                        $through = $relation->getThrough();
-                        $this->setAlias($through, join('_', array_merge(
-                            array_slice($segments, 0, -1),
-                            [$through->getTableName()]
-                        )));
-                    }
-
-                    if (! $this->hasAlias($relation->getTarget())) {
-                        $this->setAlias($relation->getTarget(), join('_', $segments));
-                    }
+                    throw new InvalidArgumentException(sprintf(
+                        'Cannot join relation "%s" in model "%s". Relation not found.',
+                        $relationName,
+                        get_class($target)
+                    ));
                 }
 
+                $relation = $targetRelations->get($relationName);
+                $relation->setSource($target);
+
                 $resolvedRelations[$relationPath] = $relation;
+
+                if ($relation instanceof BelongsToMany) {
+                    $through = $relation->getThrough();
+                    $this->setAlias($through, join('_', array_merge(
+                        array_slice($segments, 0, -1),
+                        [$through->getTableName()]
+                    )));
+                }
+
+                $this->setAlias($relation->getTarget(), join('_', $segments));
             }
 
             yield $relationPath => $relation;
 
             $target = $relation->getTarget();
+        }
+
+        if ($pathBeingResolved !== null) {
+            $resolvedRelations[$pathBeingResolved] = $relation;
         }
 
         $this->resolvedRelations->attach($subject, $resolvedRelations);
@@ -576,21 +571,35 @@ class Resolver
             switch (true) {
                 /** @noinspection PhpMissingBreakStatementInspection */
                 case $dot !== false:
-                    $relation = substr($columnPath, 0, $dot);
+                    $hydrationPath = substr($columnPath, 0, $dot);
                     $columnPath = substr($columnPath, $dot + 1); // Updates also $column or $alias
 
-                    if ($relation !== $tableName) {
-                        $relation = $this->qualifyPath($relation, $tableName);
+                    if ($hydrationPath !== $tableName) {
+                        $hydrationPath = $this->qualifyPath($hydrationPath, $tableName);
 
-                        $this->query->with($relation);
-                        $target = $this->resolvedRelations[$model][$relation]->getTarget();
+                        foreach ($this->resolveRelations($hydrationPath) as $relationPath => $relation) {
+                            // run and exhaust generator
+                        }
+
+                        if (is_int($alias) && $relationPath !== $hydrationPath) {
+                            // If the actual relation is resolved differently,
+                            // ensure the hydration path is not an unexpected one
+                            $alias = "$hydrationPath.$column";
+                        }
+
+                        $this->query->with($hydrationPath);
+                        $target = $relation->getTarget();
 
                         break;
                     }
                 // Move to default
                 default:
-                    $relation = null;
+                    $relationPath = null;
                     $target = $model;
+            }
+
+            if (! $column instanceof ExpressionInterface) {
+                $column = $this->getBehaviors($target)->rewriteColumn($column, $relationPath) ?: $column;
             }
 
             if (

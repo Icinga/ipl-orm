@@ -135,14 +135,14 @@ class Behaviors implements IteratorAggregate
      * Rewrite the given filter condition
      *
      * @param Filter\Condition $condition
-     * @param string           $relation Absolute path of the model
+     * @param string           $relation Absolute path (with a trailing dot) of the model
      *
      * @return Filter\Rule|null
      */
     public function rewriteCondition(Filter\Condition $condition, $relation = null)
     {
         $filter = null;
-        foreach (array_merge($this->rewriteFilterBehaviors, $this->rewriteBehaviors) as $behavior) {
+        foreach ($this->rewriteFilterBehaviors as $behavior) {
             $replacement = $behavior->rewriteCondition($filter ?: $condition, $relation);
             if ($replacement !== null) {
                 $filter = $replacement;
@@ -153,7 +153,7 @@ class Behaviors implements IteratorAggregate
     }
 
     /**
-     * Rewrite the given column path
+     * Rewrite the given relation path
      *
      * @param string $path
      * @param string $relation Absolute path of the model
@@ -171,5 +171,26 @@ class Behaviors implements IteratorAggregate
         }
 
         return $newPath;
+    }
+
+    /**
+     * Rewrite the given column
+     *
+     * @param string $column
+     * @param string $relation Absolute path of the model
+     *
+     * @return string|null
+     */
+    public function rewriteColumn($column, $relation = null)
+    {
+        $newColumn = null;
+        foreach ($this->rewriteBehaviors as $behavior) {
+            $replacement = $behavior->rewriteColumn($newColumn ?: $column, $relation);
+            if ($replacement !== null) {
+                $newColumn = $replacement;
+            }
+        }
+
+        return $newColumn;
     }
 }
