@@ -2,6 +2,7 @@
 
 namespace ipl\Tests\Orm;
 
+use InvalidArgumentException;
 use ipl\Orm\Relation;
 
 class RelationTest extends \PHPUnit\Framework\TestCase
@@ -80,9 +81,10 @@ class RelationTest extends \PHPUnit\Framework\TestCase
         $this->assertSame($targetClass, $relation->getTargetClass());
     }
 
-    /** @expectedException \InvalidArgumentException */
     public function testSetTargetClassThrowsInvalidArgumentExceptionIfNotString()
     {
+        $this->expectException(InvalidArgumentException::class);
+
         (new Relation())->setTargetClass(new TestModel());
     }
 
@@ -90,7 +92,7 @@ class RelationTest extends \PHPUnit\Framework\TestCase
     {
         $candidateKey = Relation::getDefaultCandidateKey(new TestModel());
 
-        $this->assertInternalType('array', $candidateKey);
+        $this->assertTrue(is_array($candidateKey));
         $this->assertEmpty($candidateKey);
     }
 
@@ -112,7 +114,7 @@ class RelationTest extends \PHPUnit\Framework\TestCase
     {
         $foreignKey = Relation::getDefaultForeignKey(new TestModel());
 
-        $this->assertInternalType('array', $foreignKey);
+        $this->assertTrue(is_array($foreignKey));
         $this->assertEmpty($foreignKey);
     }
 

@@ -2,6 +2,7 @@
 
 namespace ipl\Tests\Orm;
 
+use InvalidArgumentException;
 use ipl\Orm\Relation\BelongsTo;
 use ipl\Orm\Relation\BelongsToMany;
 use ipl\Orm\Relation\HasMany;
@@ -21,9 +22,10 @@ class RelationsTest extends \PHPUnit\Framework\TestCase
         $this->assertSame($targetClass, $relation->getTargetClass());
     }
 
-    /** @expectedException \InvalidArgumentException */
     public function testCreateThrowsInvalidArgumentExceptionIfClassIsNotASubclassOfRelation()
     {
+        $this->expectException(InvalidArgumentException::class);
+
         (new Relations())->create(TestModel::class, 'test', TestModel::class);
     }
 
@@ -44,9 +46,10 @@ class RelationsTest extends \PHPUnit\Framework\TestCase
         $this->assertFalse($relations->has('test'));
     }
 
-    /** @expectedException \InvalidArgumentException */
     public function testAddThrowsInvalidArgumentExceptionIfRelationWithTheSameNameAlreadyExists()
     {
+        $this->expectException(InvalidArgumentException::class);
+
         $relations = new Relations();
         $relation = $relations->create(TestRelation::class, 'test', TestModel::class);
         $relations->add($relation);
@@ -62,9 +65,10 @@ class RelationsTest extends \PHPUnit\Framework\TestCase
         $this->assertSame($relation, $relations->get('test'));
     }
 
-    /** @expectedException \InvalidArgumentException */
     public function testGetThrowsInvalidArgumentExceptionIfRelationDoesNotExist()
     {
+        $this->expectException(InvalidArgumentException::class);
+
         (new Relations())->get('test');
     }
 

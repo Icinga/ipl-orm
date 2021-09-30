@@ -37,7 +37,7 @@ class ResolverTest extends TestCase
         $resolver = new Resolver();
         $columns = $resolver->getSelectColumns($model);
 
-        $this->assertInternalType('array', $columns);
+        $this->assertTrue(is_array($columns));
         $this->assertEmpty($columns);
     }
 
