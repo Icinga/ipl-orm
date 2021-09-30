@@ -6,6 +6,7 @@ use ArrayIterator;
 use ipl\Orm\Contract\PersistBehavior;
 use ipl\Orm\Contract\PropertyBehavior;
 use ipl\Orm\Contract\RetrieveBehavior;
+use ipl\Orm\Contract\RewriteBehavior;
 use ipl\Orm\Contract\RewriteFilterBehavior;
 use ipl\Stdlib\Filter;
 use IteratorAggregate;
@@ -26,6 +27,9 @@ class Behaviors implements IteratorAggregate
 
     /** @var RewriteFilterBehavior[] Registered rewrite filter behaviors */
     protected $rewriteFilterBehaviors = [];
+
+    /** @var RewriteBehavior[] Registered rewrite behaviors */
+    protected $rewriteBehaviors = [];
 
     /**
      * Add a behavior
@@ -52,6 +56,10 @@ class Behaviors implements IteratorAggregate
 
         if ($behavior instanceof RewriteFilterBehavior) {
             $this->rewriteFilterBehaviors[] = $behavior;
+        }
+
+        if ($behavior instanceof RewriteBehavior) {
+            $this->rewriteBehaviors[] = $behavior;
         }
     }
 
@@ -142,5 +150,47 @@ class Behaviors implements IteratorAggregate
         }
 
         return $filter;
+    }
+
+    /**
+     * Rewrite the given relation path
+     *
+     * @param string $path
+     * @param string $relation Absolute path of the model
+     *
+     * @return string|null
+     */
+    public function rewritePath($path, $relation = null)
+    {
+        $newPath = null;
+        foreach ($this->rewriteBehaviors as $behavior) {
+            $replacement = $behavior->rewritePath($newPath ?: $path, $relation);
+            if ($replacement !== null) {
+                $newPath = $replacement;
+            }
+        }
+
+        return $newPath;
+    }
+
+    /**
+     * Rewrite the given column
+     *
+     * @param string $column
+     * @param string $relation Absolute path of the model
+     *
+     * @return string|null
+     */
+    public function rewriteColumn($column, $relation = null)
+    {
+        $newColumn = null;
+        foreach ($this->rewriteBehaviors as $behavior) {
+            $replacement = $behavior->rewriteColumn($newColumn ?: $column, $relation);
+            if ($replacement !== null) {
+                $newColumn = $replacement;
+            }
+        }
+
+        return $newColumn;
     }
 }
