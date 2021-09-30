@@ -22,6 +22,7 @@ jobs:
         include:
           - php: '5.6'
             allow_failure: true
+            phplint_options: "--exclude='{tests/.*}'"
           - php: '7.0'
             allow_failure: true
 
@@ -41,7 +42,7 @@ jobs:
 
       - name: PHP Lint
         if: success() || matrix.allow_failure
-        run: ./vendor/bin/phplint -n --exclude={^vendor/.*} -- .
+        run: ./vendor/bin/phplint -n --exclude={^vendor/.*} ${{ matrix.phplint_options }} -- .
 
       - name: PHP CodeSniffer
         if: success() || matrix.allow_failure
@@ -52,20 +53,20 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     env:
-      phpunit-version: 8.5.15
+      phpunit-version: 9.5.4
 
     strategy:
       fail-fast: false
       matrix:
-        php: ['5.6', '7.0', '7.1', '7.2', '7.3', '7.4', '8.0']
+        php: ['7.0', '7.1', '7.2', '7.3', '7.4', '8.0']
         os: ['ubuntu-latest']
         include:
-          - php: '5.6'
-            phpunit-version: 5.7.27
           - php: '7.0'
             phpunit-version: 6.5.14
           - php: '7.1'
             phpunit-version: 7.5.20
+          - php: '7.2'
+            phpunit-version: 8.5.15
 
     steps:
       - name: Checkout code base
