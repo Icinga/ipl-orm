@@ -92,7 +92,7 @@ class RelationTest extends \PHPUnit\Framework\TestCase
     {
         $candidateKey = Relation::getDefaultCandidateKey(new TestModel());
 
-        $this->assertInternalType('array', $candidateKey);
+        $this->assertTrue(is_array($candidateKey));
         $this->assertEmpty($candidateKey);
     }
 
@@ -114,7 +114,7 @@ class RelationTest extends \PHPUnit\Framework\TestCase
     {
         $foreignKey = Relation::getDefaultForeignKey(new TestModel());
 
-        $this->assertInternalType('array', $foreignKey);
+        $this->assertTrue(is_array($foreignKey));
         $this->assertEmpty($foreignKey);
     }
 

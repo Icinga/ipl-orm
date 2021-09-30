@@ -44,7 +44,7 @@ class QueryTest extends \PHPUnit\Framework\TestCase
         $columns = (new Query())
             ->getColumns();
 
-        $this->assertInternalType('array', $columns);
+        $this->assertTrue(is_array($columns));
         $this->assertEmpty($columns);
     }
 
@@ -99,7 +99,7 @@ class QueryTest extends \PHPUnit\Framework\TestCase
     {
         $with = (new Query())->getWith();
 
-        $this->assertInternalType('array', $with);
+        $this->assertTrue(is_array($with));
         $this->assertEmpty($with);
     }
 
