@@ -135,7 +135,7 @@ class Behaviors implements IteratorAggregate
      * Rewrite the given filter condition
      *
      * @param Filter\Condition $condition
-     * @param string           $relation Absolute path of the model
+     * @param string           $relation Absolute path (with a trailing dot) of the model
      *
      * @return Filter\Rule|null
      */
