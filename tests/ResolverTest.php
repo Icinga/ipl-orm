@@ -135,4 +135,22 @@ class ResolverTest extends TestCase
             (new QueryBuilder(new TestAdapter()))->assembleSelect($query->assembleSelect())[0]
         );
     }
+
+    public function testDotSeparatedAliasesAreQualified()
+    {
+        $columns = [
+            'u.username' => 'username',
+            'u.password' => 'password'
+        ];
+        $qualified = [
+            'u_username' => 'profile_user.username',
+            'u_password' => 'profile_user.password'
+        ];
+        $query = (new Query())
+            ->setModel(new Profile())
+            ->with('user');
+
+        $model = $query->getWith()['profile.user']->getTarget();
+        $this->assertSame($qualified, $query->getResolver()->qualifyColumnsAndAliases($columns, $model));
+    }
 }

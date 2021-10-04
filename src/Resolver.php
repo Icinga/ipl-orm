@@ -360,7 +360,12 @@ class Resolver
                     $alias = $this->qualifyColumnAlias($column, $targetAlias);
                 }
             } elseif ($target !== $this->query->getModel()) {
-                $alias = $this->qualifyColumnAlias($alias, $targetAlias);
+                if (strpos($alias, '.') !== false) {
+                    // This is safe, because custom aliases won't be qualified
+                    $alias = str_replace('.', '_', $alias);
+                } else {
+                    $alias = $this->qualifyColumnAlias($alias, $targetAlias);
+                }
             }
 
             if ($column instanceof ResolvedExpression) {
@@ -468,8 +473,17 @@ class Resolver
         }
 
         $target = $subject;
+        $pathBeingResolved = null;
         $segments = [array_shift($relations)];
-        foreach ($relations as $relationName) {
+        while (! empty($relations)) {
+            $newPath = $this->getBehaviors($target)
+                ->rewritePath(join('.', $relations), join('.', $segments));
+            if ($newPath !== null) {
+                $relations = explode('.', $newPath);
+                $pathBeingResolved = $path;
+            }
+
+            $relationName = array_shift($relations);
             $segments[] = $relationName;
             $relationPath = join('.', $segments);
 
@@ -504,6 +518,10 @@ class Resolver
             yield $relationPath => $relation;
 
             $target = $relation->getTarget();
+        }
+
+        if ($pathBeingResolved !== null) {
+            $resolvedRelations[$pathBeingResolved] = $relation;
         }
 
         $this->resolvedRelations->attach($subject, $resolvedRelations);
@@ -553,21 +571,35 @@ class Resolver
             switch (true) {
                 /** @noinspection PhpMissingBreakStatementInspection */
                 case $dot !== false:
-                    $relation = substr($columnPath, 0, $dot);
+                    $hydrationPath = substr($columnPath, 0, $dot);
                     $columnPath = substr($columnPath, $dot + 1); // Updates also $column or $alias
 
-                    if ($relation !== $tableName) {
-                        $relation = $this->qualifyPath($relation, $tableName);
+                    if ($hydrationPath !== $tableName) {
+                        $hydrationPath = $this->qualifyPath($hydrationPath, $tableName);
 
-                        $this->query->with($relation);
-                        $target = $this->resolvedRelations[$model][$relation]->getTarget();
+                        foreach ($this->resolveRelations($hydrationPath) as $relationPath => $relation) {
+                            // run and exhaust generator
+                        }
+
+                        if (is_int($alias) && $relationPath !== $hydrationPath) {
+                            // If the actual relation is resolved differently,
+                            // ensure the hydration path is not an unexpected one
+                            $alias = "$hydrationPath.$column";
+                        }
+
+                        $this->query->with($hydrationPath);
+                        $target = $relation->getTarget();
 
                         break;
                     }
                 // Move to default
                 default:
-                    $relation = null;
+                    $relationPath = null;
                     $target = $model;
+            }
+
+            if (! $column instanceof ExpressionInterface) {
+                $column = $this->getBehaviors($target)->rewriteColumn($column, $relationPath) ?: $column;
             }
 
             if (
