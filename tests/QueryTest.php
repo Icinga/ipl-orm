@@ -23,6 +23,12 @@ class QueryTest extends \PHPUnit\Framework\TestCase
         $this->assertSame($model, $query->getModel());
     }
 
+    public function testExecuteReturnsCustomResultSet()
+    {
+        $query = (new Query())->setResultSetClass(TestResultSet::class);
+        $this->assertInstanceOf(TestResultSet::class, $query->execute());
+    }
+
     public function testGetDbReturnsNullIfUnset()
     {
         $query = new Query();
