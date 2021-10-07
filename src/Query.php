@@ -568,11 +568,12 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
         $subQueryConditions = [];
         foreach ((array) $this->getModel()->getKeyName() as $column) {
             $fk = $subQueryResolver->qualifyColumn($column, $sourceAlias);
+            $ck = $from !== null ? $from->getKeyName() : $column;
 
-            if (isset($from->$column)) {
-                $subQueryConditions["$fk = ?"] = $from->$column;
+            if (isset($from->$ck)) {
+                $subQueryConditions["$fk = ?"] = $from->$ck;
             } else {
-                $subQueryConditions[] = "$fk = " . $resolver->qualifyColumn($column, $baseAlias);
+                $subQueryConditions[] = "$fk = " . $resolver->qualifyColumn($ck, $baseAlias);
             }
         }
 
