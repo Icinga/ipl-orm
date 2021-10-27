@@ -60,6 +60,9 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
     /** @var Relation[] Relations to utilize (join) */
     protected $utilize = [];
 
+    /** @var bool Whether to disable the default sorts of the model */
+    protected $disableDefaultSort = false;
+
     /**
      * Get the database connection
      *
@@ -173,6 +176,32 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
         $this->filter = $filter;
 
         return $this;
+    }
+
+    /**
+     * Disable default sorts
+     *
+     * Prevents the default sort rules of the source model from being used
+     *
+     * @param bool $disable
+     *
+     * @return $this
+     */
+    public function disableDefaultSort($disable = true)
+    {
+        $this->disableDefaultSort = (bool) $disable;
+
+        return $this;
+    }
+
+    /**
+     * Get whether to not use the default sort rules of the source model
+     *
+     * @return bool
+     */
+    public function defaultSortDisabled()
+    {
+        return $this->disableDefaultSort;
     }
 
     /**
@@ -747,7 +776,10 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
     protected function order(Select $select)
     {
         $orderBy = $this->getOrderBy();
-        $defaultSort = (array) $this->getModel()->getDefaultSort();
+        $defaultSort = [];
+        if (! $this->defaultSortDisabled()) {
+            $defaultSort = (array) $this->getModel()->getDefaultSort();
+        }
 
         if (empty($orderBy)) {
             if (empty($defaultSort)) {
