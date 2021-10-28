@@ -5,6 +5,7 @@ namespace ipl\Orm;
 use Generator;
 use InvalidArgumentException;
 use ipl\Orm\Exception\InvalidColumnException;
+use ipl\Orm\Exception\InvalidRelationException;
 use ipl\Orm\Relation\BelongsToMany;
 use ipl\Orm\Relation\HasOne;
 use ipl\Sql\ExpressionInterface;
@@ -453,7 +454,8 @@ class Resolver
      * @param Model  $subject
      *
      * @return Generator
-     * @throws InvalidArgumentException In case $path is not fully qualified or a relation is unknown
+     * @throws InvalidArgumentException In case $path is not fully qualified
+     * @throws InvalidRelationException In case a relation is unknown
      */
     public function resolveRelations($path, Model $subject = null)
     {
@@ -492,11 +494,7 @@ class Resolver
             } else {
                 $targetRelations = $this->getRelations($target);
                 if (! $targetRelations->has($relationName)) {
-                    throw new InvalidArgumentException(sprintf(
-                        'Cannot join relation "%s" in model "%s". Relation not found.',
-                        $relationName,
-                        get_class($target)
-                    ));
+                    throw new InvalidRelationException($relationName, $target);
                 }
 
                 $relation = $targetRelations->get($relationName);

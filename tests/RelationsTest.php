@@ -3,6 +3,7 @@
 namespace ipl\Tests\Orm;
 
 use InvalidArgumentException;
+use ipl\Orm\Exception\InvalidRelationException;
 use ipl\Orm\Relation\BelongsTo;
 use ipl\Orm\Relation\BelongsToMany;
 use ipl\Orm\Relation\HasMany;
@@ -65,9 +66,9 @@ class RelationsTest extends \PHPUnit\Framework\TestCase
         $this->assertSame($relation, $relations->get('test'));
     }
 
-    public function testGetThrowsInvalidArgumentExceptionIfRelationDoesNotExist()
+    public function testGetThrowsInvalidRelationExceptionIfRelationDoesNotExist()
     {
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(InvalidRelationException::class);
 
         (new Relations())->get('test');
     }
