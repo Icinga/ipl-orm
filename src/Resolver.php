@@ -4,11 +4,11 @@ namespace ipl\Orm;
 
 use Generator;
 use InvalidArgumentException;
+use ipl\Orm\Exception\InvalidColumnException;
 use ipl\Orm\Relation\BelongsToMany;
 use ipl\Orm\Relation\HasOne;
 use ipl\Sql\ExpressionInterface;
 use OutOfBoundsException;
-use RuntimeException;
 use SplObjectStorage;
 
 use function ipl\Stdlib\get_php_type;
@@ -537,7 +537,7 @@ class Resolver
      *
      * @return Generator
      *
-     * @throws RuntimeException If a column does not exist
+     * @throws InvalidColumnException If a column does not exist
      */
     public function requireAndResolveColumns(array $columns, Model $model = null)
     {
@@ -607,11 +607,7 @@ class Resolver
                 && ! $this->hasSelectableColumn($target, $columnPath)
                 && ! $this->hasSelectableColumn($target, $alias)
             ) {
-                throw new RuntimeException(sprintf(
-                    "Can't require column '%s' in model '%s'. Column not found.",
-                    $columnPath,
-                    get_class($target)
-                ));
+                throw new InvalidColumnException($columnPath, $target);
             }
 
             yield [$target, $alias, $column];
