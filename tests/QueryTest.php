@@ -2,7 +2,7 @@
 
 namespace ipl\Tests\Orm;
 
-use InvalidArgumentException;
+use ipl\Orm\Exception\InvalidRelationException;
 use ipl\Orm\Query;
 
 class QueryTest extends \PHPUnit\Framework\TestCase
@@ -139,9 +139,9 @@ class QueryTest extends \PHPUnit\Framework\TestCase
         );
     }
 
-    public function testWithThrowsInvalidArgumentExceptionIfRelationDoesNotExist()
+    public function testWithThrowsInvalidRelationExceptionIfRelationDoesNotExist()
     {
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(InvalidRelationException::class);
 
         $query = (new Query())
             ->setModel(new User())

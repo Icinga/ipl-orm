@@ -3,6 +3,7 @@
 namespace ipl\Orm;
 
 use ArrayIterator;
+use ipl\Orm\Exception\InvalidRelationException;
 use ipl\Orm\Relation\BelongsTo;
 use ipl\Orm\Relation\BelongsToMany;
 use ipl\Orm\Relation\HasMany;
@@ -204,7 +205,7 @@ class Relations implements IteratorAggregate
     protected function assertRelationExists($name)
     {
         if (! $this->has($name)) {
-            throw new \InvalidArgumentException("Can't access relation '$name'. Relation not found");
+            throw new InvalidRelationException($name);
         }
     }
 }

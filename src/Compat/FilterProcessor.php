@@ -4,6 +4,7 @@ namespace ipl\Orm\Compat;
 
 use AppendIterator;
 use ArrayIterator;
+use ipl\Orm\Exception\InvalidColumnException;
 use ipl\Orm\Query;
 use ipl\Orm\Relation;
 use ipl\Orm\UnionQuery;
@@ -121,6 +122,10 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
                     return $this->requireAndResolveFilterColumns($rewrittenFilter, $query, $forceOptimization)
                         ?: $rewrittenFilter;
                 }
+            }
+
+            if (! $resolver->hasSelectableColumn($subject, $columnName)) {
+                throw new InvalidColumnException($columnName, $subject);
             }
 
             if ($relationPath !== $baseTable) {
