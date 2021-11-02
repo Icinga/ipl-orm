@@ -24,6 +24,7 @@ class UnionQuery extends Query
                     ->setDb($this->getDb())
                     ->setModel(new $target())
                     ->columns($columns)
+                    ->disableDefaultSort()
                     ->with($relations);
 
                 $this->unions[] = $query;
