@@ -162,8 +162,8 @@ class BelongsToMany extends Relation
             if ($relations->has($target->getTableName())) {
                 $targetRelation = $relations->get($target->getTableName());
 
-                $possibleTargetCandidateKey[] = $targetRelation->getForeignKey();
-                $possibleTargetForeignKey[] = $targetRelation->getCandidateKey();
+                $possibleTargetCandidateKey[] = $targetRelation->getCandidateKey();
+                $possibleTargetForeignKey[] = $targetRelation->getForeignKey();
             }
         }
 
