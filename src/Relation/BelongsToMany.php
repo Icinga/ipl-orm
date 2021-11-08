@@ -143,8 +143,8 @@ class BelongsToMany extends Relation
 
         $target = $this->getTarget();
 
-        $possibleTargetCandidateKey = [$this->getTargetForeignKey() ?: static::getDefaultForeignKey($target)];
-        $possibleTargetForeignKey = [$this->getTargetCandidateKey() ?: static::getDefaultCandidateKey($target)];
+        $possibleTargetForeignKey = [$this->getTargetForeignKey() ?: static::getDefaultForeignKey($target)];
+        $possibleTargetCandidateKey = [$this->getTargetCandidateKey() ?: static::getDefaultCandidateKey($target)];
 
         $junction = $this->getThrough();
 
@@ -162,8 +162,8 @@ class BelongsToMany extends Relation
             if ($relations->has($target->getTableName())) {
                 $targetRelation = $relations->get($target->getTableName());
 
-                $possibleTargetCandidateKey[] = $targetRelation->getForeignKey();
-                $possibleTargetForeignKey[] = $targetRelation->getCandidateKey();
+                $possibleTargetCandidateKey[] = $targetRelation->getCandidateKey();
+                $possibleTargetForeignKey[] = $targetRelation->getForeignKey();
             }
         }
 
