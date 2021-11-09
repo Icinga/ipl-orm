@@ -34,5 +34,8 @@ class User extends Model
             ->through('user_group');
 
         $relations->hasMany('audit', Audit::class);
+
+        $relations->belongsToMany('car', Car::class)
+            ->through(CarUser::class);
     }
 }

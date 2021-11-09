@@ -29,5 +29,11 @@ class Car extends Model
     public function createRelations(Relations $relations)
     {
         $relations->hasMany('passenger', Passenger::class);
+
+        $relations->belongsToMany('user', User::class)
+            ->through(CarUser::class);
+
+        $relations->belongsToMany('user_custom_keys', User::class)
+            ->through(CarUserWithCustomKeys::class);
     }
 }
