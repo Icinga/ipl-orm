@@ -9,6 +9,7 @@ use ipl\Orm\Relation\BelongsToMany;
 use ipl\Orm\Relation\HasMany;
 use ipl\Orm\Relation\HasOne;
 use IteratorAggregate;
+use Traversable;
 
 use function ipl\Stdlib\get_php_type;
 
@@ -180,7 +181,7 @@ class Relations implements IteratorAggregate
         return $relation;
     }
 
-    public function getIterator()
+    public function getIterator(): Traversable
     {
         return new ArrayIterator($this->relations);
     }

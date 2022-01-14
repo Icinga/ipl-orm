@@ -20,6 +20,7 @@ use ipl\Stdlib\Filters;
 use IteratorAggregate;
 use RuntimeException;
 use SplObjectStorage;
+use Traversable;
 
 /**
  * Represents a database query which is associated to a model and a database connection.
@@ -717,7 +718,7 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
         }
     }
 
-    public function count()
+    public function count(): int
     {
         if ($this->count === null) {
             $this->count = $this->getDb()->select($this->assembleSelect()->getCountQuery())->fetchColumn(0);
@@ -726,7 +727,7 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
         return $this->count;
     }
 
-    public function getIterator()
+    public function getIterator(): Traversable
     {
         return $this->execute();
     }

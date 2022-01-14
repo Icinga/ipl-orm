@@ -10,6 +10,7 @@ use ipl\Orm\Contract\RewriteBehavior;
 use ipl\Orm\Contract\RewriteFilterBehavior;
 use ipl\Stdlib\Filter;
 use IteratorAggregate;
+use Traversable;
 
 class Behaviors implements IteratorAggregate
 {
@@ -68,7 +69,7 @@ class Behaviors implements IteratorAggregate
      *
      * @return ArrayIterator
      */
-    public function getIterator()
+    public function getIterator(): Traversable
     {
         return new ArrayIterator($this->behaviors);
     }
