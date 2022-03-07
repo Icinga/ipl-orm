@@ -632,7 +632,7 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
             $fk = $subQueryResolver->qualifyColumn($column, $sourceAlias);
 
             if (isset($from->$column)) {
-                $subQueryConditions["$fk = ?"] = $from->$column;
+                $subQueryConditions["$fk = ?"] = $this->resolveProperty($from, $column);
             } else {
                 $subQueryConditions[] = "$fk = " . $resolver->qualifyColumn($column, $baseAlias);
             }
@@ -697,6 +697,19 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
         $this->peekAhead = (bool) $peekAhead;
 
         return $this;
+    }
+
+    /**
+     * Resolve a model property by applying any persist behaviors
+     *
+     * @param Model  $model    Model from which to resolve the property
+     * @param string $property Name of the property to resolve
+     *
+     * @return mixed
+     */
+    public function resolveProperty(Model $model, $property)
+    {
+        return $this->getResolver()->getBehaviors($model)->persistProperty($model->$property, $property);
     }
 
     /**
