@@ -105,6 +105,36 @@ class SqlTest extends \PHPUnit\Framework\TestCase
         );
     }
 
+    public function testSelectFromModelWithExplicitAliasedModelColumns()
+    {
+        $this->setupTest();
+
+        $model = new TestModelWithAliasedColumns();
+        $query = (new Query())
+            ->setModel($model)
+            ->columns(['lorem']);
+
+        $this->assertSql(
+            'SELECT (MAX(test.lorem)) AS lorem FROM test',
+            $query->assembleSelect()
+        );
+    }
+
+    public function testSelectFromModelWithExplicitAliasedAliasedModelColumns()
+    {
+        $this->setupTest();
+
+        $model = new TestModelWithAliasedColumns();
+        $query = (new Query())
+            ->setModel($model)
+            ->columns(['alias' => 'ipsum']);
+
+        $this->assertSql(
+            'SELECT (MIN(test.ipsum)) AS alias FROM test',
+            $query->assembleSelect()
+        );
+    }
+
     public function testSelectFromModelWithLimit()
     {
         $this->setupTest();
