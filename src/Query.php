@@ -807,15 +807,19 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
             $selectColumns = $resolver->getSelectColumns($model);
             $tableName = $resolver->getAlias($model);
 
-            if (isset($selectColumns[$column])) {
-                $column = $selectColumns[$column];
-            }
+            if (! is_int($alias)) {
+                $orderByResolved[] = [$alias, $direction];
+            } else {
+                if (isset($selectColumns[$column])) {
+                    $column = $selectColumns[$column];
+                }
 
-            if (is_string($column)) {
-                $column = $resolver->qualifyColumn($column, $tableName);
-            }
+                if (is_string($column)) {
+                    $column = $resolver->qualifyColumn($column, $tableName);
+                }
 
-            $orderByResolved[] = [$column, $direction];
+                $orderByResolved[] = [$column, $direction];
+            }
 
             array_shift($columnsAndDirections);
         }
