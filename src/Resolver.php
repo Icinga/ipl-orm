@@ -541,6 +541,7 @@ class Resolver
     {
         $model = $model ?: $this->query->getModel();
         $tableName = $model->getTableName();
+        $targetColumns = $model->getColumns();
 
         foreach ($columns as $alias => $column) {
             $columnPath = &$column;
@@ -598,14 +599,18 @@ class Resolver
 
             if (! $column instanceof ExpressionInterface) {
                 $column = $this->getBehaviors($target)->rewriteColumn($column, $relationPath) ?: $column;
-            }
 
-            if (
-                ! $column instanceof ExpressionInterface
-                && ! $this->hasSelectableColumn($target, $columnPath)
-                && ! $this->hasSelectableColumn($target, $alias)
-            ) {
-                throw new InvalidColumnException($columnPath, $target);
+                if (
+                    ! $this->hasSelectableColumn($target, $columnPath)
+                    && ! $this->hasSelectableColumn($target, $alias)
+                ) {
+                    throw new InvalidColumnException($columnPath, $target);
+                }
+
+                if (isset($targetColumns[$column])) {
+                    $alias = is_int($alias) ? $column : $alias;
+                    $column = $targetColumns[$column];
+                }
             }
 
             yield [$target, $alias, $column];
