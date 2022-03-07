@@ -229,8 +229,7 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
     public function getResolver()
     {
         if ($this->resolver === null) {
-            $this->resolver = (new Resolver())
-                ->setQuery($this);
+            $this->resolver = new Resolver($this);
         }
 
         return $this->resolver;
@@ -828,7 +827,6 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
     public function __clone()
     {
         $this->resolver = clone $this->resolver;
-        $this->resolver->setQuery($this);
 
         if ($this->filter !== null) {
             $this->filter = clone $this->filter;
