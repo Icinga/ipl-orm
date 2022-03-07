@@ -48,9 +48,13 @@ class Resolver
 
     /**
      * Create a new resolver
+     *
+     * @param Query $query The query to resolve
      */
-    public function __construct()
+    public function __construct(Query $query)
     {
+        $this->query = $query;
+
         $this->relations = new SplObjectStorage();
         $this->behaviors = new SplObjectStorage();
         $this->aliases = new SplObjectStorage();
@@ -58,20 +62,6 @@ class Resolver
         $this->selectColumns = new SplObjectStorage();
         $this->metaData = new SplObjectStorage();
         $this->resolvedRelations = new SplObjectStorage();
-    }
-
-    /**
-     * Set the query this resolver belongs to
-     *
-     * @param Query $query
-     *
-     * @return $this
-     */
-    public function setQuery(Query $query)
-    {
-        $this->query = $query;
-
-        return $this;
     }
 
     /**

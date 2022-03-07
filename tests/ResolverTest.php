@@ -34,7 +34,7 @@ class ResolverTest extends TestCase
     public function testGetSelectColumnsReturnsEmptyArrayIfPrimaryKeyAndColumnsAreEmpty()
     {
         $model = new TestModel();
-        $resolver = new Resolver();
+        $resolver = (new Query())->getResolver();
         $columns = $resolver->getSelectColumns($model);
 
         $this->assertTrue(is_array($columns));
@@ -44,7 +44,7 @@ class ResolverTest extends TestCase
     public function testGetSelectColumnsOnlyReturnsThePrimaryKeyAsArrayIfThereIsOnlyThePrimaryKeyAndItIsAString()
     {
         $model = new TestModelWithPrimaryKey();
-        $resolver = new Resolver();
+        $resolver = (new Query())->getResolver();
 
         $this->assertSame((array) $model->getKeyName(), $resolver->getSelectColumns($model));
     }
@@ -52,7 +52,7 @@ class ResolverTest extends TestCase
     public function testGetSelectColumnsOnlyReturnsTheCompoundPrimaryKeyAsArrayIfTheresOnlyThePrimaryKeyAndItsCompound()
     {
         $model = new TestModelWithCompoundPrimaryKey();
-        $resolver = new Resolver();
+        $resolver = (new Query())->getResolver();
 
         $this->assertSame($model->getKeyName(), $resolver->getSelectColumns($model));
     }
@@ -60,7 +60,7 @@ class ResolverTest extends TestCase
     public function testGetSelectColumnsOnlyReturnsTheColumnsIfThereIsNoPrimaryKey()
     {
         $model = new TestModelWithColumns();
-        $resolver = new Resolver();
+        $resolver = (new Query())->getResolver();
 
         $this->assertSame($model->getColumns(), $resolver->getSelectColumns($model));
     }
@@ -68,7 +68,7 @@ class ResolverTest extends TestCase
     public function testGetSelectColumnsReturnsPrimaryKeyPlusColumnsInThatOrder()
     {
         $model = new TestModelWithPrimaryKeyAndColumns();
-        $resolver = new Resolver();
+        $resolver = (new Query())->getResolver();
 
         $this->assertSame(
             array_merge((array) $model->getKeyName(), $model->getColumns()),
@@ -79,7 +79,7 @@ class ResolverTest extends TestCase
     public function testGetSelectColumnsReturnsCompoundPrimaryKeyPlusColumnsInThatOrder()
     {
         $model = new TestModelWithCompoundPrimaryKeyAndColumns();
-        $resolver = new Resolver();
+        $resolver = (new Query())->getResolver();
 
         $this->assertSame(array_merge($model->getKeyName(), $model->getColumns()), $resolver->getSelectColumns($model));
     }
