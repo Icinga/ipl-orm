@@ -6,5 +6,4 @@ use ipl\Orm\ResultSet;
 
 class TestResultSet extends ResultSet
 {
-
 }
