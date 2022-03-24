@@ -50,6 +50,7 @@ class ResultSet implements Iterator
         return $this->generator->valid();
     }
 
+    #[\ReturnTypeWillChange]
     public function current()
     {
         if ($this->position === null) {
@@ -59,7 +60,7 @@ class ResultSet implements Iterator
         return $this->isCacheDisabled ? $this->generator->current() : $this->cache->current();
     }
 
-    public function next()
+    public function next(): void
     {
         if (! $this->isCacheDisabled) {
             $this->cache->next();
@@ -71,7 +72,7 @@ class ResultSet implements Iterator
         }
     }
 
-    public function key()
+    public function key(): int
     {
         if ($this->position === null) {
             $this->advance();
@@ -80,7 +81,7 @@ class ResultSet implements Iterator
         return $this->isCacheDisabled ? $this->generator->key() : $this->cache->key();
     }
 
-    public function valid()
+    public function valid(): bool
     {
         if ($this->limit !== null && $this->position === $this->limit) {
             return false;
@@ -89,7 +90,7 @@ class ResultSet implements Iterator
         return $this->cache->valid() || $this->generator->valid();
     }
 
-    public function rewind()
+    public function rewind(): void
     {
         if (! $this->isCacheDisabled) {
             $this->cache->rewind();
