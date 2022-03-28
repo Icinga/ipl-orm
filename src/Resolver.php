@@ -4,6 +4,7 @@ namespace ipl\Orm;
 
 use Generator;
 use InvalidArgumentException;
+use ipl\Orm\Contract\QueryAwareBehavior;
 use ipl\Orm\Exception\InvalidColumnException;
 use ipl\Orm\Exception\InvalidRelationException;
 use ipl\Orm\Relation\BelongsToMany;
@@ -95,6 +96,12 @@ class Resolver
             $behaviors = new Behaviors();
             $model->createBehaviors($behaviors);
             $this->behaviors->attach($model, $behaviors);
+
+            foreach ($behaviors as $behavior) {
+                if ($behavior instanceof QueryAwareBehavior) {
+                    $behavior->setQuery($this->query);
+                }
+            }
         }
 
         return $this->behaviors[$model];
