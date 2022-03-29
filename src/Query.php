@@ -632,7 +632,9 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
             $fk = $subQueryResolver->qualifyColumn($column, $sourceAlias);
 
             if (isset($from->$column)) {
-                $subQueryConditions["$fk = ?"] = $from->$column;
+                $subQueryConditions["$fk = ?"] = $resolver
+                    ->getBehaviors($from)
+                    ->persistProperty($from->$column, $column);
             } else {
                 $subQueryConditions[] = "$fk = " . $resolver->qualifyColumn($column, $baseAlias);
             }
