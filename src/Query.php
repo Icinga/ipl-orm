@@ -18,6 +18,7 @@ use ipl\Stdlib\Contract\Paginatable;
 use ipl\Stdlib\Filter;
 use ipl\Stdlib\Filters;
 use IteratorAggregate;
+use ReflectionClass;
 use RuntimeException;
 use SplObjectStorage;
 use Traversable;
@@ -104,11 +105,19 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
      * @param string $class
      *
      * @return $this
+     *
+     * @throws InvalidArgumentException If class is not an instance of {@link ResultSet}
      */
     public function setResultSetClass($class)
     {
         if (! is_string($class)) {
             throw new InvalidArgumentException('Argument $class must be a string');
+        }
+
+        if (! (new ReflectionClass($class))->newInstanceWithoutConstructor() instanceof ResultSet) {
+            throw new InvalidArgumentException(
+                $class . ' must be an instance of ' . ResultSet::class
+            );
         }
 
         $this->resultSetClass = $class;
@@ -661,15 +670,9 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
     public function execute()
     {
         $class = $this->getResultSetClass();
+        /** @var ResultSet $class Just for type hinting. $class is of course a string */
 
-        $result = new $class($this->yieldResults(), $this->getLimit());
-        if (! $result instanceof ResultSet) {
-            throw new RuntimeException(
-                $class . ' must be an instance of ' . ResultSet::class
-            );
-        }
-
-        return $result;
+        return $class::fromQuery($this);
     }
 
     /**

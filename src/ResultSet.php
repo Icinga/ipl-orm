@@ -27,6 +27,18 @@ class ResultSet implements Iterator
     }
 
     /**
+     * Create a new result set from the given query
+     *
+     * @param Query $query
+     *
+     * @return static
+     */
+    public static function fromQuery(Query $query)
+    {
+        return new static($query->yieldResults(), $query->getLimit());
+    }
+
+    /**
      * Do not cache query result
      *
      * ResultSet instance can only be iterated once
