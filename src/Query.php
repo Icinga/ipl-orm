@@ -15,6 +15,7 @@ use ipl\Sql\OrderByInterface;
 use ipl\Sql\Select;
 use ipl\Stdlib\Contract\Filterable;
 use ipl\Stdlib\Contract\Paginatable;
+use ipl\Stdlib\Events;
 use ipl\Stdlib\Filter;
 use ipl\Stdlib\Filters;
 use IteratorAggregate;
@@ -28,9 +29,23 @@ use Traversable;
  */
 class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Paginatable, IteratorAggregate
 {
+    use Events;
     use Filters;
     use LimitOffset;
     use OrderBy;
+
+    /**
+     * Event raised after assembling a {@link Select} object for the query
+     *
+     * **Example usage:**
+     *
+     * ```
+     * $query->on(Query::ON_SELECT_ASSEMBLED, function (Select $select) {
+     *     // ...
+     * });
+     * ```
+     */
+    const ON_SELECT_ASSEMBLED = 'selectAssembled';
 
     /** @var int Count cache */
     protected $count;
@@ -511,6 +526,8 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
         }
 
         $this->order($select);
+
+        $this->emit(static::ON_SELECT_ASSEMBLED, [$select]);
 
         return $select;
     }
