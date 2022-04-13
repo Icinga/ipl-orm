@@ -443,24 +443,6 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
             }
         }
 
-        $aggregateColumns = $model->getAggregateColumns();
-        if ($aggregateColumns === true) {
-            $select->groupBy(
-                $resolver->qualifyColumnsAndAliases((array) $model->getKeyName(), $model, false)
-            );
-        } elseif (! empty($aggregateColumns)) {
-            $aggregateColumns = array_flip($aggregateColumns);
-            foreach ($select->getColumns() as $alias => $column) {
-                if (isset($aggregateColumns[$alias])) {
-                    $select->groupBy(
-                        $resolver->qualifyColumnsAndAliases((array) $model->getKeyName(), $model, false)
-                    );
-
-                    break;
-                }
-            }
-        }
-
         $filter = clone $this->getFilter();
         FilterProcessor::resolveFilter($filter, $this);
         $where = FilterProcessor::assembleFilter($filter);
