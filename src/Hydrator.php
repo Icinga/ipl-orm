@@ -2,114 +2,71 @@
 
 namespace ipl\Orm;
 
-use function ipl\Stdlib\get_php_type;
-
 /**
  * Hydrates raw database rows into concrete model instances.
  */
 class Hydrator
 {
-    /** @var Behaviors The model's behaviors */
-    protected $behaviors;
-
-    /** @var array Column to property resolution map */
-    protected $columnToPropertyMap;
-
-    /** @var array Property defaults in terms of key-value pairs */
-    protected $defaults;
-
     /** @var array Additional hydration rules for the model's relations */
     protected $hydrators = [];
 
-    /**
-     * Set the model's behaviors
-     *
-     * @param Behaviors $behaviors
-     *
-     * @return $this
-     */
-    public function setBehaviors(Behaviors $behaviors)
-    {
-        $this->behaviors = $behaviors;
-
-        return $this;
-    }
+    /** @var Query The query the hydration rules are for */
+    protected $query;
 
     /**
-     * Set the column to property resolution map
+     * Create a new Hydrator
      *
-     * @param array $columnToPropertyMap
-     *
-     * @return $this
+     * @param Query $query
      */
-    public function setColumnToPropertyMap(array $columnToPropertyMap)
+    public function __construct(Query $query)
     {
-        $this->columnToPropertyMap = $columnToPropertyMap;
-
-        return $this;
-    }
-
-    /**
-     * Get defaults
-     *
-     * @return array
-     */
-    public function getDefaults()
-    {
-        return $this->defaults;
-    }
-
-    /**
-     * Set defaults
-     *
-     * @param array $defaults
-     *
-     * @return $this
-     */
-    public function setDefaults(array $defaults)
-    {
-        $this->defaults = $defaults;
-
-        return $this;
+        $this->query = $query;
     }
 
     /**
      * Add a hydration rule
      *
-     * @param string    $path                Property path
-     * @param string    $propertyName        The name of the property to hydrate into
-     * @param string    $class               The class to use for the model instance
-     * @param array     $columnToPropertyMap Column to property resolution map
-     * @param array     $defaults            Default properties
-     * @param Behaviors $behaviors           The class' behaviors
+     * @param string $path Model path
      *
      * @return $this
      *
-     * @throws \InvalidArgumentException If a hydrator for the given property already exists
-     * @throws \InvalidArgumentException If the class to use for the model class is not a subclass of {@link Model}
+     * @throws \InvalidArgumentException If a hydrator for the given path already exists
      */
-    public function add($path, $propertyName, $class, array $columnToPropertyMap, array $defaults, Behaviors $behaviors)
+    public function add($path)
     {
         if (isset($this->hydrators[$path])) {
-            throw new \InvalidArgumentException("Hydrator for property '$propertyName' already exists");
+            throw new \InvalidArgumentException("Hydrator for path '$path' already exists");
         }
 
-        // Test model class
-        $model = new $class();
-        if (! $model instanceof Model) {
-            throw new \InvalidArgumentException(sprintf(
-                '%s() expects parameter 2 to be a subclass of %s, %s given',
-                __METHOD__,
-                Model::class,
-                get_php_type($model)
-            ));
+        $resolver = $this->query->getResolver();
+        $target = $this->query->getModel();
+        $relation = null;
+
+        if ($path === $target->getTableName()) {
+            $selectableColumns = $resolver->getSelectableColumns($target);
+            $columnToPropertyMap = array_combine($selectableColumns, $selectableColumns);
+        } else {
+            $relation = $resolver->resolveRelation($path);
+            $target = $relation->getTarget();
+            $selectableColumns = $resolver->getSelectableColumns($target);
+            $columnToPropertyMap = array_combine(
+                array_keys($resolver->qualifyColumnsAndAliases($selectableColumns, $target)),
+                $selectableColumns
+            );
         }
 
-        // TODO: Maybe .. teach this about the query after all?
-        // Then only $propertyName and $class would need to be passed
-        $this->hydrators[$path] = [$propertyName, $class, $columnToPropertyMap, $defaults, $behaviors];
+        $defaults = [];
+        foreach ($resolver->getRelations($target) as $targetRelation) {
+            $name = $targetRelation->getName();
+            $isOne = $targetRelation->isOne();
 
-        //natcasesort($this->hydrators);
+            $defaults[$name] = function (Model $model) use ($name, $isOne) {
+                $query = $this->query->derive($name, $model);
+                return $isOne ? $query->first() : $query;
+            };
+        }
+
+        $this->hydrators[$path] = [$target, $relation, $columnToPropertyMap, $defaults];
 
         return $this;
     }
@@ -124,35 +81,57 @@ class Hydrator
      */
     public function hydrate(array $data, Model $model)
     {
-        $properties = $this->extractAndMap($data, $this->columnToPropertyMap);
-
+        $defaultsToApply = [];
         foreach ($this->hydrators as $path => $vars) {
-            list($propertyName, $class, $columnToPropertyMap, $defaults, $behaviors) = $vars;
+            list($target, $relation, $columnToPropertyMap, $defaults) = $vars;
 
-            $subject = &$properties;
-            $parts = explode('.', $path);
-            array_pop($parts);
-            foreach ($parts as $part) {
-                $subject = &$subject[$part];
+            $subject = $model;
+            if ($relation !== null) {
+                /** @var Relation $relation */
+
+                $steps = explode('.', $path);
+                $baseTable = array_shift($steps);
+                $relationName = array_pop($steps);
+
+                $parent = $model;
+                foreach ($steps as $i => $step) {
+                    if (! isset($parent->$step)) {
+                        $intermediateRelation = $this->query->getResolver()->resolveRelation(
+                            $baseTable . '.' . implode('.', array_slice($steps, 0, $i + 1)),
+                            $model
+                        );
+                        $parentClass = $intermediateRelation->getTargetClass();
+                        $parent = $parent->$step = new $parentClass();
+                    } else {
+                        $parent = $parent->$step;
+                    }
+                }
+
+                if (isset($parent->$relationName)) {
+                    $subject = $parent->$relationName;
+                } else {
+                    $subjectClass = $relation->getTargetClass();
+                    $subject = new $subjectClass();
+                    $parent->$relationName = $subject;
+                }
             }
 
-            /** @var Model $target */
-            $target = new $class();
-            $target->setProperties($this->extractAndMap($data, $columnToPropertyMap) + $defaults);
-            $behaviors->retrieve($target);
-            $subject[$propertyName] = $target;
+            $subject->setProperties($this->extractAndMap($data, $columnToPropertyMap));
+            $this->query->getResolver()->getBehaviors($target)->retrieve($subject);
+            $defaultsToApply[] = [$subject, $defaults];
         }
 
         // If there are any columns left, add them to the base model's properties
-        $properties += $data;
+        $model->setProperties($data);
 
-        if ($this->defaults !== null) {
-            $properties += $this->defaults;
+        // Apply defaults last, otherwise we may evaluate them during hydration
+        foreach ($defaultsToApply as list($subject, $defaults)) {
+            foreach ($defaults as $name => $default) {
+                if (! $subject->hasProperty($name)) {
+                    $subject->$name = $default;
+                }
+            }
         }
-
-        $model->setProperties($properties);
-
-        $this->behaviors->retrieve($model);
 
         return $model;
     }
