@@ -539,65 +539,12 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
      */
     public function createHydrator()
     {
-        $hydrator = new Hydrator();
-        $model = $this->getModel();
-        $resolver = $this->getResolver();
+        $hydrator = new Hydrator($this);
 
-        $modelColumns = $resolver->getSelectableColumns($model);
-
-        $hydrator->setColumnToPropertyMap(array_combine(
-            $modelColumns,
-            $modelColumns
-        ));
-
-        foreach ($this->getWith() as $path => $relation) {
-            $target = $relation->getTarget();
-            $targetColumns = $resolver->getSelectableColumns($target);
-
-            $defaults = [];
-            foreach ($this->getResolver()->getRelations($target) as $targetRelation) {
-                $name = $targetRelation->getName();
-                $isOne = $targetRelation->isOne();
-
-                $defaults[$name] = function (Model $model) use ($name, $isOne) {
-                    $query = $this->derive($name, $model);
-                    return $isOne ? $query->first() : $query;
-                };
-            }
-
-            $hydrator->add(
-                explode('.', $path, 2)[1],
-                $relation->getName(),
-                $relation->getTargetClass(),
-                array_combine(
-                    array_keys($resolver->qualifyColumnsAndAliases(
-                        $targetColumns,
-                        $relation->getTarget()
-                    )),
-                    $targetColumns
-                ),
-                $defaults,
-                $this->getResolver()->getBehaviors($target)
-            );
+        $hydrator->add($this->getModel()->getTableName());
+        foreach ($this->getWith() as $path => $_) {
+            $hydrator->add($path);
         }
-
-        $defaults = [];
-        foreach ($this->getResolver()->getRelations($model) as $relation) {
-            $name = $relation->getName();
-            $isOne = $relation->isOne();
-
-            if (! isset($this->with[$name])) {
-                $defaults[$name] = function (Model $model) use ($name, $isOne) {
-                    $query = $this->derive($name, $model);
-                    return $isOne ? $query->first() : $query;
-                };
-            }
-        }
-        if (! empty($defaults)) {
-            $hydrator->setDefaults($defaults);
-        }
-
-        $hydrator->setBehaviors($this->getResolver()->getBehaviors($model));
 
         return $hydrator;
     }
