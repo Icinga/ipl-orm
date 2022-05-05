@@ -2,6 +2,9 @@
 
 namespace ipl\Orm;
 
+use InvalidArgumentException;
+use ipl\Orm\Exception\InvalidRelationException;
+
 /**
  * Hydrates raw database rows into concrete model instances.
  */
@@ -122,8 +125,44 @@ class Hydrator
             $defaultsToApply[] = [$subject, $defaults];
         }
 
-        // If there are any columns left, add them to the base model's properties
-        $model->setProperties($data);
+        // If there are any columns left, propagate them to the targeted relation if possible, to the base otherwise
+        foreach ($data as $column => $value) {
+            $columnName = $column;
+            $steps = explode('_', $column);
+            $baseTable = array_shift($steps);
+
+            $subject = $model;
+            $target = $this->query->getModel();
+            $stepsTaken = [];
+            foreach ($steps as $step) {
+                $stepsTaken[] = $step;
+                $relationPath = "$baseTable." . implode('.', $stepsTaken);
+
+                try {
+                    $relation = $this->query->getResolver()->resolveRelation($relationPath);
+                } catch (InvalidArgumentException $_) {
+                    // The base table is missing, which means the alias hasn't been qualified and is custom defined
+                    break;
+                } catch (InvalidRelationException $_) {
+                    array_pop($stepsTaken);
+                    $columnName = implode('_', array_slice($steps, count($stepsTaken)));
+                    break;
+                }
+
+                if (! $subject->hasProperty($step)) {
+                    $stepClass = $relation->getTargetClass();
+                    $subject->$step = new $stepClass();
+                }
+
+                $subject = $subject->$step;
+                $target = $relation->getTarget();
+            }
+
+            $subject->$columnName = $this->query
+                ->getResolver()
+                ->getBehaviors($target)
+                ->retrieveProperty($value, $columnName);
+        }
 
         // Apply defaults last, otherwise we may evaluate them during hydration
         foreach ($defaultsToApply as list($subject, $defaults)) {
