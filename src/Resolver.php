@@ -353,8 +353,9 @@ class Resolver
             }
 
             if (is_int($alias)) {
-                // TODO: Provide an alias for expressions nonetheless? (One without won't be hydrated)
-                if ($autoAlias && ! $column instanceof ExpressionInterface) {
+                if ($column instanceof AliasedExpression) {
+                    $alias = $column->getAlias();
+                } elseif ($autoAlias && ! $column instanceof ExpressionInterface) {
                     $alias = $this->qualifyColumnAlias($column, $targetAlias);
                 }
             } elseif ($target !== $this->query->getModel()) {
