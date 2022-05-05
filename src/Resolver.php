@@ -29,6 +29,9 @@ class Resolver
     /** @var SplObjectStorage Model behaviors */
     protected $behaviors;
 
+    /** @var SplObjectStorage Model defaults */
+    protected $defaults;
+
     /** @var SplObjectStorage Model aliases */
     protected $aliases;
 
@@ -58,6 +61,7 @@ class Resolver
 
         $this->relations = new SplObjectStorage();
         $this->behaviors = new SplObjectStorage();
+        $this->defaults = new SplObjectStorage();
         $this->aliases = new SplObjectStorage();
         $this->selectableColumns = new SplObjectStorage();
         $this->selectColumns = new SplObjectStorage();
@@ -105,6 +109,24 @@ class Resolver
         }
 
         return $this->behaviors[$model];
+    }
+
+    /**
+     * Get a model's defaults
+     *
+     * @param Model $model
+     *
+     * @return Defaults
+     */
+    public function getDefaults(Model $model): Defaults
+    {
+        if (! $this->defaults->contains($model)) {
+            $defaults = new Defaults($this->query);
+            $model->createDefaults($defaults);
+            $this->defaults->attach($model, $defaults);
+        }
+
+        return $this->defaults[$model];
     }
 
     /**

@@ -114,6 +114,15 @@ abstract class Model implements \ArrayAccess
     }
 
     /**
+     * Create the model's defaults
+     *
+     * @param Defaults $defaults
+     */
+    public function createDefaults(Defaults $defaults)
+    {
+    }
+
+    /**
      * Create the model's relations
      *
      * If your model should be associated to other models, override this method and create the model's relations.
