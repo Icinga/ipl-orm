@@ -9,7 +9,7 @@ use ipl\Sql\Connection;
  * Models represent single database tables or parts of it.
  * They are also used to interact with the tables, i.e. in order to query for data.
  */
-abstract class Model implements \ArrayAccess
+abstract class Model implements \ArrayAccess, \IteratorAggregate
 {
     use PropertiesWithDefaults;
 

@@ -3,6 +3,7 @@
 namespace ipl\Orm\Common;
 
 use Closure;
+use Traversable;
 
 trait PropertiesWithDefaults
 {
@@ -17,5 +18,14 @@ trait PropertiesWithDefaults
         }
 
         return $this->parentGetProperty($key);
+    }
+
+    public function getIterator(): Traversable
+    {
+        foreach ($this->properties as $key => $value) {
+            if (! $value instanceof Closure) {
+                yield $key => $value;
+            }
+        }
     }
 }
