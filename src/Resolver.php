@@ -2,6 +2,8 @@
 
 namespace ipl\Orm;
 
+use AppendIterator;
+use ArrayIterator;
 use Generator;
 use InvalidArgumentException;
 use ipl\Orm\Contract\QueryAwareBehavior;
@@ -573,8 +575,38 @@ class Resolver
                     if ($hydrationPath !== $tableName) {
                         $hydrationPath = $this->qualifyPath($hydrationPath, $tableName);
 
-                        foreach ($this->resolveRelations($hydrationPath) as $relationPath => $relation) {
-                            // run and exhaust generator
+                        $relations = new AppendIterator();
+                        $relations->append(new ArrayIterator([$tableName => null]));
+                        $relations->append($this->resolveRelations($hydrationPath));
+                        foreach ($relations as $relationPath => $relation) {
+                            if ($column instanceof ExpressionInterface) {
+                                continue;
+                            }
+
+                            if ($relationPath === $tableName) {
+                                $subject = $model;
+                            } else {
+                                /** @var Relation $relation */
+                                $subject = $relation->getTarget();
+                            }
+
+                            $columnName = $columnPath;
+                            if ($relationPath !== $hydrationPath) {
+                                // It's still an intermediate relation, not the target
+                                $columnName = substr($hydrationPath, strlen($relationPath) + 1) . ".$columnName";
+                            }
+
+                            $newColumn = $this->getBehaviors($subject)->rewriteColumn($columnName, $relationPath);
+                            if ($newColumn !== null) {
+                                if ($newColumn instanceof ExpressionInterface) {
+                                    $column = $newColumn;
+                                    $target = $subject;
+                                    break 2; // Expressions don't need to be *withed* and get no automatic alias either
+                                }
+
+                                $column = $newColumn;
+                                break;
+                            }
                         }
 
                         if (is_int($alias) && $relationPath !== $hydrationPath) {
@@ -592,10 +624,10 @@ class Resolver
                 default:
                     $relationPath = null;
                     $target = $model;
-            }
 
-            if (! $column instanceof ExpressionInterface) {
-                $column = $this->getBehaviors($target)->rewriteColumn($column, $relationPath) ?: $column;
+                    if (! $column instanceof ExpressionInterface) {
+                        $column = $this->getBehaviors($target)->rewriteColumn($column) ?: $column;
+                    }
             }
 
             if (
