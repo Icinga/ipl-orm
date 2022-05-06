@@ -55,11 +55,8 @@ class Hydrator
             );
         }
 
-        $relationLoader = function (Model $subject, string $relationName) use ($target) {
-            $relation = $this->query->getResolver()->getRelations($target)->get($relationName);
-
-            $query = $this->query->derive($relationName, $subject);
-            return $relation->isOne() ? $query->first() : $query;
+        $relationLoader = function (Model $subject, string $relationName) {
+            return $this->query->derive($relationName, $subject);
         };
 
         $defaults = $this->query->getResolver()->getDefaults($target);
