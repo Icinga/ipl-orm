@@ -173,4 +173,19 @@ class QueryTest extends \PHPUnit\Framework\TestCase
             $query->assembleSelect()->getColumns()
         );
     }
+
+    public function testAliasIsUsedForAliasedExpressionsInOrderBy()
+    {
+        $query = (new Query())
+            ->setModel(new User())
+            ->columns('api_identity.api_token')
+            ->orderBy('api_identity.api_token', 'desc');
+
+        $orderBy = $query->assembleSelect()->getOrderBy();
+
+        $this->assertSame(
+            [['user_api_identity_api_token', 'desc']],
+            $orderBy
+        );
+    }
 }

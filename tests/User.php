@@ -28,6 +28,7 @@ class User extends Model
     public function createRelations(Relations $relations)
     {
         $relations->hasOne('profile', Profile::class);
+        $relations->hasOne('api_identity', ApiIdentity::class);
 
         $relations
             ->belongsToMany('group', Group::class)
