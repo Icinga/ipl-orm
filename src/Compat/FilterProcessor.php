@@ -165,11 +165,7 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
                             $optimizeChild !== null && $optimizeChild
                             || (
                                 $optimizeChild === null
-                                && ! (
-                                    // Not a selected join
-                                    isset($this->baseJoins[$relationPath])
-                                    || isset($query->getWith()[$relationPath])
-                                )
+                                && ! isset($query->getWith()[$relationPath]) // Not a selected join
                                 && ! $query->getResolver()->isDistinctRelation($relationPath) // Not a to-one relation
                             )
                         )
