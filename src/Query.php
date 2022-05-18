@@ -2,6 +2,8 @@
 
 namespace ipl\Orm;
 
+use AppendIterator;
+use ArrayIterator;
 use ArrayObject;
 use Generator;
 use InvalidArgumentException;
@@ -394,30 +396,14 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
     {
         $columns = $this->getColumns();
         $model = $this->getModel();
+        $tableName = $model->getTableName();
         $select = clone $this->getSelectBase();
         $resolver = $this->getResolver();
 
+        $resolved = null;
         if (! empty($columns)) {
             $resolved = $this->groupColumnsByTarget($resolver->requireAndResolveColumns($columns));
             $customAliases = array_flip(array_filter(array_keys($columns), 'is_string'));
-
-            if ($resolved->contains($model)) {
-                $modelColumns = $resolved[$model]->getArrayCopy();
-                if (! empty($customAliases)) {
-                    $customColumns = array_intersect_key($modelColumns, $customAliases);
-                    $modelColumns = array_diff_key($modelColumns, $customAliases);
-
-                    $select->columns($resolver->qualifyColumns($customColumns, $model));
-                }
-
-                if (! empty($modelColumns)) {
-                    $select->columns(
-                        $resolver->qualifyColumnsAndAliases($modelColumns, $model, false)
-                    );
-                }
-
-                $resolved->detach($model);
-            }
 
             foreach ($resolved as $target) {
                 $targetColumns = $resolved[$target]->getArrayCopy();
@@ -432,29 +418,34 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
                     $select->columns(
                         $resolver->qualifyColumnsAndAliases(
                             $targetColumns,
-                            $target
+                            $target,
+                            $target !== $model
                         )
                     );
                 }
             }
-        } else {
-            $select->columns(
-                $resolver->qualifyColumnsAndAliases(
-                    $resolver->requireAndResolveColumns(
-                        $resolver->getSelectColumns($model)
-                    ),
-                    null,
-                    false
-                )
-            );
+        }
 
-            foreach ($this->getWith() as $relation) {
+        $chosen = new AppendIterator();
+        $chosen->append(new ArrayIterator([$tableName => null]));
+        $chosen->append(new ArrayIterator($this->getWith()));
+        foreach ($chosen as $relationPath => $relation) {
+            if ($relationPath === $tableName) {
+                $subject = $model;
+            } else {
+                /** @var Relation $relation */
+                $subject = $relation->getTarget();
+            }
+
+            if (! $resolved || ! $resolved->contains($subject)) {
                 $select->columns(
                     $resolver->qualifyColumnsAndAliases(
                         $resolver->requireAndResolveColumns(
-                            $resolver->getSelectColumns($relation->getTarget()),
-                            $relation->getTarget()
-                        )
+                            $resolver->getSelectColumns($subject),
+                            $subject
+                        ),
+                        $subject,
+                        $relationPath !== $tableName
                     )
                 );
             }

@@ -185,4 +185,38 @@ class QueryTest extends \PHPUnit\Framework\TestCase
             $orderBy
         );
     }
+
+    public function testExplicitColumnsDontCauseRelationsToBeImplicitlySelected()
+    {
+    $query = (new Query())
+        ->setModel(new User())
+        ->with('profile')
+        ->columns(['user.username', 'profile.surname']);
+
+    $this->assertSame(
+        [
+            'user.username',
+            'user_profile_surname' => 'user_profile.surname'
+        ],
+        $query->assembleSelect()->getColumns()
+    );
+}
+
+    public function testExplicitColumnsDontCauseOtherRelationsToNotBeImplicitlySelected()
+    {
+        $query = (new Query())
+            ->setModel(new User())
+            ->with('profile')
+            ->columns('profile.surname');
+
+        $this->assertSame(
+            [
+                'user_profile_surname' => 'user_profile.surname',
+                'user.id',
+                'user.username',
+                'user.password'
+            ],
+            $query->assembleSelect()->getColumns()
+        );
+    }
 }
