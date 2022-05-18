@@ -258,22 +258,6 @@ SQL;
         );
     }
 
-    public function testSelectFromModelWithEagerLoadingOfASingleOneToOneRelationAndExplicitColumnsToSelect()
-    {
-        $this->setupTest();
-
-        $user = new User();
-        $query = (new Query())
-            ->setModel($user)
-            ->columns('*')
-            ->with('profile');
-
-        $this->assertSql(
-            'SELECT user.* FROM user INNER JOIN profile user_profile ON user_profile.user_id = user.id',
-            $query->assembleSelect()
-        );
-    }
-
     public function testSelectFromModelWithEagerLoadingOfASingleOneToOneRelationInversed()
     {
         $this->setupTest();
