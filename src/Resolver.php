@@ -326,7 +326,7 @@ class Resolver
                 $column->setColumns($this->qualifyColumns($column->getResolvedColumns()));
             } elseif ($column instanceof ExpressionInterface) {
                 $column = clone $column; // The expression may be part of a model and those shouldn't change implicitly
-                $column->setColumns($this->qualifyColumns($column->getResolvedColumns(), $target));
+                $column->setColumns($this->qualifyColumns($column->getColumns(), $target));
             } else {
                 $column = $this->qualifyColumn($column, $targetAlias);
             }
