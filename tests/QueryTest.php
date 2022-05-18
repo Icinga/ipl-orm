@@ -4,6 +4,7 @@ namespace ipl\Tests\Orm;
 
 use ipl\Orm\Exception\InvalidRelationException;
 use ipl\Orm\Query;
+use ipl\Sql\Expression;
 
 class QueryTest extends \PHPUnit\Framework\TestCase
 {
@@ -136,6 +137,23 @@ class QueryTest extends \PHPUnit\Framework\TestCase
         $this->assertSame(
             $query->getResolver()->getRelations($query->getModel())->get('group'),
             $query->getWith()['user.group']
+        );
+    }
+
+    public function testExpressionsDontCauseRelationsToBeEagerLoaded()
+    {
+        $query = (new Query())
+            ->setModel(new User())
+            ->columns([
+                'expr' => new Expression(
+                    'HEX(%s)',
+                    ['profile.id']
+                )
+            ]);
+
+        $this->assertSame(
+            ['expr'],
+            array_keys($query->assembleSelect()->getColumns())
         );
     }
 

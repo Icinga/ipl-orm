@@ -530,12 +530,13 @@ class Resolver
      *
      * @param array $columns
      * @param Model $model
+     * @param bool $utilize Pass true in order to just utilize referenced relations
      *
      * @return Generator
      *
      * @throws InvalidColumnException If a column does not exist
      */
-    public function requireAndResolveColumns(array $columns, Model $model = null)
+    public function requireAndResolveColumns(array $columns, Model $model = null, $utilize = false)
     {
         $model = $model ?: $this->query->getModel();
         $tableName = $model->getTableName();
@@ -545,7 +546,7 @@ class Resolver
             if ($column instanceof ExpressionInterface) {
                 $column = new ResolvedExpression(
                     $column,
-                    $this->requireAndResolveColumns($column->getColumns(), $model)
+                    $this->requireAndResolveColumns($column->getColumns(), $model, true)
                 );
 
                 if (is_int($alias)) {
@@ -583,7 +584,12 @@ class Resolver
                             $alias = "$hydrationPath.$column";
                         }
 
-                        $this->query->with($hydrationPath);
+                        if ($utilize) {
+                            $this->query->utilize($hydrationPath);
+                        } else {
+                            $this->query->with($hydrationPath);
+                        }
+
                         $target = $relation->getTarget();
 
                         break;
