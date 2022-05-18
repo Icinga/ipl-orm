@@ -187,14 +187,14 @@ class SqlTest extends \PHPUnit\Framework\TestCase
     {
         $this->setupTest();
 
-        $model = new TestModelWithColumns();
+        $model = new TestModel();
         $query = (new Query())
             ->setModel($model)
-            ->columns('lorem')
+            ->columns('*')
             ->limit(25);
 
         $this->assertSql(
-            'SELECT test.lorem FROM test LIMIT 25',
+            'SELECT test.* FROM test LIMIT 25',
             $query->assembleSelect()
         );
     }
@@ -203,14 +203,14 @@ class SqlTest extends \PHPUnit\Framework\TestCase
     {
         $this->setupTest();
 
-        $model = new TestModelWithColumns();
+        $model = new TestModel();
         $query = (new Query())
             ->setModel($model)
-            ->columns('lorem')
+            ->columns('*')
             ->offset(25);
 
         $this->assertSql(
-            'SELECT test.lorem FROM test OFFSET 25',
+            'SELECT test.* FROM test OFFSET 25',
             $query->assembleSelect()
         );
     }
@@ -219,15 +219,15 @@ class SqlTest extends \PHPUnit\Framework\TestCase
     {
         $this->setupTest();
 
-        $model = new TestModelWithColumns();
+        $model = new TestModel();
         $query = (new Query())
             ->setModel($model)
-            ->columns('lorem')
+            ->columns('*')
             ->limit(25)
             ->offset(25);
 
         $this->assertSql(
-            'SELECT test.lorem FROM test LIMIT 25 OFFSET 25',
+            'SELECT test.* FROM test LIMIT 25 OFFSET 25',
             $query->assembleSelect()
         );
     }
@@ -265,11 +265,11 @@ SQL;
         $user = new User();
         $query = (new Query())
             ->setModel($user)
-            ->columns('username')
+            ->columns('*')
             ->with('profile');
 
         $this->assertSql(
-            'SELECT user.username FROM user INNER JOIN profile user_profile ON user_profile.user_id = user.id',
+            'SELECT user.* FROM user INNER JOIN profile user_profile ON user_profile.user_id = user.id',
             $query->assembleSelect()
         );
     }

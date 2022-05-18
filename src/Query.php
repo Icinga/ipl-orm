@@ -376,9 +376,8 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
         $select = clone $this->getSelectBase();
         $resolver = $this->getResolver();
 
-        $allColumns = false;
         if (! empty($columns)) {
-            list($resolved, $allColumns) = $this->groupColumnsByTarget($resolver->requireAndResolveColumns($columns));
+            $resolved = $this->groupColumnsByTarget($resolver->requireAndResolveColumns($columns));
             $customAliases = array_flip(array_filter(array_keys($columns), 'is_string'));
 
             if ($resolved->contains($model)) {
@@ -417,14 +416,12 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
                     );
                 }
             }
-        }
-
-        if (empty($columns) || $allColumns) {
+        } else {
             $select->columns(
                 $resolver->qualifyColumnsAndAliases(
-                    $resolver->requireAndResolveColumns($allColumns
-                        ? $resolver->requireRemainingColumns($select->getColumns(), $model)
-                        : $resolver->getSelectColumns($model)),
+                    $resolver->requireAndResolveColumns(
+                        $resolver->getSelectColumns($model)
+                    ),
                     null,
                     false
                 )
@@ -434,9 +431,7 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
                 $select->columns(
                     $resolver->qualifyColumnsAndAliases(
                         $resolver->requireAndResolveColumns(
-                            $allColumns
-                                ? $resolver->requireRemainingColumns($select->getColumns(), $relation->getTarget())
-                                : $resolver->getSelectColumns($relation->getTarget()),
+                            $resolver->getSelectColumns($relation->getTarget()),
                             $relation->getTarget()
                         )
                     )
@@ -688,19 +683,13 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
      *
      * @param Generator $columns
      *
-     * @return [SplObjectStorage, bool]
+     * @return SplObjectStorage
      */
     protected function groupColumnsByTarget(Generator $columns)
     {
         $columnStorage = new SplObjectStorage();
 
-        $allColumns = false;
         foreach ($columns as list($target, $alias, $column)) {
-            if ($column === '*') {
-                $allColumns = true;
-                continue;
-            }
-
             if (! $columnStorage->contains($target)) {
                 $resolved = new ArrayObject();
                 $columnStorage->attach($target, $resolved);
@@ -715,7 +704,7 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
             }
         }
 
-        return [$columnStorage, $allColumns];
+        return $columnStorage;
     }
 
     /**
