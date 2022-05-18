@@ -343,7 +343,8 @@ SQL;
         $group = new Group();
         $query = (new Query())
             ->setModel($group)
-            ->with(['user', 'user.audit']);
+            ->with('user')
+            ->with('user.audit');
 
         $sql = <<<'SQL'
 SELECT

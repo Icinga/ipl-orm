@@ -291,17 +291,32 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
     /**
      * Add a relation to eager load
      *
-     * @param string|array $relations
+     * @param string $relation
+     * @param array $columns (Unqualified) columns to select from the relation.
+     *                       If not given or empty, all available columns are selected
      *
      * @return $this
      */
-    public function with($relations)
+    public function with($relation, $columns = [])
     {
-        $tableName = $this->getModel()->getTableName();
-        foreach ((array) $relations as $relation) {
-            $relation = $this->getResolver()->qualifyPath($relation, $tableName);
-            $this->with[$relation] = $this->getResolver()->resolveRelation($relation);
+        if (is_array($relation) && empty($columns)) {
+            // TODO: The first argument used to accept arrays, this should be removed some time
+            foreach ($relation as $relationPath) {
+                $this->with($relationPath);
+            }
+
+            return $this;
         }
+
+        $relation = $this->getResolver()->qualifyPath($relation, $this->getModel()->getTableName());
+        $this->with[$relation] = $this->getResolver()->resolveRelation($relation);
+
+        // Qualify columns
+        foreach ($columns as &$column) {
+            $column = "$relation.$column";
+        }
+
+        $this->columns($columns);
 
         return $this;
     }
@@ -309,17 +324,23 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
     /**
      * Remove an eager loaded relation
      *
-     * @param string|array $relations
+     * @param string $relation
      *
      * @return $this
      */
-    public function without($relations)
+    public function without($relation)
     {
-        $tableName = $this->getModel()->getTableName();
-        foreach ((array) $relations as $relation) {
-            $relation = $this->getResolver()->qualifyPath($relation, $tableName);
-            unset($this->with[$relation]);
+        if (is_array($relation)) {
+            // TODO: The first argument used to accept arrays, this should be removed some time
+            foreach ($relation as $relationPath) {
+                $this->without($relationPath);
+            }
+
+            return $this;
         }
+
+        $path = $this->getResolver()->qualifyPath($relation, $this->getModel()->getTableName());
+        unset($this->with[$path]);
 
         return $this;
     }

@@ -122,12 +122,12 @@ class QueryTest extends \PHPUnit\Framework\TestCase
         );
     }
 
-    public function testWithWithArrayAsParamaterAddsTheCorrectRelationsToEagerLoad()
+    public function testMultipleCallsOfWithAddsTheCorrectRelationsToEagerLoad()
     {
         $query = (new Query())
             ->setModel(new User());
 
-        $query->with(['profile', 'group']);
+        $query->with('profile')->with('group');
 
         $this->assertSame(
             $query->getResolver()->getRelations($query->getModel())->get('profile'),
