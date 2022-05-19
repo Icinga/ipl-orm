@@ -21,6 +21,7 @@ use ipl\Stdlib\Contract\Paginatable;
 use ipl\Stdlib\Events;
 use ipl\Stdlib\Filter;
 use ipl\Stdlib\Filters;
+use ipl\Stdlib\Str;
 use IteratorAggregate;
 use ReflectionClass;
 use RuntimeException;
@@ -343,6 +344,19 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
 
         $path = $this->getResolver()->qualifyPath($relation, $this->getModel()->getTableName());
         unset($this->with[$path]);
+
+        // Cleanup columns, otherwise they'll cause the relation to be loaded again
+        foreach ($this->columns as $alias => $column) {
+            if ($column instanceof ExpressionInterface) {
+                // This only affects the targeted relation. If other relations are required by the
+                // expression itself, it needs to be removed manually.
+                $column = $alias;
+            }
+
+            if (is_string($column) && Str::startsWith($column, $path . '.')) {
+                unset($this->columns[$alias]);
+            }
+        }
 
         return $this;
     }
