@@ -66,6 +66,9 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
     /** @var array Columns to select from the model */
     protected $columns = [];
 
+    /** @var array<string, bool> Relations of which columns are implicitly selected */
+    protected $implicitColumnsFrom = [];
+
     /** @var bool Whether to peek ahead for more results */
     protected $peekAhead = false;
 
@@ -164,6 +167,7 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
     public function setModel(Model $model)
     {
         $this->model = $model;
+        $this->implicitColumnsFrom[$model->getTableName()] = true;
         $this->getResolver()->setAlias($model, $model->getTableName());
 
         return $this;
@@ -189,6 +193,22 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
     public function setColumns(array $columns)
     {
         $this->columns = $columns;
+
+        return $this;
+    }
+
+    /**
+     * Reset all columns selected from the model
+     *
+     * Note that this will also prevent automatic column selection of relations registered for eager loading so far.
+     * If you don't want that, consider calling {@see self::setColumns()} with an empty array instead.
+     *
+     * @return $this
+     */
+    public function resetColumns()
+    {
+        $this->columns = [];
+        $this->implicitColumnsFrom = [];
 
         return $this;
     }
@@ -313,6 +333,7 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
 
         $relation = $this->getResolver()->qualifyPath($relation, $this->getModel()->getTableName());
         $this->with[$relation] = $this->getResolver()->resolveRelation($relation);
+        $this->implicitColumnsFrom[$relation] = true;
 
         // Qualify columns
         foreach ($columns as &$column) {
@@ -444,6 +465,10 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
         $chosen->append(new ArrayIterator([$tableName => null]));
         $chosen->append(new ArrayIterator($this->getWith()));
         foreach ($chosen as $relationPath => $relation) {
+            if (! array_key_exists($relationPath, $this->implicitColumnsFrom)) {
+                continue;
+            }
+
             if ($relationPath === $tableName) {
                 $subject = $model;
             } else {

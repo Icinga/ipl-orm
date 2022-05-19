@@ -219,4 +219,77 @@ class QueryTest extends \PHPUnit\Framework\TestCase
             $query->assembleSelect()->getColumns()
         );
     }
+
+    public function testResetColumnsResetsImplicitColumnSelection()
+    {
+        $query = (new Query())
+            ->setModel(new User())
+            ->with('profile');
+
+        // What normally happens
+        $this->assertSame(
+            [
+                'user.id',
+                'user.username',
+                'user.password',
+                'user_profile_id' => 'user_profile.id',
+                'user_profile_user_id' => 'user_profile.user_id',
+                'user_profile_given_name' => 'user_profile.given_name',
+                'user_profile_surname' => 'user_profile.surname'
+            ],
+            $query->assembleSelect()->getColumns()
+        );
+
+        // `resetColumns()` now prevents the automatic selection of any other columns
+        $query->resetColumns()->columns('user.username');
+
+        // The test
+        $this->assertSame(
+            ['user.username'],
+            $query->assembleSelect()->getColumns()
+        );
+    }
+
+    /**
+     * @depends testResetColumnsResetsImplicitColumnSelection
+     */
+    public function testResetColumnsResetsImplicitColumnSelectionOnlyOfPreviouslyLoadedRelations()
+    {
+        $query = (new Query())
+            ->setModel(new User())
+            ->with('profile'); // Important, this won't be automatically selected
+
+        $query->resetColumns()->columns('user.username');
+        $query->with('audit'); // but this will
+
+        $this->assertSame(
+            [
+                'user.username',
+                'user_audit_id' => 'user_audit.id',
+                'user_audit_user_id' => 'user_audit.user_id',
+                'user_audit_activity' => 'user_audit.activity'
+            ],
+            $query->assembleSelect()->getColumns()
+        );
+    }
+
+    public function testSetColumnsOnlyAdjustsColumns()
+    {
+        $query = (new Query())
+            ->setModel(new User())
+            ->columns('user.profile.surname');
+
+        // Such a chained call shouldn't affect automatic column selection
+        $query->setColumns($query->getColumns());
+
+        $this->assertSame(
+            [
+                'user_profile_surname' => 'user_profile.surname',
+                'user.id',
+                'user.username',
+                'user.password'
+            ],
+            $query->assembleSelect()->getColumns()
+        );
+    }
 }
