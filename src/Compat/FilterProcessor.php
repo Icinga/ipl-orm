@@ -181,7 +181,7 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
             foreach ($subQueryGroups as $relationPath => $columns) {
                 $generalRules = [];
                 foreach ($columns as $column => & $comparisons) {
-                    if (isset($comparisons[Filter\Unequal::class])) {
+                    if (isset($comparisons[Filter\Unequal::class]) || isset($comparisons[Filter\Unlike::class])) {
                         // If there's a unequal (!=) comparison for any column, all other comparisons (for the same
                         // column) also need to be outsourced to their own sub query. Regardless of their amount of
                         // occurrence. This is because `$generalRules` apply to all comparisons of such a column and
@@ -207,7 +207,7 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
                 $subQueryFilters = [];
                 foreach ($columns as $column => $comparisons) {
                     foreach ($comparisons as $conditionClass => $rules) {
-                        if ($conditionClass === Filter\Unequal::class) {
+                        if ($conditionClass === Filter\Unequal::class || $conditionClass === Filter\Unlike::class) {
                             // Unequal comparisons are always put into their own sub query
                             $subQueryFilters[] = [$rules, count($rules), true];
                         } elseif (count($rules) > $count) {
@@ -234,8 +234,13 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
                     if ($count !== null) {
                         $aggregateFilter = Filter::any();
                         foreach ($filters as $condition) {
-                            if ($negate && $condition instanceof Filter\Unequal) {
-                                $negation = Filter::equal($condition->getColumn(), $condition->getValue());
+                            if ($negate) {
+                                if ($condition instanceof Filter\Unequal) {
+                                    $negation = Filter::equal($condition->getColumn(), $condition->getValue());
+                                } else { // if ($condition instanceof Filter\Unlike)
+                                    $negation = Filter::like($condition->getColumn(), $condition->getValue());
+                                }
+
                                 $negation->metaData()->merge($condition->metaData());
                                 $condition = $negation;
                                 $count = 1;
