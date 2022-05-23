@@ -2,8 +2,8 @@
 
 namespace ipl\Orm;
 
+use ipl\Orm\Common\PropertiesWithDefaults;
 use ipl\Sql\Connection;
-use ipl\Stdlib\Properties;
 
 /**
  * Models represent single database tables or parts of it.
@@ -11,7 +11,7 @@ use ipl\Stdlib\Properties;
  */
 abstract class Model implements \ArrayAccess
 {
-    use Properties;
+    use PropertiesWithDefaults;
 
     final public function __construct(array $properties = null)
     {
@@ -110,6 +110,15 @@ abstract class Model implements \ArrayAccess
      * @param Behaviors $behaviors
      */
     public function createBehaviors(Behaviors $behaviors)
+    {
+    }
+
+    /**
+     * Create the model's defaults
+     *
+     * @param Defaults $defaults
+     */
+    public function createDefaults(Defaults $defaults)
     {
     }
 

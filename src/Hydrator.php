@@ -55,15 +55,19 @@ class Hydrator
             );
         }
 
-        $defaults = [];
-        foreach ($resolver->getRelations($target) as $targetRelation) {
-            $name = $targetRelation->getName();
-            $isOne = $targetRelation->isOne();
+        $relationLoader = function (Model $subject, string $relationName) use ($target) {
+            $relation = $this->query->getResolver()->getRelations($target)->get($relationName);
 
-            $defaults[$name] = function (Model $model) use ($name, $isOne) {
-                $query = $this->query->derive($name, $model);
-                return $isOne ? $query->first() : $query;
-            };
+            $query = $this->query->derive($relationName, $subject);
+            return $relation->isOne() ? $query->first() : $query;
+        };
+
+        $defaults = $this->query->getResolver()->getDefaults($target);
+        foreach ($resolver->getRelations($target) as $targetRelation) {
+            $targetRelationName = $targetRelation->getName();
+            if (! $defaults->has($targetRelationName)) {
+                $defaults->add($targetRelationName, $relationLoader);
+            }
         }
 
         $this->hydrators[$path] = [$target, $relation, $columnToPropertyMap, $defaults];
