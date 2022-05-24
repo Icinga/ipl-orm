@@ -743,11 +743,19 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
         $columnsAndDirections = [];
         $orderByResolved = [];
         $resolver = $this->getResolver();
+        $selectedColumns = $select->getColumns();
 
-        // Prepare flat ORDER BY column(s) and direction(s) for requireAndResolveColumns()
         foreach ($orderBy as $part) {
             list($column, $direction) = $part;
-            $columnsAndDirections[$column] = $direction;
+
+            if (isset($selectedColumns[$column])) {
+                // If it's a custom alias, we have no other way of knowing it,
+                // unless the caller explicitly uses it in the sort rule.
+                $orderByResolved[] = $part;
+            } else {
+                // Prepare flat ORDER BY column(s) and direction(s) for requireAndResolveColumns()
+                $columnsAndDirections[$column] = $direction;
+            }
         }
 
         foreach (

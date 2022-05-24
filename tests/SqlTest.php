@@ -159,7 +159,7 @@ class SqlTest extends \PHPUnit\Framework\TestCase
         $query = (new Query())
             ->setModel($model)
             ->columns(['alias' => 'lorem'])
-            ->orderBy('lorem');
+            ->orderBy('alias');
 
         $this->assertSql(
             'SELECT (MAX(test.lorem)) AS alias FROM test ORDER BY alias',
