@@ -178,7 +178,7 @@ class SqlTest extends \PHPUnit\Framework\TestCase
             ->orderBy('ipsum');
 
         $this->assertSql(
-            'SELECT (MAX(test.lorem)) AS lorem FROM test ORDER BY (MIN(test.ipsum))',
+            'SELECT (MAX(test.lorem)) AS lorem FROM test ORDER BY MIN(test.ipsum)',
             $query->assembleSelect()
         );
     }

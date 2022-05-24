@@ -8,6 +8,7 @@ use InvalidArgumentException;
 use ipl\Orm\Common\SortUtil;
 use ipl\Orm\Compat\FilterProcessor;
 use ipl\Sql\Connection;
+use ipl\Sql\ExpressionInterface;
 use ipl\Sql\LimitOffset;
 use ipl\Sql\LimitOffsetInterface;
 use ipl\Sql\OrderBy;
@@ -765,8 +766,17 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
             $selectColumns = $resolver->getSelectColumns($model);
             $tableName = $resolver->getAlias($model);
 
-            if ($column instanceof AliasedExpression) {
-                $column = is_string($alias) ? $alias : $column->getAlias();
+            if ($column instanceof ExpressionInterface) {
+                if (is_int($alias) && $column instanceof AliasedExpression) {
+                    $alias = $column->getAlias();
+                } elseif (is_string($alias) && $model !== $this->getModel()) {
+                    $alias = $resolver->qualifyColumnAlias($alias, $tableName);
+                }
+
+                if (is_string($alias) && isset($selectedColumns[$alias])) {
+                    // An expression's alias can only be used if the expression is also selected
+                    $column = $alias;
+                }
             } else {
                 if (isset($selectColumns[$column])) {
                     $column = $selectColumns[$column];
