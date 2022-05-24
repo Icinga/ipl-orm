@@ -652,6 +652,22 @@ class Resolver
                     }
             }
 
+            if (! $column instanceof ExpressionInterface) {
+                $targetColumns = $target->getColumns();
+                if (isset($targetColumns[$column])) {
+                    // $column is actually an alias
+                    $alias = is_int($alias) ? $column : $alias;
+                    $column = $targetColumns[$column];
+
+                    if ($column instanceof ExpressionInterface) {
+                        $column = new ResolvedExpression(
+                            $column,
+                            $this->requireAndResolveColumns($column->getColumns(), $target)
+                        );
+                    }
+                }
+            }
+
             if (
                 ! $column instanceof ExpressionInterface
                 && ! $this->hasSelectableColumn($target, $columnPath)
