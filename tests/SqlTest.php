@@ -105,6 +105,84 @@ class SqlTest extends \PHPUnit\Framework\TestCase
         );
     }
 
+    public function testSelectFromModelWithExplicitAliasedModelColumns()
+    {
+        $this->setupTest();
+
+        $model = new TestModelWithAliasedColumns();
+        $query = (new Query())
+            ->setModel($model)
+            ->columns(['lorem']);
+
+        $this->assertSql(
+            'SELECT (MAX(test.lorem)) AS lorem FROM test',
+            $query->assembleSelect()
+        );
+    }
+
+    public function testSelectFromModelWithExplicitAliasedAliasedModelColumns()
+    {
+        $this->setupTest();
+
+        $model = new TestModelWithAliasedColumns();
+        $query = (new Query())
+            ->setModel($model)
+            ->columns(['alias' => 'ipsum']);
+
+        $this->assertSql(
+            'SELECT (MIN(test.ipsum)) AS alias FROM test',
+            $query->assembleSelect()
+        );
+    }
+
+    public function testSelectFromModelWithAliasedOrderByColumnBeingSelected()
+    {
+        $this->setupTest();
+
+        $model = new TestModelWithAliasedColumns();
+        $query = (new Query())
+            ->setModel($model)
+            ->columns('lorem')
+            ->orderBy('lorem');
+
+        $this->assertSql(
+            'SELECT (MAX(test.lorem)) AS lorem FROM test ORDER BY lorem',
+            $query->assembleSelect()
+        );
+    }
+
+    public function testSelectFromModelWithAliasedOrderByColumnBeingSelectedWithAlias()
+    {
+        $this->setupTest();
+
+        $model = new TestModelWithAliasedColumns();
+        $query = (new Query())
+            ->setModel($model)
+            ->columns(['alias' => 'lorem'])
+            ->orderBy('alias');
+
+        $this->assertSql(
+            'SELECT (MAX(test.lorem)) AS alias FROM test ORDER BY alias',
+            $query->assembleSelect()
+        );
+    }
+
+    public function testSelectFromModelWithAliasedOrderByColumnNotBeingSelected()
+    {
+        $this->setupTest();
+
+        $model = new TestModelWithAliasedColumns();
+        $query = (new Query())
+            ->setModel($model)
+            ->columns('lorem')
+            ->orderBy('ipsum');
+
+        $this->assertSql(
+            'SELECT (MAX(test.lorem)) AS lorem FROM test ORDER BY MIN(test.ipsum)',
+            $query->assembleSelect()
+        );
+    }
+
     public function testSelectFromModelWithLimit()
     {
         $this->setupTest();
