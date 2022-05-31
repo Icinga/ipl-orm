@@ -52,6 +52,9 @@ class Resolver
     /** @var SplObjectStorage Resolved relations */
     protected $resolvedRelations;
 
+    /** @var array Known and already resolved/joined relations */
+    protected $knownRelations;
+
     /**
      * Create a new resolver
      *
@@ -87,6 +90,20 @@ class Resolver
         }
 
         return $this->relations[$model];
+    }
+
+    /**
+     * Reset this model's known relations
+     *
+     * Should always be called before resolving this query's with[] relations
+     *
+     * @return $this
+     */
+    public function resetKnownRelations()
+    {
+        $this->knownRelations = [];
+
+        return $this;
     }
 
     /**
@@ -360,12 +377,21 @@ class Resolver
             );
         }
 
+        $knownTargetAlias = null;
+        if (isset($this->knownRelations[$target->getTableName()])) {
+            $knownTargetAlias = $this->knownRelations[$target->getTableName()];
+        }
+
         $qualified = [];
         foreach ($columns as $alias => $column) {
             if (is_int($alias) && is_array($column)) {
                 // $columns is $this->requireAndResolveColumns()
                 list($target, $alias, $columnName) = $column;
                 $targetAlias = $this->getAlias($target);
+
+                if (isset($this->knownRelations[$target->getTableName()])) {
+                    $knownTargetAlias = $this->knownRelations[$target->getTableName()];
+                }
 
                 // Thanks to PHP 5.6 where `list` is evaluated from right to left. It will extract
                 // the values for `$target` and `$alias` then from the third argument (`$column`).
@@ -397,10 +423,18 @@ class Resolver
                 $column = clone $column; // The expression may be part of a model and those shouldn't change implicitly
                 $column->setColumns($this->qualifyColumns($column->getColumns(), $target));
             } else {
-                $column = $this->qualifyColumn($column, $targetAlias);
+                if (! $knownTargetAlias) {
+                    $knownTargetAlias = $targetAlias;
+                }
+
+                $column = $this->qualifyColumn($column, $knownTargetAlias);
             }
 
             $qualified[$alias] = $column;
+        }
+
+        if (! isset($this->knownRelations[$target->getTableName()])) {
+            $this->knownRelations[$target->getTableName()] = $targetAlias;
         }
 
         return $qualified;

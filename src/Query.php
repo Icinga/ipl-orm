@@ -430,6 +430,9 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
                 )
             );
 
+            // Needs to be reset before we can begin to resolve the actual model relations.
+            $resolver->resetKnownRelations();
+
             foreach ($this->getWith() as $relation) {
                 $select->columns(
                     $resolver->qualifyColumnsAndAliases(
@@ -454,7 +457,8 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
         $joinedRelations = [];
         foreach ($this->getWith() + $this->getUtilize() as $path => $_) {
             foreach ($resolver->resolveRelations($path) as $relationPath => $relation) {
-                if (isset($joinedRelations[$relationPath])) {
+                $tableName = $relation->getTarget()->getTableName();
+                if (isset($joinedRelations[$tableName])) {
                     continue;
                 }
 
@@ -464,6 +468,12 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
 
                     $sourceAlias = $resolver->getAlias($source);
                     $targetAlias = $resolver->getAlias($target);
+
+                    if (isset($joinedRelations[$source->getTableName()])) {
+                        // When this relation is already joined, we only need to use
+                        // it's alias instead of generating a new one
+                        $sourceAlias = $joinedRelations[$source->getTableName()];
+                    }
 
                     $conditions = [];
                     foreach ($relatedKeys as $fk => $ck) {
@@ -491,7 +501,7 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
                     }
                 }
 
-                $joinedRelations[$relationPath] = true;
+                $joinedRelations[$tableName] = $resolver->getAlias($relation->getTarget());
             }
         }
 
