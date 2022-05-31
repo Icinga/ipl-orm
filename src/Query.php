@@ -397,70 +397,36 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
     {
         $columns = $this->getColumns();
         $model = $this->getModel();
-        $select = clone $this->getSelectBase();
         $resolver = $this->getResolver();
+        $select = clone $this->getSelectBase();
 
-        if (! empty($columns)) {
-            $resolved = $this->groupColumnsByTarget($resolver->requireAndResolveColumns($columns));
-            $customAliases = array_flip(array_filter(array_keys($columns), 'is_string'));
+        if (empty($columns)) {
+            $columns = $resolver->getSelectColumns($model);
 
-            if ($resolved->contains($model)) {
-                $modelColumns = $resolved[$model]->getArrayCopy();
-                if (! empty($customAliases)) {
-                    $customColumns = array_intersect_key($modelColumns, $customAliases);
-                    $modelColumns = array_diff_key($modelColumns, $customAliases);
-
-                    $select->columns($resolver->qualifyColumns($customColumns, $model));
-                }
-
-                if (! empty($modelColumns)) {
-                    $select->columns(
-                        $resolver->qualifyColumnsAndAliases($modelColumns, $model, false)
-                    );
-                }
-
-                $resolved->detach($model);
-            }
-
-            foreach ($resolved as $target) {
-                $targetColumns = $resolved[$target]->getArrayCopy();
-                if (! empty($customAliases)) {
-                    $customColumns = array_intersect_key($targetColumns, $customAliases);
-                    $targetColumns = array_diff_key($targetColumns, $customAliases);
-
-                    $select->columns($resolver->qualifyColumns($customColumns, $target));
-                }
-
-                if (! empty($targetColumns)) {
-                    $select->columns(
-                        $resolver->qualifyColumnsAndAliases(
-                            $targetColumns,
-                            $target
-                        )
-                    );
+            foreach ($this->getWith() as $path => $relation) {
+                foreach ($resolver->getSelectColumns($relation->getTarget()) as $alias => $column) {
+                    if (is_int($alias)) {
+                        $columns[] = "$path.$column";
+                    } else {
+                        $columns[] = "$path.$alias";
+                    }
                 }
             }
-        } else {
+        }
+
+        $columns = array_merge($columns, $this->withColumns);
+
+        $resolved = $this->groupColumnsByTarget($resolver->requireAndResolveColumns($columns));
+        foreach ($resolved as $target) {
+            $targetColumns = $resolved[$target]->getArrayCopy();
+
             $select->columns(
                 $resolver->qualifyColumnsAndAliases(
-                    $resolver->requireAndResolveColumns(
-                        $resolver->getSelectColumns($model)
-                    ),
-                    null,
-                    false
+                    $targetColumns,
+                    $target,
+                    $target !== $model
                 )
             );
-
-            foreach ($this->getWith() as $relation) {
-                $select->columns(
-                    $resolver->qualifyColumnsAndAliases(
-                        $resolver->requireAndResolveColumns(
-                            $resolver->getSelectColumns($relation->getTarget()),
-                            $relation->getTarget()
-                        )
-                    )
-                );
-            }
         }
 
         $filter = clone $this->getFilter();
