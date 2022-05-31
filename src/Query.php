@@ -21,7 +21,6 @@ use ipl\Stdlib\Filter;
 use ipl\Stdlib\Filters;
 use IteratorAggregate;
 use ReflectionClass;
-use RuntimeException;
 use SplObjectStorage;
 use Traversable;
 
