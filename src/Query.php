@@ -62,6 +62,9 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
     /** @var array Columns to select from the model */
     protected $columns = [];
 
+    /** @var array Additional columns to select from the model (or its relations) */
+    protected $withColumns = [];
+
     /** @var bool Whether to peek ahead for more results */
     protected $peekAhead = false;
 
@@ -241,6 +244,22 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
     public function columns($columns)
     {
         $this->columns = array_merge($this->columns, (array) $columns);
+
+        return $this;
+    }
+
+    /**
+     * Set additional columns to select from the model (or its relations)
+     *
+     * Multiple calls to this method will not overwrite the previous set columns but append the columns to the query.
+     *
+     * @param string|array $columns The column(s) to select
+     *
+     * @return $this
+     */
+    public function withColumns($columns)
+    {
+        $this->withColumns = array_merge($this->withColumns, (array) $columns);
 
         return $this;
     }

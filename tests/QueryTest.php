@@ -185,4 +185,60 @@ class QueryTest extends \PHPUnit\Framework\TestCase
             $orderBy
         );
     }
+
+    public function testMultipleCallsToWithColumnsAreMerged()
+    {
+        $query = (new Query())
+            ->setModel(new User())
+            ->columns('id')
+            ->withColumns('username')
+            ->withColumns('password');
+
+        $this->assertSame(
+            [
+                'user.id',
+                'user.username',
+                'user.password'
+            ],
+            $query->assembleSelect()->getColumns()
+        );
+    }
+
+    public function testWithColumnsAdditivity()
+    {
+        $query = (new Query())
+            ->setModel(new User())
+            ->withcolumns('profile.surname');
+
+        $this->assertSame(
+            [
+                'user.id',
+                'user.username',
+                'user.password',
+                'user_profile_surname' => 'user_profile.surname',
+            ],
+            $query->assembleSelect()->getColumns()
+        );
+    }
+
+    public function testWithColumnsDoesNotConstrainPreviouslyAddedRelation()
+    {
+        $query = (new Query())
+            ->setModel(new User())
+            ->with('profile')
+            ->withcolumns('profile.surname');
+
+        $this->assertSame(
+            [
+                'user.id',
+                'user.username',
+                'user.password',
+                'user_profile_id'         => 'user_profile.id',
+                'user_profile_user_id'    => 'user_profile.user_id',
+                'user_profile_given_name' => 'user_profile.given_name',
+                'user_profile_surname'    => 'user_profile.surname',
+            ],
+            $query->assembleSelect()->getColumns()
+        );
+    }
 }
