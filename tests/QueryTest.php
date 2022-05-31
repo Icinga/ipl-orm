@@ -63,7 +63,7 @@ class QueryTest extends \PHPUnit\Framework\TestCase
         $this->assertSame($columns, $query->getColumns());
     }
 
-    public function testMultipleCallsToColumnsAreMerged()
+    public function testMultipleCallsToColumnsOverwriteEachOther()
     {
         $columns1 = ['lorem'];
         $columns2 = ['ipsum'];
@@ -71,7 +71,7 @@ class QueryTest extends \PHPUnit\Framework\TestCase
             ->columns($columns1)
             ->columns($columns2);
 
-        $this->assertSame(array_merge($columns1, $columns2), $query->getColumns());
+        $this->assertSame($columns2, $query->getColumns());
     }
 
     public function testColumnsWithStringAsParameter()
@@ -152,19 +152,18 @@ class QueryTest extends \PHPUnit\Framework\TestCase
     {
         $query = (new Query())
             ->setModel(new Car())
-            ->with('passenger')
             ->columns([
-                'gender' => 'manufacturer', // Collided previously with car_passenger_gender
-                'model_name_lowered' => 'model_name' // Only persists if custom aliases have preference
+                'gender'             => 'manufacturer',
+                'model_name_lowered' => 'model_name',
+                'passenger.name',
+                'passenger.gender'
             ]);
 
         $this->assertSame(
             [
-                'gender' => 'car.manufacturer',
-                'model_name_lowered' => 'car.model_name',
-                'car_passenger_id' => 'car_passenger.id',
-                'car_passenger_car_id' => 'car_passenger.car_id',
-                'car_passenger_name' => 'car_passenger.name',
+                'gender'               => 'car.manufacturer',
+                'model_name_lowered'   => 'car.model_name',
+                'car_passenger_name'   => 'car_passenger.name',
                 'car_passenger_gender' => 'car_passenger.sex'
             ],
             $query->assembleSelect()->getColumns()
