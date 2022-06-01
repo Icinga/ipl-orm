@@ -185,6 +185,22 @@ class QueryTest extends \PHPUnit\Framework\TestCase
         );
     }
 
+    public function testExplicitColumnsDontCauseRelationsToBeImplicitlySelected()
+    {
+        $query = (new Query())
+            ->setModel(new User())
+            ->with('profile')
+            ->columns(['user.username', 'profile.surname']);
+
+        $this->assertSame(
+            [
+                'user.username',
+                'user_profile_surname' => 'user_profile.surname'
+            ],
+            $query->assembleSelect()->getColumns()
+        );
+    }
+
     public function testMultipleCallsToWithColumnsAreMerged()
     {
         $query = (new Query())
