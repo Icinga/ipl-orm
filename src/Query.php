@@ -179,20 +179,6 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
     }
 
     /**
-     * Set the columns to select from the model
-     *
-     * @param array $columns
-     *
-     * @return $this
-     */
-    public function setColumns(array $columns)
-    {
-        $this->columns = $columns;
-
-        return $this;
-    }
-
-    /**
      * Set the filter of the query
      *
      * @param Filter\Chain $filter
