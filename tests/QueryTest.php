@@ -63,7 +63,7 @@ class QueryTest extends \PHPUnit\Framework\TestCase
         $this->assertSame($columns, $query->getColumns());
     }
 
-    public function testMultipleCallsToColumnsAreMerged()
+    public function testMultipleCallsToColumnsOverwriteEachOther()
     {
         $columns1 = ['lorem'];
         $columns2 = ['ipsum'];
@@ -71,7 +71,7 @@ class QueryTest extends \PHPUnit\Framework\TestCase
             ->columns($columns1)
             ->columns($columns2);
 
-        $this->assertSame(array_merge($columns1, $columns2), $query->getColumns());
+        $this->assertSame($columns2, $query->getColumns());
     }
 
     public function testColumnsWithStringAsParameter()
@@ -152,22 +152,18 @@ class QueryTest extends \PHPUnit\Framework\TestCase
     {
         $query = (new Query())
             ->setModel(new Car())
-            ->with('passenger')
             ->columns([
-                'gender' => 'manufacturer', // Collided previously with car_passenger_gender
-                'model_name_lowered' => 'model_name', // Only persists if custom aliases have preference
-                '*'
+                'gender'             => 'manufacturer',
+                'model_name_lowered' => 'model_name',
+                'passenger.name',
+                'passenger.gender'
             ]);
 
         $this->assertSame(
             [
-                'gender' => 'car.manufacturer',
-                'model_name_lowered' => 'car.model_name',
-                'car.id',
-                'car.model_name',
-                'car_passenger_id' => 'car_passenger.id',
-                'car_passenger_car_id' => 'car_passenger.car_id',
-                'car_passenger_name' => 'car_passenger.name',
+                'gender'               => 'car.manufacturer',
+                'model_name_lowered'   => 'car.model_name',
+                'car_passenger_name'   => 'car_passenger.name',
                 'car_passenger_gender' => 'car_passenger.sex'
             ],
             $query->assembleSelect()->getColumns()
@@ -186,6 +182,78 @@ class QueryTest extends \PHPUnit\Framework\TestCase
         $this->assertSame(
             [['user_api_identity_api_token', 'desc']],
             $orderBy
+        );
+    }
+
+    public function testExplicitColumnsDontCauseRelationsToBeImplicitlySelected()
+    {
+        $query = (new Query())
+            ->setModel(new User())
+            ->with('profile')
+            ->columns(['user.username', 'profile.surname']);
+
+        $this->assertSame(
+            [
+                'user.username',
+                'user_profile_surname' => 'user_profile.surname'
+            ],
+            $query->assembleSelect()->getColumns()
+        );
+    }
+
+    public function testMultipleCallsToWithColumnsAreMerged()
+    {
+        $query = (new Query())
+            ->setModel(new User())
+            ->columns('id')
+            ->withColumns('username')
+            ->withColumns('password');
+
+        $this->assertSame(
+            [
+                'user.id',
+                'user.username',
+                'user.password'
+            ],
+            $query->assembleSelect()->getColumns()
+        );
+    }
+
+    public function testWithColumnsAdditivity()
+    {
+        $query = (new Query())
+            ->setModel(new User())
+            ->withcolumns('profile.surname');
+
+        $this->assertSame(
+            [
+                'user.id',
+                'user.username',
+                'user.password',
+                'user_profile_surname' => 'user_profile.surname',
+            ],
+            $query->assembleSelect()->getColumns()
+        );
+    }
+
+    public function testWithColumnsDoesNotConstrainPreviouslyAddedRelation()
+    {
+        $query = (new Query())
+            ->setModel(new User())
+            ->with('profile')
+            ->withcolumns('profile.surname');
+
+        $this->assertSame(
+            [
+                'user.id',
+                'user.username',
+                'user.password',
+                'user_profile_id'         => 'user_profile.id',
+                'user_profile_user_id'    => 'user_profile.user_id',
+                'user_profile_given_name' => 'user_profile.given_name',
+                'user_profile_surname'    => 'user_profile.surname',
+            ],
+            $query->assembleSelect()->getColumns()
         );
     }
 }

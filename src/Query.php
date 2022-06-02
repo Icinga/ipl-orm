@@ -21,7 +21,6 @@ use ipl\Stdlib\Filter;
 use ipl\Stdlib\Filters;
 use IteratorAggregate;
 use ReflectionClass;
-use RuntimeException;
 use SplObjectStorage;
 use Traversable;
 
@@ -60,8 +59,11 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
     /** @var Model Model to query */
     protected $model;
 
-    /** @var array Columns to select from the model */
+    /** @var array Columns to select from the model (or its relations). If empty, all columns are selected */
     protected $columns = [];
+
+    /** @var array Additional columns to select from the model (or its relations) */
+    protected $withColumns = [];
 
     /** @var bool Whether to peek ahead for more results */
     protected $peekAhead = false;
@@ -177,20 +179,6 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
     }
 
     /**
-     * Set the columns to select from the model
-     *
-     * @param array $columns
-     *
-     * @return $this
-     */
-    public function setColumns(array $columns)
-    {
-        $this->columns = $columns;
-
-        return $this;
-    }
-
-    /**
      * Set the filter of the query
      *
      * @param Filter\Chain $filter
@@ -230,10 +218,15 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
         return $this->disableDefaultSort;
     }
 
+
     /**
-     * Set columns to select from the model
+     * Set columns to select from the model (or its relations)
      *
-     * Multiple calls to this method will not overwrite the previous set columns but append the columns to the query.
+     * By default, i.e. if you do not specify any columns, all columns of the model and
+     * any relation added via {@see with()} will be selected.
+     * Multiple calls to this method will overwrite the previously specified columns.
+     * If you specify columns from the model's relations, the relations are automatically joined upon querying.
+     * Note that a call to this method also overwrites any previously column specified via {@see withColumns()}.
      *
      * @param string|array $columns The column(s) to select
      *
@@ -241,7 +234,24 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
      */
     public function columns($columns)
     {
-        $this->columns = array_merge($this->columns, (array) $columns);
+        $this->columns = (array) $columns;
+        $this->withColumns = [];
+
+        return $this;
+    }
+
+    /**
+     * Set additional columns to select from the model (or its relations)
+     *
+     * Multiple calls to this method will not overwrite the previous set columns but append the columns to the query.
+     *
+     * @param string|array $columns The column(s) to select
+     *
+     * @return $this
+     */
+    public function withColumns($columns)
+    {
+        $this->withColumns = array_merge($this->withColumns, (array) $columns);
 
         return $this;
     }
@@ -373,75 +383,36 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
     {
         $columns = $this->getColumns();
         $model = $this->getModel();
-        $select = clone $this->getSelectBase();
         $resolver = $this->getResolver();
+        $select = clone $this->getSelectBase();
 
-        $allColumns = false;
-        if (! empty($columns)) {
-            list($resolved, $allColumns) = $this->groupColumnsByTarget($resolver->requireAndResolveColumns($columns));
-            $customAliases = array_flip(array_filter(array_keys($columns), 'is_string'));
+        if (empty($columns)) {
+            $columns = $resolver->getSelectColumns($model);
 
-            if ($resolved->contains($model)) {
-                $modelColumns = $resolved[$model]->getArrayCopy();
-                if (! empty($customAliases)) {
-                    $customColumns = array_intersect_key($modelColumns, $customAliases);
-                    $modelColumns = array_diff_key($modelColumns, $customAliases);
-
-                    $select->columns($resolver->qualifyColumns($customColumns, $model));
-                }
-
-                if (! empty($modelColumns)) {
-                    $select->columns(
-                        $resolver->qualifyColumnsAndAliases($modelColumns, $model, false)
-                    );
-                }
-
-                $resolved->detach($model);
-            }
-
-            foreach ($resolved as $target) {
-                $targetColumns = $resolved[$target]->getArrayCopy();
-                if (! empty($customAliases)) {
-                    $customColumns = array_intersect_key($targetColumns, $customAliases);
-                    $targetColumns = array_diff_key($targetColumns, $customAliases);
-
-                    $select->columns($resolver->qualifyColumns($customColumns, $target));
-                }
-
-                if (! empty($targetColumns)) {
-                    $select->columns(
-                        $resolver->qualifyColumnsAndAliases(
-                            $targetColumns,
-                            $target
-                        )
-                    );
+            foreach ($this->getWith() as $path => $relation) {
+                foreach ($resolver->getSelectColumns($relation->getTarget()) as $alias => $column) {
+                    if (is_int($alias)) {
+                        $columns[] = "$path.$column";
+                    } else {
+                        $columns[] = "$path.$alias";
+                    }
                 }
             }
         }
 
-        if (empty($columns) || $allColumns) {
+        $columns = array_merge($columns, $this->withColumns);
+
+        $resolved = $this->groupColumnsByTarget($resolver->requireAndResolveColumns($columns));
+        foreach ($resolved as $target) {
+            $targetColumns = $resolved[$target]->getArrayCopy();
+
             $select->columns(
                 $resolver->qualifyColumnsAndAliases(
-                    $resolver->requireAndResolveColumns($allColumns
-                        ? $resolver->requireRemainingColumns($select->getColumns(), $model)
-                        : $resolver->getSelectColumns($model)),
-                    null,
-                    false
+                    $targetColumns,
+                    $target,
+                    $target !== $model
                 )
             );
-
-            foreach ($this->getWith() as $relation) {
-                $select->columns(
-                    $resolver->qualifyColumnsAndAliases(
-                        $resolver->requireAndResolveColumns(
-                            $allColumns
-                                ? $resolver->requireRemainingColumns($select->getColumns(), $relation->getTarget())
-                                : $resolver->getSelectColumns($relation->getTarget()),
-                            $relation->getTarget()
-                        )
-                    )
-                );
-            }
         }
 
         $filter = clone $this->getFilter();
@@ -688,19 +659,13 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
      *
      * @param Generator $columns
      *
-     * @return [SplObjectStorage, bool]
+     * @return SplObjectStorage
      */
     protected function groupColumnsByTarget(Generator $columns)
     {
         $columnStorage = new SplObjectStorage();
 
-        $allColumns = false;
         foreach ($columns as list($target, $alias, $column)) {
-            if ($column === '*') {
-                $allColumns = true;
-                continue;
-            }
-
             if (! $columnStorage->contains($target)) {
                 $resolved = new ArrayObject();
                 $columnStorage->attach($target, $resolved);
@@ -715,7 +680,7 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
             }
         }
 
-        return [$columnStorage, $allColumns];
+        return $columnStorage;
     }
 
     /**

@@ -326,7 +326,7 @@ class Resolver
                 $column->setColumns($this->qualifyColumns($column->getResolvedColumns()));
             } elseif ($column instanceof ExpressionInterface) {
                 $column = clone $column; // The expression may be part of a model and those shouldn't change implicitly
-                $column->setColumns($this->qualifyColumns($column->getResolvedColumns(), $target));
+                $column->setColumns($this->qualifyColumns($column->getColumns(), $target));
             } else {
                 $column = $this->qualifyColumn($column, $targetAlias);
             }
@@ -678,64 +678,6 @@ class Resolver
 
             yield [$target, $alias, $column];
         }
-    }
-
-    /**
-     * Require all remaining columns that are not already selected
-     *
-     * @param array $existingColumns The fully qualified columns that are already selected
-     * @param Model $model The model from which to fetch any remaining columns
-     *
-     * @return array
-     */
-    public function requireRemainingColumns(array $existingColumns, Model $model)
-    {
-        $modelColumns = $this->getSelectColumns($model);
-        if (empty($existingColumns)) {
-            return $modelColumns;
-        }
-
-        $modelAlias = $this->getAlias($model);
-        $isBaseModel = $model === $this->query->getModel();
-
-        foreach ($existingColumns as $alias => $columnPath) {
-            if (is_string($alias)) {
-                if ($isBaseModel || substr($alias, 0, strlen($modelAlias)) === $modelAlias) {
-                    if (! $isBaseModel) {
-                        $alias = substr($alias, strlen($modelAlias) + 1);
-                    }
-
-                    if (isset($modelColumns[$alias])) {
-                        unset($modelColumns[$alias]);
-                        continue;
-                    }
-                } else {
-                    continue;
-                }
-            }
-
-            if (is_string($columnPath) && substr($columnPath, 0, strlen($modelAlias)) === $modelAlias) {
-                $column = substr($columnPath, strlen($modelAlias) + 1);
-                if (($pos = array_search($column, $modelColumns, true)) !== false) {
-                    if (is_int($pos)) {
-                        // Explicit aliases can only be overridden with the same alias (see above)
-                        unset($modelColumns[$pos]);
-                        continue;
-                    }
-                }
-            }
-
-            // Not an alias match nor a column match. The only remaining match can be
-            // accomplished by checking whether a selected alias can be mapped to a
-            // column of the model.
-            if (is_string($alias) && ($pos = array_search($alias, $modelColumns, true)) !== false) {
-                if (is_int($pos)) {
-                    unset($modelColumns[$pos]);
-                }
-            }
-        }
-
-        return $modelColumns;
     }
 
     /**
