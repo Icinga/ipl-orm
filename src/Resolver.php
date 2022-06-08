@@ -252,7 +252,7 @@ class Resolver
      *
      * @return array Column paths as keys (relative to $subject) and their meta data as values
      */
-    public function getMetaData(Model $subject)
+    public function getColumnDefinitions(Model $subject)
     {
         if (! $this->metaData->contains($subject)) {
             $this->metaData->attach($subject, $this->collectMetaData($subject));
@@ -292,7 +292,7 @@ class Resolver
             }
         } while ($parts);
 
-        $definition = $this->getMetaData($subject)[$column] ?? new ColumnDefinition($column);
+        $definition = $this->getColumnDefinitions($subject)[$column] ?? new ColumnDefinition($column);
         $this->getBehaviors($subject)->rewriteColumnDefinition($definition, implode('.', $relationPath));
 
         return $definition;
