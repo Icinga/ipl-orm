@@ -4,7 +4,7 @@ namespace ipl\Tests\Orm;
 
 use ipl\Orm\AliasedExpression;
 use ipl\Orm\Behaviors;
-use ipl\Orm\Contract\RewriteBehavior;
+use ipl\Orm\Contract\RewriteColumnBehavior;
 use ipl\Orm\Model;
 use ipl\Orm\Relations;
 use ipl\Stdlib\Filter\Condition;
@@ -31,11 +31,7 @@ class ApiIdentity extends Model
 
     public function createBehaviors(Behaviors $behaviors)
     {
-        $rewriteBehavior = new class () implements RewriteBehavior {
-            public function rewritePath($path, $relation = null)
-            {
-            }
-
+        $rewriteBehavior = new class () implements RewriteColumnBehavior {
             public function rewriteColumn($column, $relation = null)
             {
                 if ($column === 'api_token') {
