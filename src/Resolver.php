@@ -10,8 +10,8 @@ use ipl\Orm\Contract\QueryAwareBehavior;
 use ipl\Orm\Exception\InvalidColumnException;
 use ipl\Orm\Exception\InvalidRelationException;
 use ipl\Orm\Relation\BelongsToMany;
-use ipl\Orm\Relation\HasOne;
 use ipl\Sql\ExpressionInterface;
+use LogicException;
 use OutOfBoundsException;
 use SplObjectStorage;
 
@@ -717,55 +717,32 @@ class Resolver
      */
     protected function collectMetaData(Model $subject)
     {
-        if ($subject instanceof UnionModel) {
-            $models = [];
-            foreach ($subject->getUnions() as $union) {
-                /** @var Model $unionModel */
-                $unionModel = new $union[0]();
-                $models[$unionModel->getTableName()] = $unionModel;
-                $this->collectDirectRelations($unionModel, $models, []);
-            }
-        } else {
-            $models = [$subject->getTableName() => $subject];
-            $this->collectDirectRelations($subject, $models, []);
-        }
-
-        $columns = [];
-        foreach ($models as $path => $model) {
-            /** @var Model $model */
-            foreach ($model->getMetaData() as $columnName => $columnMeta) {
-                $columns[$path . '.' . $columnName] = $columnMeta;
-            }
-        }
-
-        return $columns;
-    }
-
-    /**
-     * Collect all direct relations of the given model
-     *
-     * A direct relation is either a direct descendant of the model
-     * or a descendant of such related in a to-one cardinality.
-     *
-     * @param Model $subject
-     * @param array $models
-     * @param array $path
-     */
-    protected function collectDirectRelations(Model $subject, array &$models, array $path)
-    {
-        foreach ($this->getRelations($subject) as $name => $relation) {
-            /** @var Relation $relation */
-            $isOne = $relation instanceof HasOne;
-            if (empty($path) || $isOne) {
-                $relationPath = [$name];
-                if ($isOne && empty($path)) {
-                    array_unshift($relationPath, $subject->getTableName());
+        $definitions = [];
+        foreach ($subject->getMetaData() as $name => $data) {
+            if ($data instanceof ColumnDefinition) {
+                $definition = $data;
+            } else {
+                if (is_string($data)) {
+                    $data = ['name' => $name, 'label' => $data];
+                } elseif (! isset($data[$name])) {
+                    $data['name'] = $name;
                 }
 
-                $relationPath = array_merge($path, $relationPath);
-                $models[join('.', $relationPath)] = $relation->getTarget();
-                $this->collectDirectRelations($relation->getTarget(), $models, $relationPath);
+                $definition = ColumnDefinition::fromArray($data);
             }
+
+            if (is_string($name) && $definition->getName() !== $name) {
+                throw new LogicException(sprintf(
+                    'Model %s provides a column definition with a different name (%s) than the index (%s)',
+                    get_class($subject),
+                    $definition->getName(),
+                    $name
+                ));
+            }
+
+            $definitions[$name] = $definition;
         }
+
+        return $definitions;
     }
 }
