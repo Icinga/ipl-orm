@@ -262,6 +262,43 @@ class Resolver
     }
 
     /**
+     * Get definition of the given column
+     *
+     * @param string $columnPath
+     *
+     * @return ColumnDefinition
+     */
+    public function getColumnDefinition(string $columnPath): ColumnDefinition
+    {
+        $parts = explode('.', $columnPath);
+        $model = $this->query->getModel();
+
+        if ($parts[0] !== $model->getTableName()) {
+            array_unshift($parts, $model->getTableName());
+        }
+
+        do {
+            $relationPath[] = array_shift($parts);
+            $column = implode('.', $parts);
+
+            if (count($relationPath) === 1) {
+                $subject = $model;
+            } else {
+                $subject = $this->resolveRelation(implode('.', $relationPath))->getTarget();
+            }
+
+            if ($this->hasSelectableColumn($subject, $column)) {
+                break;
+            }
+        } while ($parts);
+
+        $definition = $this->getMetaData($subject)[$column] ?? new ColumnDefinition($column);
+        $this->getBehaviors($subject)->rewriteColumnDefinition($definition, implode('.', $relationPath));
+
+        return $definition;
+    }
+
+    /**
      * Qualify the given alias by the specified table name
      *
      * @param string $alias
