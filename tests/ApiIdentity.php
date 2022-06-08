@@ -4,6 +4,7 @@ namespace ipl\Tests\Orm;
 
 use ipl\Orm\AliasedExpression;
 use ipl\Orm\Behaviors;
+use ipl\Orm\ColumnDefinition;
 use ipl\Orm\Contract\RewriteColumnBehavior;
 use ipl\Orm\Model;
 use ipl\Orm\Relations;
@@ -38,6 +39,15 @@ class ApiIdentity extends Model
                     $relation = str_replace('.', '_', $relation);
                     return new AliasedExpression("{$relation}_api_token", '"api_token retrieval not permitted"');
                 }
+            }
+
+            public function rewriteColumnDefinition(ColumnDefinition $def, string $relation): void
+            {
+            }
+
+            public function isSelectableColumn(string $name): bool
+            {
+                return $name === 'api_token';
             }
 
             public function rewriteCondition(Condition $condition, $relation = null)
