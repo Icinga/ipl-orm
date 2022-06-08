@@ -19,6 +19,15 @@ interface RewriteColumnBehavior extends RewriteFilterBehavior
     public function rewriteColumn($column, ?string $relation = null);
 
     /**
+     * Get whether {@see rewriteColumn} might return an otherwise unknown column or expression
+     *
+     * @param string $name
+     *
+     * @return bool
+     */
+    public function isSelectableColumn(string $name): bool;
+
+    /**
      * Rewrite the given column definition
      *
      * @param ColumnDefinition $def

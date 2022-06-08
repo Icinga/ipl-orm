@@ -206,8 +206,11 @@ class Resolver
         }
 
         $columns = $this->selectableColumns[$subject];
+        if (! isset($columns[$column])) {
+            $columns[$column] = $this->getBehaviors($subject)->isSelectableColumn($column);
+        }
 
-        return isset($columns[$column]);
+        return $columns[$column];
     }
 
     /**

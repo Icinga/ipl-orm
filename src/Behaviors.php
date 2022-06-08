@@ -217,4 +217,22 @@ class Behaviors implements IteratorAggregate
             $behavior->rewriteColumnDefinition($def, $relation);
         }
     }
+
+    /**
+     * Get whether the given column is selectable
+     *
+     * @param string $column
+     *
+     * @return bool
+     */
+    public function isSelectableColumn(string $column): bool
+    {
+        foreach ($this->rewriteColumnBehaviors as $behavior) {
+            if ($behavior->isSelectableColumn($column)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 }
