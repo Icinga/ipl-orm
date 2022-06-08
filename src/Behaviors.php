@@ -6,8 +6,9 @@ use ArrayIterator;
 use ipl\Orm\Contract\PersistBehavior;
 use ipl\Orm\Contract\PropertyBehavior;
 use ipl\Orm\Contract\RetrieveBehavior;
-use ipl\Orm\Contract\RewriteBehavior;
+use ipl\Orm\Contract\RewriteColumnBehavior;
 use ipl\Orm\Contract\RewriteFilterBehavior;
+use ipl\Orm\Contract\RewritePathBehavior;
 use ipl\Stdlib\Filter;
 use IteratorAggregate;
 use Traversable;
@@ -29,8 +30,11 @@ class Behaviors implements IteratorAggregate
     /** @var RewriteFilterBehavior[] Registered rewrite filter behaviors */
     protected $rewriteFilterBehaviors = [];
 
-    /** @var RewriteBehavior[] Registered rewrite behaviors */
-    protected $rewriteBehaviors = [];
+    /** @var RewriteColumnBehavior[] Registered rewrite column behaviors */
+    protected $rewriteColumnBehaviors = [];
+
+    /** @var RewritePathBehavior[] Registered rewrite path behaviors */
+    protected $rewritePathBehaviors = [];
 
     /**
      * Add a behavior
@@ -59,8 +63,12 @@ class Behaviors implements IteratorAggregate
             $this->rewriteFilterBehaviors[] = $behavior;
         }
 
-        if ($behavior instanceof RewriteBehavior) {
-            $this->rewriteBehaviors[] = $behavior;
+        if ($behavior instanceof RewriteColumnBehavior) {
+            $this->rewriteColumnBehaviors[] = $behavior;
+        }
+
+        if ($behavior instanceof RewritePathBehavior) {
+            $this->rewritePathBehaviors[] = $behavior;
         }
     }
 
@@ -164,7 +172,7 @@ class Behaviors implements IteratorAggregate
     public function rewritePath($path, $relation = null)
     {
         $newPath = null;
-        foreach ($this->rewriteBehaviors as $behavior) {
+        foreach ($this->rewritePathBehaviors as $behavior) {
             $replacement = $behavior->rewritePath($newPath ?: $path, $relation);
             if ($replacement !== null) {
                 $newPath = $replacement;
@@ -180,12 +188,12 @@ class Behaviors implements IteratorAggregate
      * @param string $column
      * @param string $relation Absolute path of the model
      *
-     * @return string|null
+     * @return mixed
      */
     public function rewriteColumn($column, $relation = null)
     {
         $newColumn = null;
-        foreach ($this->rewriteBehaviors as $behavior) {
+        foreach ($this->rewriteColumnBehaviors as $behavior) {
             $replacement = $behavior->rewriteColumn($newColumn ?: $column, $relation);
             if ($replacement !== null) {
                 $newColumn = $replacement;
