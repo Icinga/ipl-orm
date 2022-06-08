@@ -44,9 +44,9 @@ abstract class Model implements \ArrayAccess, \IteratorAggregate
     abstract public function getColumns();
 
     /**
-     * Get the model's column meta data
+     * Get the model's column definitions
      *
-     * Meta data is indexed by column names, values are either strings (labels) or arrays of this format:
+     * The array is indexed by column names, values are either strings (labels) or arrays of this format:
      *
      * [
      *  'label' => 'A Column',
@@ -55,7 +55,7 @@ abstract class Model implements \ArrayAccess, \IteratorAggregate
      *
      * @return array
      */
-    public function getMetaData()
+    public function getColumnDefinitions()
     {
         return [];
     }

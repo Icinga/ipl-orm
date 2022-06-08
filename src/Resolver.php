@@ -755,7 +755,7 @@ class Resolver
     protected function collectMetaData(Model $subject)
     {
         $definitions = [];
-        foreach ($subject->getMetaData() as $name => $data) {
+        foreach ($subject->getColumnDefinitions() as $name => $data) {
             if ($data instanceof ColumnDefinition) {
                 $definition = $data;
             } else {
