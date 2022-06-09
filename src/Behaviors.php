@@ -202,4 +202,37 @@ class Behaviors implements IteratorAggregate
 
         return $newColumn;
     }
+
+    /**
+     * Rewrite the given column definition
+     *
+     * @param ColumnDefinition $def
+     * @param string $relation Absolute path of the model
+     *
+     * @return void
+     */
+    public function rewriteColumnDefinition(ColumnDefinition $def, string $relation): void
+    {
+        foreach ($this->rewriteColumnBehaviors as $behavior) {
+            $behavior->rewriteColumnDefinition($def, $relation);
+        }
+    }
+
+    /**
+     * Get whether the given column is selectable
+     *
+     * @param string $column
+     *
+     * @return bool
+     */
+    public function isSelectableColumn(string $column): bool
+    {
+        foreach ($this->rewriteColumnBehaviors as $behavior) {
+            if ($behavior->isSelectableColumn($column)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 }
