@@ -735,10 +735,12 @@ class Resolver
         $selectable = [];
 
         foreach ($columns as $alias => $column) {
-            if (is_int($alias)) {
-                $selectable[$column] = true;
-            } else {
+            if (is_string($alias)) {
                 $selectable[$alias] = true;
+            }
+
+            if (is_string($column)) {
+                $selectable[$column] = true;
             }
         }
 

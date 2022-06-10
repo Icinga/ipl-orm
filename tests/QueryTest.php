@@ -148,6 +148,24 @@ class QueryTest extends \PHPUnit\Framework\TestCase
             ->with('invalid');
     }
 
+    public function testAliasedModelColumnsCanBeSelected()
+    {
+        $query = (new Query())
+            ->setModel(new TestModelWithAliasedColumns())
+            ->columns([
+                'dolor',
+                'sit'
+            ]);
+
+        $this->assertSame(
+            [
+                'dolor' => 'test.sit',
+                'test.sit'
+            ],
+            $query->assembleSelect()->getColumns()
+        );
+    }
+
     public function testModelAliasesAreQualifiedButCustomAliasesAreNot()
     {
         $query = (new Query())
