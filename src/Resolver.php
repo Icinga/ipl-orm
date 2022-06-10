@@ -696,7 +696,7 @@ class Resolver
                 $targetColumns = $target->getColumns();
                 if (isset($targetColumns[$column])) {
                     // $column is actually an alias
-                    $alias = is_int($alias) ? $column : $alias;
+                    $alias = is_string($alias) ? $alias : ($relationPath ? "$hydrationPath.$column" : $column);
                     $column = $targetColumns[$column];
 
                     if ($column instanceof ExpressionInterface) {
@@ -708,11 +708,7 @@ class Resolver
                 }
             }
 
-            if (
-                ! $column instanceof ExpressionInterface
-                && ! $this->hasSelectableColumn($target, $columnPath)
-                && ! $this->hasSelectableColumn($target, $alias)
-            ) {
+            if (! $column instanceof ExpressionInterface && ! $this->hasSelectableColumn($target, $columnPath)) {
                 throw new InvalidColumnException($columnPath, $target);
             }
 
