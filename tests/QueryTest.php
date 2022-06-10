@@ -148,13 +148,49 @@ class QueryTest extends \PHPUnit\Framework\TestCase
             ->with('invalid');
     }
 
+    public function testAliasedModelColumnsCanBeSelected()
+    {
+        $query = (new Query())
+            ->setModel(new TestModelWithAliasedColumns())
+            ->columns([
+                'dolor',
+                'sit'
+            ]);
+
+        $this->assertSame(
+            [
+                'dolor' => 'test.sit',
+                'test.sit'
+            ],
+            $query->assembleSelect()->getColumns()
+        );
+    }
+
     public function testModelAliasesAreQualifiedButCustomAliasesAreNot()
     {
         $query = (new Query())
             ->setModel(new Car())
             ->columns([
-                'gender'             => 'manufacturer',
-                'model_name_lowered' => 'model_name',
+                'gender' => 'passenger.gender',
+                'passenger.gender'
+            ]);
+
+        $this->assertSame(
+            [
+                'gender' => 'car_passenger.sex',
+                'car_passenger_gender' => 'car_passenger.sex'
+            ],
+            $query->assembleSelect()->getColumns()
+        );
+    }
+
+    public function testModelAliasesDoNotCollideWithCustomAliases()
+    {
+        $query = (new Query())
+            ->setModel(new Car())
+            ->columns([
+                'gender'             => 'manufacturer', // Collided previously with car_passenger_gender
+                'model_name_lowered' => 'model_name', // Only persists if custom aliases have preference
                 'passenger.name',
                 'passenger.gender'
             ]);

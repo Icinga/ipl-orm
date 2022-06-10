@@ -10,7 +10,8 @@ class TestModelWithAliasedColumns extends TestModel
     {
         return [
             'lorem' => new Expression('MAX(test.lorem)'),
-            'ipsum' => new Expression('MIN(test.ipsum)')
+            'ipsum' => new Expression('MIN(test.ipsum)'),
+            'dolor' => 'sit'
         ];
     }
 }

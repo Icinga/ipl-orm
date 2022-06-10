@@ -398,13 +398,23 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
                     }
                 }
             }
-        }
 
-        $columns = array_merge($columns, $this->withColumns);
+            $columns = array_merge($columns, $this->withColumns);
+            $customAliases = array_flip(array_filter(array_keys($this->withColumns), 'is_string'));
+        } else {
+            $columns = array_merge($columns, $this->withColumns);
+            $customAliases = array_flip(array_filter(array_keys($columns), 'is_string'));
+        }
 
         $resolved = $this->groupColumnsByTarget($resolver->requireAndResolveColumns($columns));
         foreach ($resolved as $target) {
             $targetColumns = $resolved[$target]->getArrayCopy();
+            if (! empty($customAliases)) {
+                $customColumns = array_intersect_key($targetColumns, $customAliases);
+                $targetColumns = array_diff_key($targetColumns, $customAliases);
+
+                $select->columns($resolver->qualifyColumns($customColumns, $target));
+            }
 
             $select->columns(
                 $resolver->qualifyColumnsAndAliases(
