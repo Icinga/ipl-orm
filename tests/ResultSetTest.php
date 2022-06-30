@@ -62,4 +62,23 @@ class ResultSetTest extends TestCase
             ['a', 'b', 'c', 'a', 'b', 'c']
         );
     }
+
+    public function testResultWithCacheEnabledWithLimit()
+    {
+        $set = (new ResultSet(new ArrayIterator(['a', 'b', 'c']), 2));
+
+        $items = [];
+        foreach ($set as $item) {
+            $items[] = $item;
+        }
+
+        foreach ($set as $item) {
+            $items[] = $item;
+        }
+
+        $this->assertEquals(
+            $items,
+            ['a', 'b', 'a', 'b']
+        );
+    }
 }
