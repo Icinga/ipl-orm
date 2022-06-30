@@ -81,6 +81,8 @@ class ResultSet implements Iterator
         if ($this->isCacheDisabled || ! $this->cache->valid()) {
             $this->generator->next();
             $this->advance();
+        } else {
+            $this->position += 1;
         }
     }
 
