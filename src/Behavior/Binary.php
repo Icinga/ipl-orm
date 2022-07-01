@@ -27,19 +27,14 @@ class Binary extends PropertyBehavior implements QueryAwareBehavior, RewriteFilt
      */
     protected $rewriteSubjects;
 
-    /**
-     * @throws UnexpectedValueException If value is set and not a resource
-     */
     public function fromDb($value, $key, $_)
     {
         if ($value !== null) {
-            if (! is_resource($value)) {
-                throw new UnexpectedValueException(
-                    sprintf('%s should be a resource got %s instead', $key, get_php_type($value))
-                );
+            if (is_resource($value)) {
+                return stream_get_contents($value);
             }
 
-            return stream_get_contents($value);
+            return $value;
         }
 
         return null;
