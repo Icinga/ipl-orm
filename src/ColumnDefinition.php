@@ -16,6 +16,9 @@ class ColumnDefinition
     /** @var ?string The label of the column */
     protected $label;
 
+    /** @var ?array The values allowed for this column */
+    protected $allowedValues;
+
     /**
      * Create a new column definition
      *
@@ -85,6 +88,30 @@ class ColumnDefinition
     }
 
     /**
+     * Get the allowed values for this column
+     *
+     * @return ?array
+     */
+    public function getAllowedValues(): ?array
+    {
+        return $this->allowedValues;
+    }
+
+    /**
+     * Set the allowed values for this column
+     *
+     * @param ?array $values
+     *
+     * @return $this
+     */
+    public function setAllowedValues(?array $values): self
+    {
+        $this->allowedValues = $values;
+
+        return $this;
+    }
+
+    /**
      * Create a new column definition based on the given options
      *
      * @param array $options
@@ -105,6 +132,10 @@ class ColumnDefinition
 
         if (isset($options['label'])) {
             $self->setLabel($options['label']);
+        }
+
+        if (isset($options['allowed_values'])) {
+            $self->setAllowedValues($options['allowed_values']);
         }
 
         return $self;
