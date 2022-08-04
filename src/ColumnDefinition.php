@@ -143,6 +143,20 @@ class ColumnDefinition
     }
 
     /**
+     * Get the given value's label
+     *
+     * Returns the value itself if there's no label available
+     *
+     * @param string $value
+     *
+     * @return string
+     */
+    public function getValueLabel(string $value): string
+    {
+        return $this->allowedValues[$value] ?? $value;
+    }
+
+    /**
      * Create a new column definition based on the given options
      *
      * @param array $options
