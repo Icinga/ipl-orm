@@ -179,6 +179,9 @@ class ColumnDefinition
             $self->setLabel($options['label']);
         }
 
+        // min (number start, datetime range start)
+        // max (number end, string length, datetime range end)
+
         if (isset($options['allowed_values'])) {
             $self->setAllowedValues($options['allowed_values']);
         }
