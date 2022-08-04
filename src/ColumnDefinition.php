@@ -10,6 +10,9 @@ class ColumnDefinition
     /** @var string The name of the column */
     protected $name;
 
+    /** @var ?string The data type of the column */
+    protected $type;
+
     /** @var ?string The label of the column */
     protected $label;
 
@@ -31,6 +34,30 @@ class ColumnDefinition
     public function getName(): string
     {
         return $this->name;
+    }
+
+    /**
+     * Get the data type of the column
+     *
+     * @return ?string
+     */
+    public function getType(): ?string
+    {
+        return $this->type;
+    }
+
+    /**
+     * Set the data type of the column
+     *
+     * @param ?string $type
+     *
+     * @return $this
+     */
+    public function setType(?string $type): self
+    {
+        $this->type = $type;
+
+        return $this;
     }
 
     /**
@@ -71,6 +98,11 @@ class ColumnDefinition
         }
 
         $self = new static($options['name']);
+
+        if (isset($options['type'])) {
+            $self->setType($options['type']);
+        }
+
         if (isset($options['label'])) {
             $self->setLabel($options['label']);
         }
