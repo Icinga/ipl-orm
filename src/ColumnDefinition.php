@@ -3,7 +3,9 @@
 namespace ipl\Orm;
 
 use InvalidArgumentException;
-use LogicException;
+use ipl\Stdlib\Filter\Condition;
+use ipl\Stdlib\Filter\Like;
+use ipl\Stdlib\Filter\Unlike;
 
 class ColumnDefinition
 {
@@ -109,6 +111,35 @@ class ColumnDefinition
         $this->allowedValues = $values;
 
         return $this;
+    }
+
+    /**
+     * Get whether the given filter's value is valid
+     *
+     * @param Condition $filter
+     *
+     * @return bool
+     */
+    public function isValidValue(Condition $filter): bool
+    {
+        if ($filter instanceof Like || $filter instanceof Unlike) {
+            return true;
+        }
+
+        switch ($this->type) {
+            case 'number':
+                if (! is_numeric($filter->getValue())) {
+                    return false;
+                }
+
+                break;
+        }
+
+        if (empty($this->allowedValues)) {
+            return true;
+        }
+
+        return isset($this->allowedValues[$filter->getValue()]);
     }
 
     /**
