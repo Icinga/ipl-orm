@@ -69,9 +69,14 @@ abstract class Model implements \ArrayAccess, \IteratorAggregate
      */
     public static function on(Connection $db)
     {
-        return (new Query())
+        $self = new static();
+        $query = (new Query())
             ->setDb($db)
-            ->setModel(new static());
+            ->setModel($self);
+
+        $self->initQuery($query);
+
+        return $query;
     }
 
     /**
@@ -118,6 +123,17 @@ abstract class Model implements \ArrayAccess, \IteratorAggregate
      * If your model should be associated to other models, override this method and create the model's relations.
      */
     public function createRelations(Relations $relations)
+    {
+    }
+
+    /**
+     * Initialize this model's Query
+     *
+     * If you want to initialize the query right after it's construction, override this method
+     *
+     * @param Query $query
+     */
+    public function initQuery(Query $query)
     {
     }
 

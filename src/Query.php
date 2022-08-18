@@ -347,14 +347,16 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
     /**
      * Add a relation to utilize (join)
      *
-     * @param string $path
+     * @param string|string[] $paths
      *
      * @return $this
      */
-    public function utilize($path)
+    public function utilize($paths)
     {
-        $path = $this->getResolver()->qualifyPath($path, $this->getModel()->getTableName());
-        $this->utilize[$path] = $this->getResolver()->resolveRelation($path);
+        foreach ((array) $paths as $path) {
+            $path = $this->getResolver()->qualifyPath($path, $this->getModel()->getTableName());
+            $this->utilize[$path] = $this->getResolver()->resolveRelation($path);
+        }
 
         return $this;
     }
