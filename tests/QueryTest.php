@@ -327,4 +327,20 @@ class QueryTest extends \PHPUnit\Framework\TestCase
         $this->assertSame('John Doe', $profile->test_user->username);
         $this->assertSame('secret', $profile->test_user->password);
     }
+
+    public function testWithColumnsDoesNotDuplicateBaseTableColumns()
+    {
+        $query = (new Query())
+            ->setModel(new User())
+            ->withColumns('user.username');
+
+        $this->assertSame(
+            [
+                'user.id',
+                'user.username',
+                'user.password'
+            ],
+            $query->assembleSelect()->getColumns()
+        );
+    }
 }
