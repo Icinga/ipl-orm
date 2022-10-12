@@ -604,6 +604,7 @@ class Resolver
         $model = $model ?: $this->query->getModel();
         $tableName = $model->getTableAlias();
 
+        $baseTableColumns = [];
         foreach ($columns as $alias => $column) {
             $columnPath = &$column;
             if ($column instanceof ExpressionInterface) {
@@ -689,6 +690,16 @@ class Resolver
 
                     if (! $column instanceof ExpressionInterface) {
                         $column = $this->getBehaviors($target)->rewriteColumn($column) ?: $column;
+                    }
+
+                    if (is_int($alias) && ! $column instanceof AliasedExpression) {
+                        if (! isset($baseTableColumns[$columnPath])) {
+                            $baseTableColumns[$columnPath] = true;
+                        } else {
+                            // Don't yield base table columns multiple times.
+                            // Duplicate columns without an alias may lead to SQL errors
+                            continue 2;
+                        }
                     }
             }
 
