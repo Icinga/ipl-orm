@@ -45,7 +45,7 @@ class Hydrator
         $target = $this->query->getModel();
         $relation = null;
 
-        if ($path === $target->getTableName()) {
+        if ($path === $target->getTableAlias()) {
             $selectableColumns = $resolver->getSelectableColumns($target);
             $columnToPropertyMap = array_combine($selectableColumns, $selectableColumns);
         } else {
