@@ -711,9 +711,13 @@ class Resolver
                     $column = $targetColumns[$column];
 
                     if ($column instanceof ExpressionInterface) {
+                        $qualifier = $relationPath ? "$hydrationPath." : '';
+
                         $column = new ResolvedExpression(
                             $column,
-                            $this->requireAndResolveColumns($column->getColumns(), $target)
+                            $this->requireAndResolveColumns(array_map(function ($c) use ($qualifier) {
+                                return $qualifier . $c;
+                            }, $column->getColumns()), $model)
                         );
                     }
                 }
