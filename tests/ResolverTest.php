@@ -136,6 +136,25 @@ class ResolverTest extends TestCase
         );
     }
 
+    public function testExpressionsWithRelationReferencesCanBeResolvedAndQualified()
+    {
+        $model = new TestModelWithExpressions();
+        $query = (new Query())
+            ->setModel($model)
+            ->columns(['expr1', 'expr2', 'more.expr3']);
+
+        $this->assertSame(
+            'SELECT (LOWER(test.uppercase_text)) AS expr1,'
+                . ' (test_relation.lorem + test_relation.ipsum) AS expr2,'
+                . ' (test_more_related.lorem + test_more_related.ipsum) AS test_more_expr3'
+                . ' FROM test'
+                . ' INNER JOIN test test_more ON test_more.id = test.test_id'
+                . ' INNER JOIN test test_relation ON test_relation.test_id = test.id'
+                . ' INNER JOIN test test_more_related ON test_more_related.test_id = test_more.id',
+            (new QueryBuilder(new TestAdapter()))->assembleSelect($query->assembleSelect())[0]
+        );
+    }
+
     public function testDotSeparatedAliasesAreQualified()
     {
         $columns = [
