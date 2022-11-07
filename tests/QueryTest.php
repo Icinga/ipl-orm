@@ -148,6 +148,18 @@ class QueryTest extends \PHPUnit\Framework\TestCase
             ->with('invalid');
     }
 
+    public function testWithQualifiesRelationNamesWithTableAlias()
+    {
+        $query = (new Query())
+            ->setModel(new TestUserProfile());
+
+        $query->with(['test_user']);
+
+        $with = $query->getWith();
+
+        $this->assertTrue(isset($with['test_user_profile.test_user']));
+    }
+
     public function testAliasedModelColumnsCanBeSelected()
     {
         $query = (new Query())
@@ -291,5 +303,28 @@ class QueryTest extends \PHPUnit\Framework\TestCase
             ],
             $query->assembleSelect()->getColumns()
         );
+    }
+
+    public function testHydrateResultsByTableAliases()
+    {
+        $columns = [
+            'given_name'                           => 'Baboo',
+            'surname'                              => 'Mccarthy',
+            'test_user_profile_test_user_username' => 'John Doe',
+            'test_user_profile_test_user_password' => 'secret',
+        ];
+        $query = (new Query())
+            ->setModel(new TestUserProfile())
+            ->with('test_user');
+
+        $model = $query->getModel();
+        $hydrator = $query->createHydrator();
+        $profile = $hydrator->hydrate($columns, new $model());
+
+        $this->assertSame('Baboo', $profile->given_name);
+        $this->assertSame('Mccarthy', $profile->surname);
+
+        $this->assertSame('John Doe', $profile->test_user->username);
+        $this->assertSame('secret', $profile->test_user->password);
     }
 }

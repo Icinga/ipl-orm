@@ -153,4 +153,22 @@ class ResolverTest extends TestCase
         $model = $query->getWith()['profile.user']->getTarget();
         $this->assertSame($qualified, $query->getResolver()->qualifyColumnsAndAliases($columns, $model));
     }
+
+    public function testColumnsAreQualifiedByTableAlias()
+    {
+        $columns = [
+            'test_user.username' => 'username',
+            'test_user.password' => 'password'
+        ];
+        $qualified = [
+            'test_user_username' => 'test_user_profile_test_user.username',
+            'test_user_password' => 'test_user_profile_test_user.password'
+        ];
+        $query = (new Query())
+            ->setModel(new TestUserProfile())
+            ->with('test_user');
+
+        $model = $query->getWith()['test_user_profile.test_user']->getTarget();
+        $this->assertSame($qualified, $query->getResolver()->qualifyColumnsAndAliases($columns, $model));
+    }
 }
