@@ -5,6 +5,7 @@ namespace ipl\Tests\Orm;
 use DateTime;
 use DateTimeZone;
 use ipl\Orm\Behavior\MillisecondTimestamp;
+use ipl\Orm\Exception\ValueConversionException;
 use PHPUnit\Framework\TestCase;
 
 class MillisecondTimestampBehaviorTest extends TestCase
@@ -76,5 +77,12 @@ class MillisecondTimestampBehaviorTest extends TestCase
         $sometime = '2022-11-09 14:00:00.123';
 
         $this->assertEquals(1668002400123, (new MillisecondTimestamp([]))->toDb($sometime, 'key', null));
+    }
+
+    public function testToDbThrowsExceptionWhenInvalidDatetimeIsPassed()
+    {
+        $this->expectException(ValueConversionException::class);
+
+        $this->assertEquals(true, (new MillisecondTimestamp([]))->toDb('*', 'key', null));
     }
 }
