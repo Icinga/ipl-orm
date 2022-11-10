@@ -163,7 +163,7 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
     public function setModel(Model $model)
     {
         $this->model = $model;
-        $this->getResolver()->setAlias($model, $model->getTableName());
+        $this->getResolver()->setAlias($model, $model->getTableAlias());
 
         return $this;
     }
@@ -307,7 +307,7 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
      */
     public function with($relations)
     {
-        $tableName = $this->getModel()->getTableName();
+        $tableName = $this->getModel()->getTableAlias();
         foreach ((array) $relations as $relation) {
             $relation = $this->getResolver()->qualifyPath($relation, $tableName);
             $this->with[$relation] = $this->getResolver()->resolveRelation($relation);
@@ -325,7 +325,7 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
      */
     public function without($relations)
     {
-        $tableName = $this->getModel()->getTableName();
+        $tableName = $this->getModel()->getTableAlias();
         foreach ((array) $relations as $relation) {
             $relation = $this->getResolver()->qualifyPath($relation, $tableName);
             unset($this->with[$relation]);
@@ -353,7 +353,7 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
      */
     public function utilize($path)
     {
-        $path = $this->getResolver()->qualifyPath($path, $this->getModel()->getTableName());
+        $path = $this->getResolver()->qualifyPath($path, $this->getModel()->getTableAlias());
         $this->utilize[$path] = $this->getResolver()->resolveRelation($path);
 
         return $this;
@@ -368,7 +368,7 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
      */
     public function omit($path)
     {
-        $path = $this->getResolver()->qualifyPath($path, $this->getModel()->getTableName());
+        $path = $this->getResolver()->qualifyPath($path, $this->getModel()->getTableAlias());
         unset($this->utilize[$path]);
 
         return $this;
@@ -505,7 +505,7 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
     {
         $hydrator = new Hydrator($this);
 
-        $hydrator->add($this->getModel()->getTableName());
+        $hydrator->add($this->getModel()->getTableAlias());
         foreach ($this->getWith() as $path => $_) {
             $hydrator->add($path);
         }
@@ -528,7 +528,7 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
         // TODO: Think of a way to merge derive() and createSubQuery()
         return $this->createSubQuery(
             $this->getResolver()->getRelations($source)->get($relation)->getTarget(),
-            $this->getResolver()->qualifyPath($relation, $source->getTableName()),
+            $this->getResolver()->qualifyPath($relation, $source->getTableAlias()),
             $source
         );
     }
@@ -550,7 +550,7 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
 
         $resolver = $this->getResolver();
         $sourceParts = array_reverse(explode('.', $targetPath));
-        $sourceParts[0] = $target->getTableName();
+        $sourceParts[0] = $target->getTableAlias();
 
         $subQueryResolver = $subQuery->getResolver();
         $sourcePath = join('.', $sourceParts);

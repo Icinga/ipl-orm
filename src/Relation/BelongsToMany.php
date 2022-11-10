@@ -152,15 +152,15 @@ class BelongsToMany extends Relation
             $relations = new Relations();
             $junction->createRelations($relations);
 
-            if ($relations->has($source->getTableName())) {
-                $sourceRelation = $relations->get($source->getTableName());
+            if ($relations->has($source->getTableAlias())) {
+                $sourceRelation = $relations->get($source->getTableAlias());
 
                 $possibleCandidateKey[] = $sourceRelation->getForeignKey();
                 $possibleForeignKey[] = $sourceRelation->getCandidateKey();
             }
 
-            if ($relations->has($target->getTableName())) {
-                $targetRelation = $relations->get($target->getTableName());
+            if ($relations->has($target->getTableAlias())) {
+                $targetRelation = $relations->get($target->getTableAlias());
 
                 $possibleTargetCandidateKey[] = $targetRelation->getCandidateKey();
                 $possibleTargetForeignKey[] = $targetRelation->getForeignKey();
@@ -168,7 +168,7 @@ class BelongsToMany extends Relation
         }
 
         $toJunction = (new HasMany())
-            ->setName($junction->getTableName())
+            ->setName($junction->getTableAlias())
             ->setSource($source)
             ->setTarget($junction)
             ->setCandidateKey($this->extractKey($possibleCandidateKey))

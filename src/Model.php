@@ -44,6 +44,16 @@ abstract class Model implements \ArrayAccess, \IteratorAggregate
     abstract public function getColumns();
 
     /**
+     * Get the configured table alias. (Default {@see static::getTableName()})
+     *
+     * @return string
+     */
+    public function getTableAlias(): string
+    {
+        return $this->getTableName();
+    }
+
+    /**
      * Get the model's column definitions
      *
      * The array is indexed by column names, values are either strings (labels) or arrays of this format:

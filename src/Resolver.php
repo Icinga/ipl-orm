@@ -273,8 +273,8 @@ class Resolver
         $parts = explode('.', $columnPath);
         $model = $this->query->getModel();
 
-        if ($parts[0] !== $model->getTableName()) {
-            array_unshift($parts, $model->getTableName());
+        if ($parts[0] !== $model->getTableAlias()) {
+            array_unshift($parts, $model->getTableAlias());
         }
 
         do {
@@ -524,9 +524,9 @@ class Resolver
         $relations = explode('.', $path);
         $subject = $subject ?: $this->query->getModel();
 
-        if ($relations[0] !== $subject->getTableName()) {
+        if ($relations[0] !== $subject->getTableAlias()) {
             throw new InvalidArgumentException(sprintf(
-                'Cannot resolve relation path "%s". Base table name is missing.',
+                'Cannot resolve relation path "%s". Base table alias/name is missing.',
                 $path
             ));
         }
@@ -568,7 +568,7 @@ class Resolver
                     $through = $relation->getThrough();
                     $this->setAlias($through, join('_', array_merge(
                         array_slice($segments, 0, -1),
-                        [$through->getTableName()]
+                        [$through->getTableAlias()]
                     )));
                 }
 
@@ -602,7 +602,7 @@ class Resolver
     public function requireAndResolveColumns(array $columns, Model $model = null)
     {
         $model = $model ?: $this->query->getModel();
-        $tableName = $model->getTableName();
+        $tableName = $model->getTableAlias();
 
         foreach ($columns as $alias => $column) {
             $columnPath = &$column;

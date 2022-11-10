@@ -86,7 +86,7 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
             }
 
             $resolver = $query->getResolver();
-            $baseTable = $query->getModel()->getTableName();
+            $baseTable = $query->getModel()->getTableAlias();
             $column = $resolver->qualifyPath(
                 $filter->metaData()->get('columnName', $filter->getColumn()),
                 $baseTable
@@ -160,7 +160,7 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
                 if ($child instanceof Filter\Condition && $child->metaData()->has('relationPath')) {
                     $relationPath = $child->metaData()->get('relationPath');
                     if (
-                        $relationPath !== $query->getModel()->getTableName() // Not the base table
+                        $relationPath !== $query->getModel()->getTableAlias() // Not the base table
                         && (
                             $optimizeChild !== null && $optimizeChild
                             || (
