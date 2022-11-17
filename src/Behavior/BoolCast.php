@@ -106,7 +106,7 @@ class BoolCast extends PropertyBehavior
             case $this->falseValue === $value:
                 return false;
             default:
-                if ($this->isStrict()) {
+                if ($this->isStrict() && $value !== null) {
                     throw new InvalidArgumentException(sprintf(
                         'Expected %s or %s, got %s instead',
                         $this->trueValue,
@@ -121,8 +121,17 @@ class BoolCast extends PropertyBehavior
 
     public function toDb($value, $key, $_)
     {
+        if ($value === null) {
+            return null;
+        }
+
         if (! is_bool($value)) {
-            if ($this->isStrict()) {
+            if (
+                $this->isStrict()
+                && $value !== '*'
+                && $value !== $this->getFalseValue()
+                && $value !== $this->getTrueValue()
+            ) {
                 throw new InvalidArgumentException(sprintf(
                     'Expected bool, got %s instead',
                     get_php_type($value)
