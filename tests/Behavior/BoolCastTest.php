@@ -69,4 +69,24 @@ class BoolCastTest extends \PHPUnit\Framework\TestCase
     {
         $this->assertSame('pass', (new BoolCast([]))->setStrict(false)->toDb('pass', 'key', 'context'));
     }
+
+    public function testFromDbReturnsNullWhenNullIsPassedInStrictMode()
+    {
+        $this->assertSame(null, (new BoolCast([]))->fromDb(null, 'key', 'context'));
+    }
+
+    public function testToDbReturnsNullWhenNullIsPassedInStrictMode()
+    {
+        $this->assertSame(null, (new BoolCast([]))->toDb(null, 'key', 'context'));
+    }
+
+    public function testToDbReturnsYesWhenYesIsPassedInStrictMode()
+    {
+        $this->assertSame('y', (new BoolCast([]))->toDb('y', 'key', 'context'));
+    }
+
+    public function testToDbReturnsNoWhenNoIsPassedInStrictMode()
+    {
+        $this->assertSame('n', (new BoolCast([]))->toDb('n', 'key', 'context'));
+    }
 }
