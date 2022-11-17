@@ -4,6 +4,7 @@ namespace ipl\Tests\Orm;
 
 use ipl\Orm\Exception\InvalidRelationException;
 use ipl\Orm\Query;
+use ipl\Sql\Expression;
 
 class QueryTest extends \PHPUnit\Framework\TestCase
 {
