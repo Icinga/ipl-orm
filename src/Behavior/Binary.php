@@ -25,7 +25,7 @@ class Binary extends PropertyBehavior implements QueryAwareBehavior, RewriteFilt
      *
      * @var array
      */
-    protected $rewriteSubjects;
+    protected $rewriteSubjects = [];
 
     public function fromDb($value, $key, $_)
     {
@@ -74,11 +74,9 @@ class Binary extends PropertyBehavior implements QueryAwareBehavior, RewriteFilt
 
     public function setQuery(Query $query)
     {
-        $this->rewriteSubjects = $this->properties;
-
-        if (! $query->getDb()->getAdapter() instanceof Pgsql) {
+        if ($query->getDb()->getAdapter() instanceof Pgsql) {
             // Only process properties if the adapter is PostgreSQL.
-            $this->properties = [];
+            $this->rewriteSubjects = $this->properties;
         }
     }
 
