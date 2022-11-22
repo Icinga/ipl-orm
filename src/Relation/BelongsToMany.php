@@ -5,6 +5,7 @@ namespace ipl\Orm\Relation;
 use ipl\Orm\Model;
 use ipl\Orm\Relation;
 use ipl\Orm\Relations;
+use LogicException;
 
 use function ipl\Stdlib\get_php_type;
 
@@ -60,6 +61,12 @@ class BelongsToMany extends Relation
     {
         if ($this->through === null) {
             $throughClass = $this->getThroughClass();
+            if ($throughClass === null) {
+                throw new LogicException(
+                    'You cannot use a many-to-many relation without a through class or a table name for the'
+                    . ' junction model'
+                );
+            }
 
             if (class_exists($throughClass)) {
                 $this->through = new $throughClass();
