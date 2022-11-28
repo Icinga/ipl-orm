@@ -235,6 +235,23 @@ class QueryTest extends TestCase
         );
     }
 
+    public function testQueryWithMultipleSortDirectionsInOrderBy()
+    {
+        $query = (new Query())
+            ->setModel(new User())
+            ->withColumns(['api_identity.api_token'])
+            ->orderBy('username', 'DESC')
+            ->orderBy('password', 'ASC')
+            ->orderBy('api_identity.api_token', 'DESC');
+
+        $orderBy = $query->assembleSelect()->getOrderBy();
+
+        $this->assertSame(
+            [['user.username', 'DESC'], ['user.password', 'ASC'], ['user_api_identity_api_token', 'DESC']],
+            $orderBy
+        );
+    }
+
     public function testQueryWithExpressionInOrderByThatUsesColumns()
     {
         $expression = new Expression("%s || ' ' || %s", ['username', 'profile.given_name']);
