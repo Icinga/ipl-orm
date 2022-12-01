@@ -2,6 +2,7 @@
 
 namespace ipl\Orm\Common;
 
+use InvalidArgumentException;
 use ipl\Stdlib\Str;
 
 class SortUtil
@@ -20,6 +21,15 @@ class SortUtil
 
         foreach ($columnsAndDirections as $columnAndDirection) {
             list($column, $direction) = static::splitColumnAndDirection($columnAndDirection);
+
+            switch (strtolower($direction ?? '')) {
+                case 'asc':
+                case 'desc':
+                case '':
+                    break;
+                default:
+                    throw new InvalidArgumentException(sprintf('Invalid sort direction "%s"', $direction));
+            }
 
             $orderBy[] = [$column, $direction];
         }
