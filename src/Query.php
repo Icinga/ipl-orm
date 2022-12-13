@@ -716,7 +716,8 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
             $orderBy = SortUtil::createOrderBy($defaultSort);
         }
 
-        $columnsAndDirections = [];
+        $columns = [];
+        $directions = [];
         $orderByResolved = [];
         $resolver = $this->getResolver();
         $selectedColumns = $select->getColumns();
@@ -724,20 +725,19 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
         foreach ($orderBy as $part) {
             list($column, $direction) = $part;
 
-            if (isset($selectedColumns[$column])) {
+            if (! $column instanceof ExpressionInterface && isset($selectedColumns[$column])) {
                 // If it's a custom alias, we have no other way of knowing it,
                 // unless the caller explicitly uses it in the sort rule.
                 $orderByResolved[] = $part;
             } else {
                 // Prepare flat ORDER BY column(s) and direction(s) for requireAndResolveColumns()
-                $columnsAndDirections[$column] = $direction;
+                $columns[] = $column;
+                $directions[] = $direction;
             }
         }
 
-        foreach (
-            $resolver->requireAndResolveColumns(array_keys($columnsAndDirections)) as list($model, $alias, $column)
-        ) {
-            $direction = reset($columnsAndDirections);
+        foreach ($resolver->requireAndResolveColumns($columns) as list($model, $alias, $column)) {
+            $direction = array_shift($directions);
             $selectColumns = $resolver->getSelectColumns($model);
             $tableName = $resolver->getAlias($model);
 
@@ -746,6 +746,10 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
                     $alias = $column->getAlias();
                 } elseif (is_string($alias) && $model !== $this->getModel()) {
                     $alias = $resolver->qualifyColumnAlias($alias, $tableName);
+                } elseif ($column instanceof ResolvedExpression) {
+                    // We are doing this in an else if, since a resolved expression can't be an aliased
+                    // expression at the same time and thus doesn't influence the functionality in any way.
+                    $column->setColumns($resolver->qualifyColumns($column->getResolvedColumns()));
                 }
 
                 if (is_string($alias) && isset($selectedColumns[$alias])) {
@@ -763,8 +767,6 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
             }
 
             $orderByResolved[] = [$column, $direction];
-
-            array_shift($columnsAndDirections);
         }
 
         $select->orderBy($orderByResolved);

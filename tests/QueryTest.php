@@ -4,8 +4,10 @@ namespace ipl\Tests\Orm;
 
 use ipl\Orm\Exception\InvalidRelationException;
 use ipl\Orm\Query;
+use ipl\Sql\Expression;
+use ipl\Tests\Sql\TestCase;
 
-class QueryTest extends \PHPUnit\Framework\TestCase
+class QueryTest extends TestCase
 {
     public function testGetModelReturnsNullIfUnset()
     {
@@ -230,6 +232,49 @@ class QueryTest extends \PHPUnit\Framework\TestCase
         $this->assertSame(
             [['user_api_identity_api_token', 'desc']],
             $orderBy
+        );
+    }
+
+    public function testQueryWithMultipleSortDirectionsInOrderBy()
+    {
+        $query = (new Query())
+            ->setModel(new User())
+            ->withColumns(['api_identity.api_token'])
+            ->orderBy('username', 'DESC')
+            ->orderBy('password', 'ASC')
+            ->orderBy('api_identity.api_token', 'DESC');
+
+        $orderBy = $query->assembleSelect()->getOrderBy();
+
+        $this->assertSame(
+            [['user.username', 'DESC'], ['user.password', 'ASC'], ['user_api_identity_api_token', 'DESC']],
+            $orderBy
+        );
+    }
+
+    public function testQueryWithExpressionInOrderByThatUsesColumns()
+    {
+        $expression = new Expression("%s || ' ' || %s", ['username', 'profile.given_name']);
+
+        $model = new User();
+        $query = (new Query())
+            ->setModel($model)
+            ->with(['profile'])
+            ->columns($model->getColumns())
+            ->orderBy($expression);
+
+        $sql = <<<SQL
+SELECT user.username, user.password
+FROM user
+INNER JOIN profile user_profile ON user_profile.user_id = user.id
+ORDER BY user.username || ' ' || user_profile.given_name
+SQL;
+
+        $this->assertSql(
+            $sql,
+            $query->assembleSelect(),
+            null,
+            'Base table and relation columns are incorrectly qualified in ORDER BY'
         );
     }
 
