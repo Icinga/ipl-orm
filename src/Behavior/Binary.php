@@ -5,6 +5,7 @@ namespace ipl\Orm\Behavior;
 use ipl\Orm\Contract\PropertyBehavior;
 use ipl\Orm\Contract\QueryAwareBehavior;
 use ipl\Orm\Contract\RewriteFilterBehavior;
+use ipl\Orm\Exception\ValueConversionException;
 use ipl\Orm\Query;
 use ipl\Sql\Adapter\Pgsql;
 use ipl\Stdlib\Filter\Condition;
@@ -41,12 +42,12 @@ class Binary extends PropertyBehavior implements QueryAwareBehavior, RewriteFilt
     }
 
     /**
-     * @throws UnexpectedValueException If value is a resource
+     * @throws ValueConversionException If value is a resource
      */
     public function toDb($value, $key, $_)
     {
         if (is_resource($value)) {
-            throw new UnexpectedValueException(sprintf('Unexpected resource for %s', $key));
+            throw new ValueConversionException(sprintf('Unexpected resource for %s', $key));
         }
 
         if ($value === '*') {

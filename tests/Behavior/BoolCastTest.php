@@ -4,6 +4,7 @@ namespace ipl\Tests\Orm;
 
 use InvalidArgumentException;
 use ipl\Orm\Behavior\BoolCast;
+use ipl\Orm\Exception\ValueConversionException;
 
 class BoolCastTest extends \PHPUnit\Framework\TestCase
 {
@@ -55,7 +56,7 @@ class BoolCastTest extends \PHPUnit\Framework\TestCase
 
     public function testToDbThrowsExceptionInStrictMode()
     {
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(ValueConversionException::class);
 
         (new BoolCast([]))->toDb('strict', 'key', 'context');
     }
