@@ -5,6 +5,7 @@ namespace ipl\Orm\Compat;
 use AppendIterator;
 use ArrayIterator;
 use ipl\Orm\Exception\InvalidColumnException;
+use ipl\Orm\Exception\ValueConversionException;
 use ipl\Orm\Query;
 use ipl\Orm\Relation;
 use ipl\Orm\UnionQuery;
@@ -111,8 +112,14 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
 
                 $subjectBehaviors = $resolver->getBehaviors($subject);
 
-                // Prepare filter as if it were final to allow full control for rewrite filter behaviors
-                $filter->setValue($subjectBehaviors->persistProperty($filter->getValue(), $columnName));
+                try {
+                    // Prepare filter as if it were final to allow full control for rewrite filter behaviors
+                    $filter->setValue($subjectBehaviors->persistProperty($filter->getValue(), $columnName));
+                } catch (ValueConversionException $_) {
+                    // The search bar may submit values with wildcards or whatever the user has entered.
+                    // In this case, we can simply ignore this error instead of rendering a stack trace.
+                }
+
                 $filter->setColumn($resolver->getAlias($subject) . '.' . $columnName);
                 $filter->metaData()->set('columnName', $columnName);
                 $filter->metaData()->set('relationPath', $path);
