@@ -4,6 +4,7 @@ namespace ipl\Orm\Behavior;
 
 use InvalidArgumentException;
 use ipl\Orm\Contract\PropertyBehavior;
+use ipl\Orm\Exception\ValueConversionException;
 
 use function ipl\Stdlib\get_php_type;
 
@@ -132,7 +133,7 @@ class BoolCast extends PropertyBehavior
                 && $value !== $this->getFalseValue()
                 && $value !== $this->getTrueValue()
             ) {
-                throw new InvalidArgumentException(sprintf(
+                throw new ValueConversionException(sprintf(
                     'Expected bool, got %s instead',
                     get_php_type($value)
                 ));
