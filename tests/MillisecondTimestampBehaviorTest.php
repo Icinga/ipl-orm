@@ -23,7 +23,7 @@ class MillisecondTimestampBehaviorTest extends TestCase
             new DateTimeZone('Europe/Berlin')
         );
 
-        $this->assertEquals(1668002400000, (new MillisecondTimestamp([]))->toDb($sometime, 'key', null));
+        $this->assertSame(1668002400000, (new MillisecondTimestamp([]))->toDb($sometime, 'key', null));
     }
 
     public function testToDbReturnsUtcTimestampWithUtcInput()
@@ -34,11 +34,11 @@ class MillisecondTimestampBehaviorTest extends TestCase
             new DateTimeZone('UTC')
         );
 
-        $this->assertEquals(1668002400000, (new MillisecondTimestamp([]))->toDb($sometime, 'key', null));
+        $this->assertSame(1668002400000, (new MillisecondTimestamp([]))->toDb($sometime, 'key', null));
 
         $sometime = 1668002400;
 
-        $this->assertEquals(1668002400000, (new MillisecondTimestamp([]))->toDb($sometime, 'key', null));
+        $this->assertSame(1668002400000, (new MillisecondTimestamp([]))->toDb($sometime, 'key', null));
     }
 
     /**
@@ -68,21 +68,21 @@ class MillisecondTimestampBehaviorTest extends TestCase
             new DateTimeZone('UTC')
         );
 
-        $this->assertEquals(1668002400123, (new MillisecondTimestamp([]))->toDb($sometime, 'key', null));
+        $this->assertSame(1668002400123, (new MillisecondTimestamp([]))->toDb($sometime, 'key', null));
 
         $sometime = 1668002400.123;
 
-        $this->assertEquals(1668002400123, (new MillisecondTimestamp([]))->toDb($sometime, 'key', null));
+        $this->assertSame(1668002400123, (new MillisecondTimestamp([]))->toDb($sometime, 'key', null));
 
         $sometime = '2022-11-09 14:00:00.123';
 
-        $this->assertEquals(1668002400123, (new MillisecondTimestamp([]))->toDb($sometime, 'key', null));
+        $this->assertSame(1668002400123, (new MillisecondTimestamp([]))->toDb($sometime, 'key', null));
     }
 
     public function testToDbThrowsExceptionWhenInvalidDatetimeIsPassed()
     {
         $this->expectException(ValueConversionException::class);
 
-        $this->assertEquals(true, (new MillisecondTimestamp([]))->toDb('*', 'key', null));
+        $this->assertSame(true, (new MillisecondTimestamp([]))->toDb('*', 'key', null));
     }
 }
