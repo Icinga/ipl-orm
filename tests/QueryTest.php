@@ -388,4 +388,72 @@ SQL;
             $query->assembleSelect()->getColumns()
         );
     }
+
+    public function testWithoutColumnsPreventsSelection()
+    {
+        $query = (new Query())
+            ->setModel(new User());
+
+        $query->withoutColumns('user.password');
+
+        $this->assertSame(
+            [
+                'user.id',
+                'user.username'
+            ],
+            $query->assembleSelect()->getColumns()
+        );
+    }
+
+    public function testWithoutColumnsIsResetByColumns()
+    {
+        $query = (new Query())
+            ->setModel(new User())
+            ->withoutColumns('user.password');
+
+        $query->columns(['username', 'password']);
+
+        $this->assertSame(
+            [
+                'user.username',
+                'user.password'
+            ],
+            $query->assembleSelect()->getColumns()
+        );
+    }
+
+    public function testWithColumnsResetsWithoutColumnsOnlyPartially()
+    {
+        $query = (new Query())
+            ->setModel(new User())
+            ->withoutColumns(['user.username', 'user.password']);
+
+        $query->withColumns('username');
+
+        $this->assertSame(
+            [
+                'user.id',
+                'user.username'
+            ],
+            $query->assembleSelect()->getColumns()
+        );
+    }
+
+    public function testWithoutColumnsOverridesColumnsAndWithColumns()
+    {
+        $query = (new Query())
+            ->setModel(new User())
+            ->columns(['user.username', 'user.password'])
+            ->withColumns(['user.profile.given_name', 'user.profile.surname']);
+
+        $query->withoutColumns(['user.password', 'user.profile.given_name']);
+
+        $this->assertSame(
+            [
+                'user.username',
+                'user_profile_surname' => 'user_profile.surname'
+            ],
+            $query->assembleSelect()->getColumns()
+        );
+    }
 }
