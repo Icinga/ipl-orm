@@ -65,6 +65,9 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
     /** @var array Additional columns to select from the model (or its relations) */
     protected $withColumns = [];
 
+    /** @var array Columns not to select from the model (or its relations) */
+    protected $withoutColumns = [];
+
     /** @var bool Whether to peek ahead for more results */
     protected $peekAhead = false;
 
@@ -226,7 +229,8 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
      * any relation added via {@see with()} will be selected.
      * Multiple calls to this method will overwrite the previously specified columns.
      * If you specify columns from the model's relations, the relations are automatically joined upon querying.
-     * Note that a call to this method also overwrites any previously column specified via {@see withColumns()}.
+     * Any of the given columns is guaranteed to be selected even if previously excluded via {@see withoutColumns()}.
+     * Any previously column specified via {@see withColumns()} will not be selected if not part of the given columns.
      *
      * @param string|array $columns The column(s) to select
      *
@@ -236,6 +240,7 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
     {
         $this->columns = (array) $columns;
         $this->withColumns = [];
+        $this->withoutColumns = [];
 
         return $this;
     }
@@ -244,6 +249,7 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
      * Set additional columns to select from the model (or its relations)
      *
      * Multiple calls to this method will not overwrite the previous set columns but append the columns to the query.
+     * Any of the given columns is guaranteed to be selected even if previously excluded via {@see withoutColumns()}.
      *
      * @param string|array $columns The column(s) to select
      *
@@ -251,7 +257,38 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
      */
     public function withColumns($columns)
     {
-        $this->withColumns = array_merge($this->withColumns, (array) $columns);
+        $tableName = $this->getModel()->getTableAlias();
+
+        $qualifiedColumns = [];
+        foreach ((array) $columns as $column) {
+            $qualifiedColumns[] = $this->getResolver()->qualifyPath($column, $tableName);
+        }
+
+        $this->withColumns = array_merge($this->withColumns, $qualifiedColumns);
+        $this->withoutColumns = array_diff($this->withoutColumns, $this->withColumns);
+
+        return $this;
+    }
+
+    /**
+     * Set columns not to select from the model (or its relations)
+     *
+     * Multiple calls to this method will not overwrite the previous set columns but append the new ones to the set.
+     *
+     * @param string|string[] $columns The column(s) not to select
+     *
+     * @return $this
+     */
+    public function withoutColumns($columns): self
+    {
+        $tableName = $this->getModel()->getTableAlias();
+
+        $qualifiedColumns = [];
+        foreach ((array) $columns as $column) {
+            $qualifiedColumns[] = $this->getResolver()->qualifyPath($column, $tableName);
+        }
+
+        $this->withoutColumns = array_merge($this->withoutColumns, $qualifiedColumns);
 
         return $this;
     }
@@ -407,8 +444,13 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
         }
 
         $resolved = $this->groupColumnsByTarget($resolver->requireAndResolveColumns($columns));
+        $omitted = $this->groupColumnsByTarget($resolver->requireAndResolveColumns($this->withoutColumns));
         foreach ($resolved as $target) {
             $targetColumns = $resolved[$target]->getArrayCopy();
+            if (isset($omitted[$target])) {
+                $targetColumns = array_diff($targetColumns, $omitted[$target]->getArrayCopy());
+            }
+
             if (! empty($customAliases)) {
                 $customColumns = array_intersect_key($targetColumns, $customAliases);
                 $targetColumns = array_diff_key($targetColumns, $customAliases);
