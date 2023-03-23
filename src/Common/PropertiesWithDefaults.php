@@ -7,8 +7,8 @@ use Traversable;
 
 trait PropertiesWithDefaults
 {
-    use \ipl\Stdlib\Properties {
-        \ipl\Stdlib\Properties::getProperty as private parentGetProperty;
+    use PropertiesState {
+        PropertiesState::getProperty as private parentGetProperty;
     }
 
     protected function getProperty($key)
