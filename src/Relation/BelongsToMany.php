@@ -174,14 +174,14 @@ class BelongsToMany extends Relation
             }
         }
 
-        $toJunction = (new HasMany())
+        $toJunction = ($this->isOne() ? new HasOne() : new HasMany())
             ->setName($junction->getTableAlias())
             ->setSource($source)
             ->setTarget($junction)
             ->setCandidateKey($this->extractKey($possibleCandidateKey))
             ->setForeignKey($this->extractKey($possibleForeignKey));
 
-        $toTarget = (new HasMany())
+        $toTarget = ($this->isOne() ? new HasOne() : new HasMany())
             ->setName($this->getName())
             ->setSource($junction)
             ->setTarget($target)

@@ -83,6 +83,18 @@ class Relation
     }
 
     /**
+     * Set to-one relationship
+     *
+     * @return $this
+     */
+    public function setIsOne(): self
+    {
+        $this->isOne = true;
+
+        return $this;
+    }
+
+    /**
      * Get the name of the relation
      *
      * @return string
