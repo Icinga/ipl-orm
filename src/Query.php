@@ -261,11 +261,15 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
 
         $qualifiedColumns = [];
         foreach ((array) $columns as $column) {
-            $qualifiedColumns[] = $this->getResolver()->qualifyPath($column, $tableName);
+            if (! $column instanceof ExpressionInterface) {
+                $qualifiedColumns[] = $this->getResolver()->qualifyPath($column, $tableName);
+            } else {
+                $qualifiedColumns[] = $column;
+            }
         }
 
         $this->withColumns = array_merge($this->withColumns, $qualifiedColumns);
-        $this->withoutColumns = array_diff($this->withoutColumns, $this->withColumns);
+        $this->withoutColumns = array_diff($this->withoutColumns, array_filter($this->withColumns, 'is_string'));
 
         return $this;
     }
@@ -285,7 +289,9 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
 
         $qualifiedColumns = [];
         foreach ((array) $columns as $column) {
-            $qualifiedColumns[] = $this->getResolver()->qualifyPath($column, $tableName);
+            if (is_string($column)) {
+                $qualifiedColumns[] = $this->getResolver()->qualifyPath($column, $tableName);
+            }
         }
 
         $this->withoutColumns = array_merge($this->withoutColumns, $qualifiedColumns);

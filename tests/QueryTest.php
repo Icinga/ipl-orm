@@ -389,6 +389,18 @@ SQL;
         );
     }
 
+    public function testWithColumnsSupportsExpressions()
+    {
+        $query = (new Query())
+            ->setModel(new User())
+            ->withColumns([new Expression('1')]);
+
+        $this->assertSql(
+            'SELECT user.id, user.username, user.password, (1) FROM user',
+            $query->assembleSelect()
+        );
+    }
+
     public function testWithoutColumnsPreventsSelection()
     {
         $query = (new Query())
@@ -454,6 +466,23 @@ SQL;
                 'user_profile_surname' => 'user_profile.surname'
             ],
             $query->assembleSelect()->getColumns()
+        );
+    }
+
+    public function testWithoutColumnsDoesNotWorkWithExpressions()
+    {
+        $expression = new Expression('1');
+
+        $query = (new Query())
+            ->setModel(new User())
+            ->withColumns([$expression]);
+
+        // Has no effect. $expression will be a ResolvedExpression by the time it is compared
+        $query->withoutColumns([$expression]);
+
+        $this->assertSql(
+            'SELECT user.id, user.username, user.password, (1) FROM user',
+            $query->assembleSelect()
         );
     }
 }
