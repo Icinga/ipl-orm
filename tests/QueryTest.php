@@ -389,6 +389,18 @@ SQL;
         );
     }
 
+    public function testWithColumnsSupportsExpressions()
+    {
+        $query = (new Query())
+            ->setModel(new User())
+            ->withColumns([new Expression('1')]);
+
+        $this->assertSql(
+            'SELECT user.id, user.username, user.password, (1) FROM user',
+            $query->assembleSelect()
+        );
+    }
+
     public function testWithoutColumnsPreventsSelection()
     {
         $query = (new Query())
