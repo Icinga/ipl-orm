@@ -795,4 +795,31 @@ class Resolver
 
         return $definitions;
     }
+
+    private function setQuery(Query $query): self
+    {
+        $this->query = $query;
+
+        return $this;
+    }
+
+    public function cloneMe($query)
+    {
+        $self = clone $this;
+        $self->setQuery($query);
+
+        return $self;
+    }
+
+    public function __clone()
+    {
+        $this->relations = clone $this->relations;
+        $this->behaviors = clone $this->behaviors;
+        $this->defaults = clone $this->defaults;
+        $this->aliases = clone $this->aliases;
+        $this->selectableColumns = clone $this->selectableColumns;
+        $this->selectColumns = clone $this->selectColumns;
+        $this->metaData = clone $this->metaData;
+        $this->resolvedRelations = clone $this->resolvedRelations;
+    }
 }
