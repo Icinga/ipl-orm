@@ -289,7 +289,9 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
 
         $qualifiedColumns = [];
         foreach ((array) $columns as $column) {
-            $qualifiedColumns[] = $this->getResolver()->qualifyPath($column, $tableName);
+            if (is_string($column)) {
+                $qualifiedColumns[] = $this->getResolver()->qualifyPath($column, $tableName);
+            }
         }
 
         $this->withoutColumns = array_merge($this->withoutColumns, $qualifiedColumns);
