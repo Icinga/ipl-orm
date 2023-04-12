@@ -401,6 +401,23 @@ SQL;
         );
     }
 
+    public function testWithColumnsHandlesCustomAliasesCorrectly()
+    {
+        $query = (new Query())
+            ->setModel(new User())
+            ->columns('username');
+
+        $query->withColumns([
+            'my_pw' => 'password',
+            'one' => new Expression('1')
+        ]);
+
+        $this->assertSql(
+            'SELECT user.password AS my_pw, (1) AS one, user.username FROM user',
+            $query->assembleSelect()
+        );
+    }
+
     public function testWithoutColumnsPreventsSelection()
     {
         $query = (new Query())
