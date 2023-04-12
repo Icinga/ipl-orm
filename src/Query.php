@@ -260,11 +260,11 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
         $tableName = $this->getModel()->getTableAlias();
 
         $qualifiedColumns = [];
-        foreach ((array) $columns as $column) {
+        foreach ((array) $columns as $alias => $column) {
             if (! $column instanceof ExpressionInterface) {
-                $qualifiedColumns[] = $this->getResolver()->qualifyPath($column, $tableName);
+                $qualifiedColumns[$alias] = $this->getResolver()->qualifyPath($column, $tableName);
             } else {
-                $qualifiedColumns[] = $column;
+                $qualifiedColumns[$alias] = $column;
             }
         }
 
