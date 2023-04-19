@@ -81,6 +81,8 @@ class Binary extends PropertyBehavior implements QueryAwareBehavior, RewriteFilt
             // Only process properties if the adapter is PostgreSQL.
             $this->properties = [];
         }
+
+        return $this;
     }
 
     public function rewriteCondition(Condition $condition, $relation = null)
