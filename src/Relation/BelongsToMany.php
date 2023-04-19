@@ -14,6 +14,9 @@ use function ipl\Stdlib\get_php_type;
  */
 class BelongsToMany extends Relation
 {
+    /** @var string Relation class */
+    protected const RELATION_CLASS = HasMany::class;
+
     protected $isOne = false;
 
     /** @var string Name of the join table or junction model class */
@@ -174,14 +177,16 @@ class BelongsToMany extends Relation
             }
         }
 
-        $toJunction = (new HasMany())
+        $junctionClass = static::RELATION_CLASS;
+        $toJunction = (new $junctionClass())
             ->setName($junction->getTableAlias())
             ->setSource($source)
             ->setTarget($junction)
             ->setCandidateKey($this->extractKey($possibleCandidateKey))
             ->setForeignKey($this->extractKey($possibleForeignKey));
 
-        $toTarget = (new HasMany())
+        $targetClass = static::RELATION_CLASS;
+        $toTarget = (new $targetClass())
             ->setName($this->getName())
             ->setSource($junction)
             ->setTarget($target)

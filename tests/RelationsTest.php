@@ -6,6 +6,7 @@ use InvalidArgumentException;
 use ipl\Orm\Exception\InvalidRelationException;
 use ipl\Orm\Relation\BelongsTo;
 use ipl\Orm\Relation\BelongsToMany;
+use ipl\Orm\Relation\BelongsToOne;
 use ipl\Orm\Relation\HasMany;
 use ipl\Orm\Relation\HasOne;
 use ipl\Orm\Relations;
@@ -103,5 +104,13 @@ class RelationsTest extends \PHPUnit\Framework\TestCase
 
         /** @noinspection PhpParamsInspection */
         $this->assertInstanceOf(BelongsToMany::class, $relation);
+    }
+
+    public function testBelongsToOneReturnsOneToOneRelationship()
+    {
+        $relation = (new Relations())->belongsToOne('test', TestModel::class);
+
+        /** @noinspection PhpParamsInspection */
+        $this->assertInstanceOf(BelongsToOne::class, $relation);
     }
 }

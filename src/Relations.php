@@ -6,6 +6,7 @@ use ArrayIterator;
 use ipl\Orm\Exception\InvalidRelationException;
 use ipl\Orm\Relation\BelongsTo;
 use ipl\Orm\Relation\BelongsToMany;
+use ipl\Orm\Relation\BelongsToOne;
 use ipl\Orm\Relation\HasMany;
 use ipl\Orm\Relation\HasOne;
 use IteratorAggregate;
@@ -76,7 +77,7 @@ class Relations implements IteratorAggregate
      * @param string $name        Name of the relation
      * @param string $targetClass Target model class
      *
-     * @return BelongsTo|BelongsToMany|HasMany|HasOne|Relation
+     * @return BelongsTo|BelongsToOne|BelongsToMany|HasMany|HasOne|Relation
      *
      * @throws \InvalidArgumentException If the target model class is not of type string
      */
@@ -158,6 +159,23 @@ class Relations implements IteratorAggregate
     public function belongsTo($name, $targetClass)
     {
         $relation = $this->create(BelongsTo::class, $name, $targetClass);
+
+        $this->add($relation);
+
+        return $relation;
+    }
+
+    /**
+     * Define a one-to-one relationship with a junction table
+     *
+     * @param string $name        Name of the relation
+     * @param string $targetClass Target model class
+     *
+     * @return BelongsToOne
+     */
+    public function belongsToOne(string $name, string $targetClass): BelongsToOne
+    {
+        $relation = $this->create(BelongsToOne::class, $name, $targetClass);
 
         $this->add($relation);
 
