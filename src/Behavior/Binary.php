@@ -93,7 +93,7 @@ class Binary extends PropertyBehavior implements QueryAwareBehavior, RewriteFilt
         if (isset($this->rewriteSubjects[$column])) {
             $value = $condition->getValue();
 
-            if (empty($this->properties) && is_resource($value)) {
+            if (! empty($this->properties) && is_resource($value)) {
                 // Only for PostgreSQL.
                 throw new UnexpectedValueException(sprintf('Unexpected resource for %s', $column));
             }
@@ -105,11 +105,11 @@ class Binary extends PropertyBehavior implements QueryAwareBehavior, RewriteFilt
              * no further adjustments are needed as ctype_xdigit returns false for binary and bytea hex strings.
              */
             if (ctype_xdigit($value)) {
-                if (empty($this->properties) && substr($value, 0, 2) !== '\\x') {
-                    // Only for PostgreSQL.
-                    $condition->setValue(sprintf('\\x%s', $value));
-                } else {
+                if (empty($this->properties)) {
                     $condition->setValue(hex2bin($value));
+                } elseif (substr($value, 0, 2) !== '\\x') {
+                    // PostgreSQL.
+                    $condition->setValue(sprintf('\\x%s', $value));
                 }
             }
         }
