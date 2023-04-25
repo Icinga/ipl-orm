@@ -103,7 +103,9 @@ class BinaryTest extends \PHPUnit\Framework\TestCase
     protected function condition($value = self::TEST_HEX_VALUE): Equal
     {
         $c = new Equal(static::TEST_COLUMN, $value);
-        $c->metaData()->set('columnName', static::TEST_COLUMN);
+        $c->metaData()
+            ->set('originalValue', $value)
+            ->set('columnName', static::TEST_COLUMN);
 
         return $c;
     }
