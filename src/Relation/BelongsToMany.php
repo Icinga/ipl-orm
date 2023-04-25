@@ -34,9 +34,9 @@ class BelongsToMany extends Relation
     /**
      * Get the name of the join table or junction model class
      *
-     * @return string
+     * @return ?string
      */
-    public function getThroughClass()
+    public function getThroughClass(): ?string
     {
         return $this->throughClass;
     }
@@ -48,7 +48,7 @@ class BelongsToMany extends Relation
      *
      * @return $this
      */
-    public function through($through)
+    public function through(string $through): self
     {
         $this->throughClass = $through;
 
@@ -60,7 +60,7 @@ class BelongsToMany extends Relation
      *
      * @return Model|Junction
      */
-    public function getThrough()
+    public function getThrough(): Model
     {
         if ($this->through === null) {
             $throughClass = $this->getThroughClass();
@@ -89,7 +89,7 @@ class BelongsToMany extends Relation
      *
      * @return $this
      */
-    public function setThrough($through)
+    public function setThrough(Model $through): self
     {
         $this->through = $through;
 
@@ -113,7 +113,7 @@ class BelongsToMany extends Relation
      *
      * @return $this
      */
-    public function setTargetForeignKey($targetForeignKey)
+    public function setTargetForeignKey($targetForeignKey): self
     {
         $this->targetForeignKey = $targetForeignKey;
 
@@ -137,7 +137,7 @@ class BelongsToMany extends Relation
      *
      * @return $this
      */
-    public function setTargetCandidateKey($targetCandidateKey)
+    public function setTargetCandidateKey($targetCandidateKey): self
     {
         $this->targetCandidateKey = $targetCandidateKey;
 
