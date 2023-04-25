@@ -78,7 +78,6 @@ class RelationsTest extends \PHPUnit\Framework\TestCase
     {
         $relation = (new Relations())->hasOne('test', TestModel::class);
 
-        /** @noinspection PhpParamsInspection */
         $this->assertInstanceOf(HasOne::class, $relation);
     }
 
@@ -86,7 +85,6 @@ class RelationsTest extends \PHPUnit\Framework\TestCase
     {
         $relation = (new Relations())->hasMany('test', TestModel::class);
 
-        /** @noinspection PhpParamsInspection */
         $this->assertInstanceOf(HasMany::class, $relation);
     }
 
@@ -94,7 +92,6 @@ class RelationsTest extends \PHPUnit\Framework\TestCase
     {
         $relation = (new Relations())->belongsTo('test', TestModel::class);
 
-        /** @noinspection PhpParamsInspection */
         $this->assertInstanceOf(BelongsTo::class, $relation);
     }
 
@@ -102,7 +99,6 @@ class RelationsTest extends \PHPUnit\Framework\TestCase
     {
         $relation = (new Relations())->belongsToMany('test', TestModel::class);
 
-        /** @noinspection PhpParamsInspection */
         $this->assertInstanceOf(BelongsToMany::class, $relation);
     }
 
@@ -110,7 +106,6 @@ class RelationsTest extends \PHPUnit\Framework\TestCase
     {
         $relation = (new Relations())->belongsToOne('test', TestModel::class);
 
-        /** @noinspection PhpParamsInspection */
         $this->assertInstanceOf(BelongsToOne::class, $relation);
     }
 }
