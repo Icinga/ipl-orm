@@ -16,11 +16,6 @@ parameters:
 			path: src/Behavior/Binary.php
 
 		-
-			message: "#^Parameter \\#1 \\$string of function substr expects string, mixed given\\.$#"
-			count: 1
-			path: src/Behavior/Binary.php
-
-		-
 			message: "#^Parameter \\#2 \\.\\.\\.\\$values of function sprintf expects bool\\|float\\|int\\|string\\|null, mixed given\\.$#"
 			count: 1
 			path: src/Behavior/Binary.php

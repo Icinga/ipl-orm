@@ -59,18 +59,6 @@ class Binary extends PropertyBehavior implements QueryAwareBehavior, RewriteFilt
             return $value;
         }
 
-        /**
-         * TODO(lippserd): If the filter is moved to a subquery, the value has already been processed.
-         * This is because our filter processor is unfortunately doing the transformation twice at the moment:
-         *
-         * {@link https://github.com/Icinga/ipl-orm/issues/48}
-         *
-         * {@see \ipl\Orm\Compat\FilterProcessor::requireAndResolveFilterColumns()}
-         */
-        if (substr($value, 0, 2) === '\\x') {
-            return $value;
-        }
-
         return sprintf('\\x%s', bin2hex($value));
     }
 
