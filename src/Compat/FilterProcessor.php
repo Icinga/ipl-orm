@@ -111,6 +111,8 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
                 }
 
                 $subjectBehaviors = $resolver->getBehaviors($subject);
+                // This is only used within the Binary behavior in rewriteCondition().
+                $filter->metaData()->set('originalValue', $filter->getValue());
 
                 try {
                     // Prepare filter as if it were final to allow full control for rewrite filter behaviors
