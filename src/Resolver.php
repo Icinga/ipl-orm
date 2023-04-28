@@ -10,6 +10,7 @@ use ipl\Orm\Contract\QueryAwareBehavior;
 use ipl\Orm\Exception\InvalidColumnException;
 use ipl\Orm\Exception\InvalidRelationException;
 use ipl\Orm\Relation\BelongsToMany;
+use ipl\Orm\Relation\BelongsToOne;
 use ipl\Sql\ExpressionInterface;
 use LogicException;
 use OutOfBoundsException;
@@ -564,7 +565,7 @@ class Resolver
 
                 $resolvedRelations[$relationPath] = $relation;
 
-                if ($relation instanceof BelongsToMany) {
+                if ($relation instanceof BelongsToMany || $relation instanceof BelongsToOne) {
                     $through = $relation->getThrough();
                     $this->setAlias($through, join('_', array_merge(
                         array_slice($segments, 0, -1),
