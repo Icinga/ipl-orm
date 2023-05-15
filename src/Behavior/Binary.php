@@ -18,18 +18,15 @@ use function ipl\Stdlib\get_php_type;
  */
 class Binary extends PropertyBehavior implements QueryAwareBehavior, RewriteFilterBehavior
 {
-    /**
-     * Properties for {@see rewriteCondition()} to support hex filters for each adapter
-     *
-     * Set in {@see setQuery()} from the {@see $properties} array because the latter is reset for adapters other than
-     * {@see Pgsql}, so {@see fromDb()} and {@see toDb()} don't run for them.
-     *
-     * @var array
-     */
-    protected $rewriteSubjects;
+    /** @var bool Whether the query is using a pgsql adapter */
+    protected $isPostgres = true;
 
     public function fromDb($value, $key, $_)
     {
+        if (! $this->isPostgres) {
+            return $value;
+        }
+
         if ($value !== null) {
             if (is_resource($value)) {
                 return stream_get_contents($value);
@@ -46,6 +43,10 @@ class Binary extends PropertyBehavior implements QueryAwareBehavior, RewriteFilt
      */
     public function toDb($value, $key, $_)
     {
+        if (! $this->isPostgres) {
+            return $value;
+        }
+
         if (is_resource($value)) {
             throw new ValueConversionException(sprintf('Unexpected resource for %s', $key));
         }
@@ -75,12 +76,9 @@ class Binary extends PropertyBehavior implements QueryAwareBehavior, RewriteFilt
 
     public function setQuery(Query $query)
     {
-        $this->rewriteSubjects = $this->properties;
+        $this->isPostgres = $query->getDb()->getAdapter() instanceof Pgsql;
 
-        if (! $query->getDb()->getAdapter() instanceof Pgsql) {
-            // Only process properties if the adapter is PostgreSQL.
-            $this->properties = [];
-        }
+        return $this;
     }
 
     public function rewriteCondition(Condition $condition, $relation = null)
@@ -90,11 +88,10 @@ class Binary extends PropertyBehavior implements QueryAwareBehavior, RewriteFilt
          * {@see \ipl\Orm\Compat\FilterProcessor::requireAndResolveFilterColumns()}
          */
         $column = $condition->metaData()->get('columnName');
-        if (isset($this->rewriteSubjects[$column])) {
-            $value = $condition->getValue();
+        if (isset($this->properties[$column])) {
+            $value = $condition->metaData()->get('originalValue');
 
-            if (empty($this->properties) && is_resource($value)) {
-                // Only for PostgreSQL.
+            if ($this->isPostgres && is_resource($value)) {
                 throw new UnexpectedValueException(sprintf('Unexpected resource for %s', $column));
             }
 
@@ -105,11 +102,10 @@ class Binary extends PropertyBehavior implements QueryAwareBehavior, RewriteFilt
              * no further adjustments are needed as ctype_xdigit returns false for binary and bytea hex strings.
              */
             if (ctype_xdigit($value)) {
-                if (empty($this->properties) && substr($value, 0, 2) !== '\\x') {
-                    // Only for PostgreSQL.
-                    $condition->setValue(sprintf('\\x%s', $value));
-                } else {
+                if (! $this->isPostgres) {
                     $condition->setValue(hex2bin($value));
+                } elseif (substr($value, 0, 2) !== '\\x') {
+                    $condition->setValue(sprintf('\\x%s', $value));
                 }
             }
         }
