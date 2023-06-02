@@ -10,6 +10,7 @@ use ipl\Orm\Query;
 use ipl\Orm\Relation;
 use ipl\Orm\UnionQuery;
 use ipl\Sql\Expression;
+use ipl\Sql\ExpressionInterface;
 use ipl\Sql\Filter\Exists;
 use ipl\Sql\Filter\NotExists;
 use ipl\Stdlib\Contract\Filterable;
@@ -135,6 +136,20 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
 
             if (! $resolver->hasSelectableColumn($subject, $columnName)) {
                 throw new InvalidColumnException($columnName, $subject);
+            }
+
+            $columns = $subject->getColumns();
+            if (isset($columns[$columnName]) && $columns[$columnName] instanceof ExpressionInterface) {
+                $expression = clone $columns[$columnName];
+                $expression->setColumns($resolver->qualifyColumns(
+                    $resolver->requireAndResolveColumns(
+                        $columns[$columnName]->getColumns(),
+                        $subject
+                    ),
+                    $subject
+                ));
+
+                $filter->setColumn($query->getDb()->getQueryBuilder()->buildExpression($expression));
             }
 
             if ($relationPath !== $baseTable) {
