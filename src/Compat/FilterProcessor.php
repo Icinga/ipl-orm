@@ -298,7 +298,7 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
                             )
                         );
 
-                        $subQuery->getSelectBase()->having(["COUNT(DISTINCT $targetKeys) >= ?" => $count]);
+                        $subQuery->getSelectBase()->having(["COUNT(DISTINCT ($targetKeys)) >= ?" => $count]);
                     }
 
                     $subQuery->filter($subQueryFilter);
