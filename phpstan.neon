@@ -1,0 +1,15 @@
+parameters:
+    level: 5 # Use 'max' instead when we got the time to fix all the claims
+
+    paths:
+        - src
+
+    scanDirectories:
+        - vendor
+
+    ignoreErrors:
+        - '#Unsafe usage of new static\(\)#'
+
+        - '#Method .*\\Binary::rewriteCondition\(\) should return .* but return statement is missing#'
+
+        - '#Parameter \#1 \$condition of method .*\\RewriteFilterBehavior::rewriteCondition\(\) .* ipl\\Stdlib\\Filter\\Rule given#'
