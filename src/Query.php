@@ -586,30 +586,39 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
      *
      * @param Model $target The model to query
      * @param string $targetPath The target's absolute relation path
-     * @param Model $from The source model
+     * @param ?Model $from The source model
+     * @param bool $link Whether the query should be linked to the parent query
      *
      * @return static
      */
-    public function createSubQuery(Model $target, $targetPath, Model $from = null)
+    public function createSubQuery(Model $target, $targetPath, Model $from = null, bool $link = true)
     {
         $subQuery = (new static())
             ->setDb($this->getDb())
             ->setModel($target);
 
-        $resolver = $this->getResolver();
         $sourceParts = array_reverse(explode('.', $targetPath));
         $sourceParts[0] = $target->getTableAlias();
 
         $subQueryResolver = $subQuery->getResolver();
         $sourcePath = join('.', $sourceParts);
+        $subQueryTarget = $subQueryResolver->resolveRelation($sourcePath)->getTarget();
+
         $subQuery->utilize($sourcePath); // TODO: Don't join if there's a matching foreign key
+
+        if (! $link) {
+            return $subQuery->columns(array_map(function ($keyName) use ($sourcePath) {
+                return "$sourcePath.$keyName";
+            }, (array) $subQueryTarget->getKeyName()));
+        }
 
         // TODO: Should be done by the caller. Though, that's not possible until we've got a filter abstraction
         //       which allows to post-pone filter column qualification.
         $subQueryResolver->setAliasPrefix('sub_');
 
+        $resolver = $this->getResolver();
         $baseAlias = $resolver->getAlias($this->getModel());
-        $sourceAlias = $subQueryResolver->getAlias($subQueryResolver->resolveRelation($sourcePath)->getTarget());
+        $sourceAlias = $subQueryResolver->getAlias($subQueryTarget);
 
         $subQueryConditions = [];
         foreach ((array) $this->getModel()->getKeyName() as $column) {

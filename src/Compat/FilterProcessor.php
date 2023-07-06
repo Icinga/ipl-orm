@@ -9,9 +9,10 @@ use ipl\Orm\Exception\ValueConversionException;
 use ipl\Orm\Query;
 use ipl\Orm\Relation;
 use ipl\Orm\UnionQuery;
-use ipl\Sql\Expression;
 use ipl\Sql\Filter\Exists;
+use ipl\Sql\Filter\In;
 use ipl\Sql\Filter\NotExists;
+use ipl\Sql\Filter\NotIn;
 use ipl\Stdlib\Contract\Filterable;
 use ipl\Stdlib\Filter\MetaDataProvider;
 use ipl\Stdlib\Filter;
@@ -82,7 +83,12 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
     protected function requireAndResolveFilterColumns(Filter\Rule $filter, Query $query, $forceOptimization = null)
     {
         if ($filter instanceof Filter\Condition) {
-            if ($filter instanceof Exists || $filter instanceof NotExists) {
+            if (
+                $filter instanceof Exists
+                || $filter instanceof NotExists
+                || $filter instanceof In
+                || $filter instanceof NotIn
+            ) {
                 return;
             }
 
@@ -284,8 +290,8 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
                     }
 
                     $relation = $query->getResolver()->resolveRelation($relationPath);
-                    $subQuery = $query->createSubQuery($relation->getTarget(), $relationPath);
-                    $subQuery->columns([new Expression('1')]);
+                    $subQuery = $query->createSubQuery($relation->getTarget(), $relationPath, null, false);
+                    $subQuery->getResolver()->setAliasPrefix('sub_');
 
                     if ($count !== null && ($negate || $filter instanceof Filter\All)) {
                         $targetKeys = join(
@@ -303,10 +309,20 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
 
                     $subQuery->filter($subQueryFilter);
 
+                    // TODO: Qualification is only necessary since the `In` and `NotIn` conditions are ignored by
+                    //       requireAndResolveFilterColumns(). In case it supports not only single columns but also
+                    //       multiple, this might be reduced to: $keyTuple = (array) $query->getModel()->getKeyName()
+                    $keyTuple = array_values(
+                        $query->getResolver()->qualifyColumns(
+                            (array) $query->getModel()->getKeyName(),
+                            $query->getModel()
+                        )
+                    );
+
                     if ($negate) {
-                        $filter->add(new NotExists($subQuery->assembleSelect()->resetOrderBy()));
+                        $filter->add(new NotIn($keyTuple, $subQuery->assembleSelect()->resetOrderBy()));
                     } else {
-                        $filter->add(new Exists($subQuery->assembleSelect()->resetOrderBy()));
+                        $filter->add(new In($keyTuple, $subQuery->assembleSelect()->resetOrderBy()));
                     }
                 }
             }
