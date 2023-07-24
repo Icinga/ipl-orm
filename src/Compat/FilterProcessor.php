@@ -293,6 +293,10 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
                     $subQuery = $query->createSubQuery($relation->getTarget(), $relationPath, null, false);
                     $subQuery->getResolver()->setAliasPrefix('sub_');
 
+                    $subQuery->filter($subQueryFilter);
+
+                    $subQuerySelect = $subQuery->assembleSelect()->resetOrderBy();
+
                     if ($count !== null && ($negate || $filter instanceof Filter\All)) {
                         $targetKeys = join(
                             ',',
@@ -304,10 +308,9 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
                             )
                         );
 
-                        $subQuery->getSelectBase()->having(["COUNT(DISTINCT $targetKeys) >= ?" => $count]);
+                        $subQuerySelect->having(["COUNT(DISTINCT $targetKeys) >= ?" => $count]);
+                        $subQuerySelect->groupBy(array_values($subQuerySelect->getColumns()));
                     }
-
-                    $subQuery->filter($subQueryFilter);
 
                     // TODO: Qualification is only necessary since the `In` and `NotIn` conditions are ignored by
                     //       requireAndResolveFilterColumns(). In case it supports not only single columns but also
@@ -320,9 +323,9 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
                     );
 
                     if ($negate) {
-                        $filter->add(new NotIn($keyTuple, $subQuery->assembleSelect()->resetOrderBy()));
+                        $filter->add(new NotIn($keyTuple, $subQuerySelect));
                     } else {
-                        $filter->add(new In($keyTuple, $subQuery->assembleSelect()->resetOrderBy()));
+                        $filter->add(new In($keyTuple, $subQuerySelect));
                     }
                 }
             }
