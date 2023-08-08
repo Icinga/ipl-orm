@@ -27,10 +27,8 @@ abstract class PropertyBehavior implements RetrieveBehavior, PersistBehavior
     public function retrieve(Model $model)
     {
         foreach ($this->properties as $key => $ctx) {
-            try {
+            if ($model->hasProperty($key)) {
                 $model[$key] = $this->fromDb($model[$key], $key, $ctx);
-            } catch (OutOfBoundsException $_) {
-                // pass
             }
         }
     }
