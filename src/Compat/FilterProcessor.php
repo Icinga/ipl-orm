@@ -103,6 +103,7 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
 
             list($relationPath, $columnName) = preg_split('/\.(?=[^.]+$)/', $column);
 
+            $subject = null;
             $relations = new AppendIterator();
             $relations->append(new ArrayIterator([$baseTable => null]));
             $relations->append($resolver->resolveRelations($relationPath));
