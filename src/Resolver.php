@@ -124,7 +124,7 @@ class Resolver
     public function getDefaults(Model $model): Defaults
     {
         if (! $this->defaults->contains($model)) {
-            $defaults = new Defaults($this->query);
+            $defaults = new Defaults();
             $model->createDefaults($defaults);
             $this->defaults->attach($model, $defaults);
         }
