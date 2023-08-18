@@ -124,6 +124,7 @@ class Relations implements IteratorAggregate
      */
     public function hasOne($name, $targetClass)
     {
+        /** @var HasOne $relation */
         $relation = $this->create(HasOne::class, $name, $targetClass);
 
         $this->add($relation);
@@ -141,6 +142,7 @@ class Relations implements IteratorAggregate
      */
     public function hasMany($name, $targetClass)
     {
+        /** @var HasMany $relation */
         $relation = $this->create(HasMany::class, $name, $targetClass);
 
         $this->add($relation);
@@ -158,6 +160,7 @@ class Relations implements IteratorAggregate
      */
     public function belongsTo($name, $targetClass)
     {
+        /** @var BelongsTo $relation */
         $relation = $this->create(BelongsTo::class, $name, $targetClass);
 
         $this->add($relation);
@@ -175,6 +178,7 @@ class Relations implements IteratorAggregate
      */
     public function belongsToOne(string $name, string $targetClass): BelongsToOne
     {
+        /** @var BelongsToOne $relation */
         $relation = $this->create(BelongsToOne::class, $name, $targetClass);
 
         $this->add($relation);
@@ -192,6 +196,7 @@ class Relations implements IteratorAggregate
      */
     public function belongsToMany($name, $targetClass)
     {
+        /** @var BelongsToMany $relation */
         $relation = $this->create(BelongsToMany::class, $name, $targetClass);
 
         $this->add($relation);
