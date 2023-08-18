@@ -539,6 +539,7 @@ class Resolver
 
         $target = $subject;
         $pathBeingResolved = null;
+        $relation = null;
         $segments = [array_shift($relations)];
         while (! empty($relations)) {
             $newPath = $this->getBehaviors($target)
@@ -633,10 +634,12 @@ class Resolver
             switch (true) {
                 /** @noinspection PhpMissingBreakStatementInspection */
                 case $dot !== false:
+                    $relationPath = null;
                     $hydrationPath = substr($columnPath, 0, $dot);
                     $columnPath = substr($columnPath, $dot + 1); // Updates also $column or $alias
 
                     if ($hydrationPath !== $tableName) {
+                        $relation = null;
                         $hydrationPath = $this->qualifyPath($hydrationPath, $tableName);
 
                         $relations = new AppendIterator();
@@ -687,6 +690,7 @@ class Resolver
                 // Move to default
                 default:
                     $relationPath = null;
+                    $hydrationPath = null;
                     $target = $model;
 
                     if (! $column instanceof ExpressionInterface) {
