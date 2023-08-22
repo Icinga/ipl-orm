@@ -1,0 +1,861 @@
+parameters:
+	ignoreErrors:
+		-
+			message: "#^Method ipl\\\\Orm\\\\AliasedExpression\\:\\:__construct\\(\\) has parameter \\$columns with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: src/AliasedExpression.php
+
+		-
+			message: "#^Cannot cast mixed to string\\.$#"
+			count: 1
+			path: src/Behavior/Binary.php
+
+		-
+			message: "#^Parameter \\#1 \\$string of function bin2hex expects string, mixed given\\.$#"
+			count: 1
+			path: src/Behavior/Binary.php
+
+		-
+			message: "#^Parameter \\#1 \\$string of function substr expects string, mixed given\\.$#"
+			count: 1
+			path: src/Behavior/Binary.php
+
+		-
+			message: "#^Parameter \\#2 \\.\\.\\.\\$values of function sprintf expects bool\\|float\\|int\\|string\\|null, mixed given\\.$#"
+			count: 1
+			path: src/Behavior/Binary.php
+
+		-
+			message: "#^Parameter \\#2 \\.\\.\\.\\$values of function sprintf expects bool\\|float\\|int\\|string\\|null, mixed given\\.$#"
+			count: 1
+			path: src/Behavior/BoolCast.php
+
+		-
+			message: "#^Parameter \\#3 \\.\\.\\.\\$values of function sprintf expects bool\\|float\\|int\\|string\\|null, mixed given\\.$#"
+			count: 1
+			path: src/Behavior/BoolCast.php
+
+		-
+			message: "#^Parameter \\#4 \\.\\.\\.\\$values of function sprintf expects bool\\|float\\|int\\|string\\|null, mixed given\\.$#"
+			count: 1
+			path: src/Behavior/BoolCast.php
+
+		-
+			message: "#^Cannot call method setTimezone\\(\\) on DateTime\\|false\\.$#"
+			count: 1
+			path: src/Behavior/MillisecondTimestamp.php
+
+		-
+			message: "#^Parameter \\#1 \\$datetime of class DateTime constructor expects string, mixed given\\.$#"
+			count: 1
+			path: src/Behavior/MillisecondTimestamp.php
+
+		-
+			message: "#^Parameter \\#2 \\.\\.\\.\\$values of function sprintf expects bool\\|float\\|int\\|string\\|null, mixed given\\.$#"
+			count: 1
+			path: src/Behavior/MillisecondTimestamp.php
+
+		-
+			message: "#^Class ipl\\\\Orm\\\\Behaviors implements generic interface IteratorAggregate but does not specify its types\\: TKey, TValue$#"
+			count: 1
+			path: src/Behaviors.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\Behaviors\\:\\:add\\(\\) has no return type specified\\.$#"
+			count: 1
+			path: src/Behaviors.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\Behaviors\\:\\:getIterator\\(\\) return type with generic class ArrayIterator does not specify its types\\: TKey, TValue$#"
+			count: 1
+			path: src/Behaviors.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\Behaviors\\:\\:persist\\(\\) has no return type specified\\.$#"
+			count: 1
+			path: src/Behaviors.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\Behaviors\\:\\:retrieve\\(\\) has no return type specified\\.$#"
+			count: 1
+			path: src/Behaviors.php
+
+		-
+			message: "#^Parameter \\#1 \\$condition of method ipl\\\\Orm\\\\Contract\\\\RewriteFilterBehavior\\:\\:rewriteCondition\\(\\) expects ipl\\\\Stdlib\\\\Filter\\\\Condition, ipl\\\\Stdlib\\\\Filter\\\\Rule given\\.$#"
+			count: 1
+			path: src/Behaviors.php
+
+		-
+			message: "#^Property ipl\\\\Orm\\\\Behaviors\\:\\:\\$behaviors type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: src/Behaviors.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\ColumnDefinition\\:\\:fromArray\\(\\) has parameter \\$options with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: src/ColumnDefinition.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\Common\\\\SortUtil\\:\\:createOrderBy\\(\\) has parameter \\$sort with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: src/Common/SortUtil.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\Common\\\\SortUtil\\:\\:createOrderBy\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: src/Common/SortUtil.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\Common\\\\SortUtil\\:\\:explodeSortSpec\\(\\) has parameter \\$sort with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: src/Common/SortUtil.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\Common\\\\SortUtil\\:\\:explodeSortSpec\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: src/Common/SortUtil.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\Common\\\\SortUtil\\:\\:normalizeSortSpec\\(\\) has parameter \\$sort with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: src/Common/SortUtil.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\Common\\\\SortUtil\\:\\:splitColumnAndDirection\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: src/Common/SortUtil.php
+
+		-
+			message: "#^Cannot use array destructuring on array\\<int, string\\>\\|false\\.$#"
+			count: 1
+			path: src/Compat/FilterProcessor.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\Compat\\\\FilterProcessor\\:\\:apply\\(\\) has no return type specified\\.$#"
+			count: 1
+			path: src/Compat/FilterProcessor.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\Compat\\\\FilterProcessor\\:\\:requireAndResolveFilterColumns\\(\\) has no return type specified\\.$#"
+			count: 1
+			path: src/Compat/FilterProcessor.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\Compat\\\\FilterProcessor\\:\\:requireAndResolveFilterColumns\\(\\) has parameter \\$forceOptimization with no type specified\\.$#"
+			count: 1
+			path: src/Compat/FilterProcessor.php
+
+		-
+			message: "#^Parameter \\#1 \\$filter of method ipl\\\\Orm\\\\Query\\:\\:filter\\(\\) expects ipl\\\\Stdlib\\\\Filter\\\\Rule, ipl\\\\Stdlib\\\\Filter\\\\Chain\\|null given\\.$#"
+			count: 1
+			path: src/Compat/FilterProcessor.php
+
+		-
+			message: "#^Parameter \\#1 \\$path of method ipl\\\\Orm\\\\Resolver\\:\\:isDistinctRelation\\(\\) expects string, mixed given\\.$#"
+			count: 1
+			path: src/Compat/FilterProcessor.php
+
+		-
+			message: "#^Parameter \\#1 \\$path of method ipl\\\\Orm\\\\Resolver\\:\\:qualifyPath\\(\\) expects string, mixed given\\.$#"
+			count: 1
+			path: src/Compat/FilterProcessor.php
+
+		-
+			message: "#^Parameter \\#1 \\$path of method ipl\\\\Orm\\\\Resolver\\:\\:resolveRelation\\(\\) expects string, int\\|string given\\.$#"
+			count: 1
+			path: src/Compat/FilterProcessor.php
+
+		-
+			message: "#^Parameter \\#1 \\$subject of method ipl\\\\Orm\\\\Resolver\\:\\:hasSelectableColumn\\(\\) expects ipl\\\\Orm\\\\Model, ipl\\\\Orm\\\\Model\\|null given\\.$#"
+			count: 1
+			path: src/Compat/FilterProcessor.php
+
+		-
+			message: "#^Parameter \\#2 \\$model of class ipl\\\\Orm\\\\Exception\\\\InvalidColumnException constructor expects ipl\\\\Orm\\\\Model, ipl\\\\Orm\\\\Model\\|null given\\.$#"
+			count: 1
+			path: src/Compat/FilterProcessor.php
+
+		-
+			message: "#^Parameter \\#2 \\$targetPath of method ipl\\\\Orm\\\\Query\\:\\:createSubQuery\\(\\) expects string, int\\|string given\\.$#"
+			count: 1
+			path: src/Compat/FilterProcessor.php
+
+		-
+			message: "#^Parameter \\#2 \\$value of static method ipl\\\\Stdlib\\\\Filter\\:\\:equal\\(\\) expects array\\|bool\\|float\\|int\\|string, mixed given\\.$#"
+			count: 1
+			path: src/Compat/FilterProcessor.php
+
+		-
+			message: "#^Parameter \\#2 \\$value of static method ipl\\\\Stdlib\\\\Filter\\:\\:like\\(\\) expects array\\<string\\>\\|string, mixed given\\.$#"
+			count: 1
+			path: src/Compat/FilterProcessor.php
+
+		-
+			message: "#^Property ipl\\\\Orm\\\\Compat\\\\FilterProcessor\\:\\:\\$baseJoins has no type specified\\.$#"
+			count: 1
+			path: src/Compat/FilterProcessor.php
+
+		-
+			message: "#^Property ipl\\\\Orm\\\\Compat\\\\FilterProcessor\\:\\:\\$madeJoins has no type specified\\.$#"
+			count: 1
+			path: src/Compat/FilterProcessor.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\Contract\\\\PersistBehavior\\:\\:persist\\(\\) has no return type specified\\.$#"
+			count: 1
+			path: src/Contract/PersistBehavior.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\Contract\\\\PropertyBehavior\\:\\:__construct\\(\\) has parameter \\$properties with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: src/Contract/PropertyBehavior.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\Contract\\\\PropertyBehavior\\:\\:persist\\(\\) has no return type specified\\.$#"
+			count: 1
+			path: src/Contract/PropertyBehavior.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\Contract\\\\PropertyBehavior\\:\\:retrieve\\(\\) has no return type specified\\.$#"
+			count: 1
+			path: src/Contract/PropertyBehavior.php
+
+		-
+			message: "#^Property ipl\\\\Orm\\\\Contract\\\\PropertyBehavior\\:\\:\\$properties type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: src/Contract/PropertyBehavior.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\Contract\\\\RetrieveBehavior\\:\\:retrieve\\(\\) has no return type specified\\.$#"
+			count: 1
+			path: src/Contract/RetrieveBehavior.php
+
+		-
+			message: "#^Class ipl\\\\Orm\\\\Defaults implements generic interface IteratorAggregate but does not specify its types\\: TKey, TValue$#"
+			count: 1
+			path: src/Defaults.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\Defaults\\:\\:add\\(\\) return type has no value type specified in iterable type \\$this\\(ipl\\\\Orm\\\\Defaults\\)\\.$#"
+			count: 1
+			path: src/Defaults.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\Defaults\\:\\:getIterator\\(\\) return type has no value type specified in iterable type Traversable\\.$#"
+			count: 1
+			path: src/Defaults.php
+
+		-
+			message: "#^Property ipl\\\\Orm\\\\Exception\\\\InvalidRelationException\\:\\:\\$model \\(ipl\\\\Orm\\\\Model\\) does not accept ipl\\\\Orm\\\\Model\\|null\\.$#"
+			count: 1
+			path: src/Exception/InvalidRelationException.php
+
+		-
+			message: "#^Cannot call method getName\\(\\) on mixed\\.$#"
+			count: 1
+			path: src/Hydrator.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\Hydrator\\:\\:extractAndMap\\(\\) has parameter \\$columnToPropertyMap with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: src/Hydrator.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\Hydrator\\:\\:extractAndMap\\(\\) has parameter \\$data with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: src/Hydrator.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\Hydrator\\:\\:extractAndMap\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: src/Hydrator.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\Hydrator\\:\\:hydrate\\(\\) has parameter \\$data with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: src/Hydrator.php
+
+		-
+			message: "#^Property ipl\\\\Orm\\\\Hydrator\\:\\:\\$hydrators type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: src/Hydrator.php
+
+		-
+			message: "#^Class ipl\\\\Orm\\\\Model implements generic interface ArrayAccess but does not specify its types\\: TKey, TValue$#"
+			count: 1
+			path: src/Model.php
+
+		-
+			message: "#^Class ipl\\\\Orm\\\\Model implements generic interface IteratorAggregate but does not specify its types\\: TKey, TValue$#"
+			count: 1
+			path: src/Model.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\Model\\:\\:__construct\\(\\) has parameter \\$properties with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: src/Model.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\Model\\:\\:createBehaviors\\(\\) has no return type specified\\.$#"
+			count: 1
+			path: src/Model.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\Model\\:\\:createDefaults\\(\\) has no return type specified\\.$#"
+			count: 1
+			path: src/Model.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\Model\\:\\:createDefaults\\(\\) has parameter \\$defaults with no value type specified in iterable type ipl\\\\Orm\\\\Defaults\\.$#"
+			count: 1
+			path: src/Model.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\Model\\:\\:createRelations\\(\\) has no return type specified\\.$#"
+			count: 1
+			path: src/Model.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\Model\\:\\:getColumnDefinitions\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: src/Model.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\Model\\:\\:getColumns\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: src/Model.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\Model\\:\\:getDefaultSort\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: src/Model.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\Model\\:\\:getKeyName\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: src/Model.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\Model\\:\\:getProperty\\(\\) has no return type specified\\.$#"
+			count: 1
+			path: src/Model.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\Model\\:\\:getProperty\\(\\) has parameter \\$key with no type specified\\.$#"
+			count: 1
+			path: src/Model.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\Model\\:\\:getSearchColumns\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: src/Model.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\Model\\:\\:init\\(\\) has no return type specified\\.$#"
+			count: 1
+			path: src/Model.php
+
+		-
+			message: "#^Parameter \\#1 \\$properties of method ipl\\\\Orm\\\\Model\\:\\:setProperties\\(\\) expects array, array\\|null given\\.$#"
+			count: 1
+			path: src/Model.php
+
+		-
+			message: "#^Argument of an invalid type array\\|null supplied for foreach, only iterables are supported\\.$#"
+			count: 1
+			path: src/Query.php
+
+		-
+			message: "#^Cannot access an offset on mixed\\.$#"
+			count: 1
+			path: src/Query.php
+
+		-
+			message: "#^Cannot access offset mixed on mixed\\.$#"
+			count: 1
+			path: src/Query.php
+
+		-
+			message: "#^Cannot call method getArrayCopy\\(\\) on mixed\\.$#"
+			count: 2
+			path: src/Query.php
+
+		-
+			message: "#^Cannot call method getJoinType\\(\\) on mixed\\.$#"
+			count: 1
+			path: src/Query.php
+
+		-
+			message: "#^Cannot call method resolve\\(\\) on mixed\\.$#"
+			count: 1
+			path: src/Query.php
+
+		-
+			message: "#^Class ipl\\\\Orm\\\\Query implements generic interface IteratorAggregate but does not specify its types\\: TKey, TValue$#"
+			count: 1
+			path: src/Query.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\Query\\:\\:columns\\(\\) has parameter \\$columns with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: src/Query.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\Query\\:\\:count\\(\\) should return int but returns int\\|string\\|false\\|null\\.$#"
+			count: 1
+			path: src/Query.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\Query\\:\\:dump\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: src/Query.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\Query\\:\\:first\\(\\) should return ipl\\\\Orm\\\\Model\\|null but returns mixed\\.$#"
+			count: 1
+			path: src/Query.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\Query\\:\\:getColumns\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: src/Query.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\Query\\:\\:groupColumnsByTarget\\(\\) return type with generic class SplObjectStorage does not specify its types\\: TObject, TData$#"
+			count: 1
+			path: src/Query.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\Query\\:\\:with\\(\\) has parameter \\$relations with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: src/Query.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\Query\\:\\:withColumns\\(\\) has parameter \\$columns with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: src/Query.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\Query\\:\\:without\\(\\) has parameter \\$relations with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: src/Query.php
+
+		-
+			message: "#^Parameter \\#1 \\$model of method ipl\\\\Orm\\\\Resolver\\:\\:getAlias\\(\\) expects ipl\\\\Orm\\\\Model, mixed given\\.$#"
+			count: 1
+			path: src/Query.php
+
+		-
+			message: "#^Parameter \\#1 \\$object of method SplObjectStorage\\<object,mixed\\>\\:\\:attach\\(\\) expects object, mixed given\\.$#"
+			count: 1
+			path: src/Query.php
+
+		-
+			message: "#^Parameter \\#1 \\$object of method SplObjectStorage\\<object,mixed\\>\\:\\:contains\\(\\) expects object, mixed given\\.$#"
+			count: 1
+			path: src/Query.php
+
+		-
+			message: "#^Parameter \\#1 \\$objectOrClass of class ReflectionClass constructor expects class\\-string\\<T of object\\>\\|T of object, string given\\.$#"
+			count: 1
+			path: src/Query.php
+
+		-
+			message: "#^Parameter \\#1 \\$subject of method ipl\\\\Orm\\\\Resolver\\:\\:getSelectColumns\\(\\) expects ipl\\\\Orm\\\\Model, mixed given\\.$#"
+			count: 1
+			path: src/Query.php
+
+		-
+			message: "#^Parameter \\#2 \\$model of method ipl\\\\Orm\\\\Resolver\\:\\:qualifyColumns\\(\\) expects ipl\\\\Orm\\\\Model\\|null, object given\\.$#"
+			count: 1
+			path: src/Query.php
+
+		-
+			message: "#^Parameter \\#2 \\$model of method ipl\\\\Orm\\\\Resolver\\:\\:qualifyColumnsAndAliases\\(\\) expects ipl\\\\Orm\\\\Model\\|null, object given\\.$#"
+			count: 1
+			path: src/Query.php
+
+		-
+			message: "#^Property ipl\\\\Orm\\\\Query\\:\\:\\$columns type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: src/Query.php
+
+		-
+			message: "#^Property ipl\\\\Orm\\\\Query\\:\\:\\$count \\(int\\) does not accept int\\|string\\|false\\|null\\.$#"
+			count: 1
+			path: src/Query.php
+
+		-
+			message: "#^Property ipl\\\\Orm\\\\Query\\:\\:\\$withColumns type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: src/Query.php
+
+		-
+			message: "#^Property ipl\\\\Orm\\\\Query\\:\\:\\$withoutColumns type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: src/Query.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\Relation\\:\\:determineKeys\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: src/Relation.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\Relation\\:\\:getCandidateKey\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: src/Relation.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\Relation\\:\\:getDefaultCandidateKey\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: src/Relation.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\Relation\\:\\:getDefaultForeignKey\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: src/Relation.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\Relation\\:\\:getForeignKey\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: src/Relation.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\Relation\\:\\:getTarget\\(\\) should return ipl\\\\Orm\\\\Model but returns object\\.$#"
+			count: 1
+			path: src/Relation.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\Relation\\:\\:setCandidateKey\\(\\) has parameter \\$candidateKey with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: src/Relation.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\Relation\\:\\:setForeignKey\\(\\) has parameter \\$foreignKey with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: src/Relation.php
+
+		-
+			message: "#^Property ipl\\\\Orm\\\\Relation\\:\\:\\$candidateKey type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: src/Relation.php
+
+		-
+			message: "#^Property ipl\\\\Orm\\\\Relation\\:\\:\\$foreignKey type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: src/Relation.php
+
+		-
+			message: "#^Property ipl\\\\Orm\\\\Relation\\:\\:\\$target \\(ipl\\\\Orm\\\\Model\\) does not accept object\\.$#"
+			count: 1
+			path: src/Relation.php
+
+		-
+			message: "#^Call to an undefined method object\\:\\:setName\\(\\)\\.$#"
+			count: 2
+			path: src/Relation/BelongsToMany.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\Relation\\\\BelongsToMany\\:\\:extractKey\\(\\) has no return type specified\\.$#"
+			count: 1
+			path: src/Relation/BelongsToMany.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\Relation\\\\BelongsToMany\\:\\:extractKey\\(\\) has parameter \\$possibleKey with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: src/Relation/BelongsToMany.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\Relation\\\\BelongsToMany\\:\\:getTargetCandidateKey\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: src/Relation/BelongsToMany.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\Relation\\\\BelongsToMany\\:\\:getTargetForeignKey\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: src/Relation/BelongsToMany.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\Relation\\\\BelongsToMany\\:\\:getThrough\\(\\) should return ipl\\\\Orm\\\\Model but returns object\\.$#"
+			count: 1
+			path: src/Relation/BelongsToMany.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\Relation\\\\BelongsToMany\\:\\:setTargetCandidateKey\\(\\) has parameter \\$targetCandidateKey with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: src/Relation/BelongsToMany.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\Relation\\\\BelongsToMany\\:\\:setTargetForeignKey\\(\\) has parameter \\$targetForeignKey with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: src/Relation/BelongsToMany.php
+
+		-
+			message: "#^Property ipl\\\\Orm\\\\Relation\\\\BelongsToMany\\:\\:\\$targetCandidateKey type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: src/Relation/BelongsToMany.php
+
+		-
+			message: "#^Property ipl\\\\Orm\\\\Relation\\\\BelongsToMany\\:\\:\\$targetForeignKey type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: src/Relation/BelongsToMany.php
+
+		-
+			message: "#^Property ipl\\\\Orm\\\\Relation\\\\BelongsToMany\\:\\:\\$through \\(ipl\\\\Orm\\\\Model\\) does not accept object\\.$#"
+			count: 1
+			path: src/Relation/BelongsToMany.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\Relation\\\\Junction\\:\\:getColumns\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: src/Relation/Junction.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\Relation\\\\Junction\\:\\:getKeyName\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: src/Relation/Junction.php
+
+		-
+			message: "#^Class ipl\\\\Orm\\\\Relations implements generic interface IteratorAggregate but does not specify its types\\: TKey, TValue$#"
+			count: 1
+			path: src/Relations.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\Relations\\:\\:assertRelationDoesNotYetExist\\(\\) has no return type specified\\.$#"
+			count: 1
+			path: src/Relations.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\Relations\\:\\:assertRelationExists\\(\\) has no return type specified\\.$#"
+			count: 1
+			path: src/Relations.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\ResolvedExpression\\:\\:getColumns\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: src/ResolvedExpression.php
+
+		-
+			message: "#^Cannot access offset non\\-falsy\\-string on mixed\\.$#"
+			count: 3
+			path: src/Resolver.php
+
+		-
+			message: "#^Cannot access offset string on mixed\\.$#"
+			count: 6
+			path: src/Resolver.php
+
+		-
+			message: "#^Cannot call method getTarget\\(\\) on mixed\\.$#"
+			count: 1
+			path: src/Resolver.php
+
+		-
+			message: "#^Cannot call method isOne\\(\\) on mixed\\.$#"
+			count: 1
+			path: src/Resolver.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\Resolver\\:\\:collectColumns\\(\\) has no return type specified\\.$#"
+			count: 1
+			path: src/Resolver.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\Resolver\\:\\:collectMetaData\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: src/Resolver.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\Resolver\\:\\:getBehaviors\\(\\) should return ipl\\\\Orm\\\\Behaviors but returns mixed\\.$#"
+			count: 1
+			path: src/Resolver.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\Resolver\\:\\:getColumnDefinitions\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: src/Resolver.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\Resolver\\:\\:getColumnDefinitions\\(\\) should return array but returns mixed\\.$#"
+			count: 1
+			path: src/Resolver.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\Resolver\\:\\:getDefaults\\(\\) return type has no value type specified in iterable type ipl\\\\Orm\\\\Defaults\\.$#"
+			count: 1
+			path: src/Resolver.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\Resolver\\:\\:getDefaults\\(\\) should return ipl\\\\Orm\\\\Defaults but returns mixed\\.$#"
+			count: 1
+			path: src/Resolver.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\Resolver\\:\\:getRelations\\(\\) should return ipl\\\\Orm\\\\Relations but returns mixed\\.$#"
+			count: 1
+			path: src/Resolver.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\Resolver\\:\\:getSelectColumns\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: src/Resolver.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\Resolver\\:\\:getSelectColumns\\(\\) should return array but returns mixed\\.$#"
+			count: 1
+			path: src/Resolver.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\Resolver\\:\\:getSelectableColumns\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: src/Resolver.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\Resolver\\:\\:hasSelectableColumn\\(\\) should return bool but returns mixed\\.$#"
+			count: 1
+			path: src/Resolver.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\Resolver\\:\\:qualifyColumns\\(\\) has parameter \\$columns with no value type specified in iterable type iterable\\.$#"
+			count: 1
+			path: src/Resolver.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\Resolver\\:\\:qualifyColumns\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: src/Resolver.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\Resolver\\:\\:qualifyColumnsAndAliases\\(\\) has parameter \\$columns with no value type specified in iterable type iterable\\.$#"
+			count: 1
+			path: src/Resolver.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\Resolver\\:\\:qualifyColumnsAndAliases\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: src/Resolver.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\Resolver\\:\\:requireAndResolveColumns\\(\\) has parameter \\$columns with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: src/Resolver.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\Resolver\\:\\:resolveRelation\\(\\) should return ipl\\\\Orm\\\\Relation but returns mixed\\.$#"
+			count: 1
+			path: src/Resolver.php
+
+		-
+			message: "#^Parameter \\#1 \\$array of function array_keys expects array, mixed given\\.$#"
+			count: 1
+			path: src/Resolver.php
+
+		-
+			message: "#^Property ipl\\\\Orm\\\\Resolver\\:\\:\\$aliases with generic class SplObjectStorage does not specify its types\\: TObject, TData$#"
+			count: 1
+			path: src/Resolver.php
+
+		-
+			message: "#^Property ipl\\\\Orm\\\\Resolver\\:\\:\\$behaviors with generic class SplObjectStorage does not specify its types\\: TObject, TData$#"
+			count: 1
+			path: src/Resolver.php
+
+		-
+			message: "#^Property ipl\\\\Orm\\\\Resolver\\:\\:\\$defaults with generic class SplObjectStorage does not specify its types\\: TObject, TData$#"
+			count: 1
+			path: src/Resolver.php
+
+		-
+			message: "#^Property ipl\\\\Orm\\\\Resolver\\:\\:\\$metaData with generic class SplObjectStorage does not specify its types\\: TObject, TData$#"
+			count: 1
+			path: src/Resolver.php
+
+		-
+			message: "#^Property ipl\\\\Orm\\\\Resolver\\:\\:\\$relations with generic class SplObjectStorage does not specify its types\\: TObject, TData$#"
+			count: 1
+			path: src/Resolver.php
+
+		-
+			message: "#^Property ipl\\\\Orm\\\\Resolver\\:\\:\\$resolvedRelations with generic class SplObjectStorage does not specify its types\\: TObject, TData$#"
+			count: 1
+			path: src/Resolver.php
+
+		-
+			message: "#^Property ipl\\\\Orm\\\\Resolver\\:\\:\\$selectColumns with generic class SplObjectStorage does not specify its types\\: TObject, TData$#"
+			count: 1
+			path: src/Resolver.php
+
+		-
+			message: "#^Property ipl\\\\Orm\\\\Resolver\\:\\:\\$selectableColumns with generic class SplObjectStorage does not specify its types\\: TObject, TData$#"
+			count: 1
+			path: src/Resolver.php
+
+		-
+			message: "#^Class ipl\\\\Orm\\\\ResultSet implements generic interface Iterator but does not specify its types\\: TKey, TValue$#"
+			count: 1
+			path: src/ResultSet.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\ResultSet\\:\\:__construct\\(\\) has parameter \\$limit with no type specified\\.$#"
+			count: 1
+			path: src/ResultSet.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\ResultSet\\:\\:__construct\\(\\) has parameter \\$traversable with no value type specified in iterable type Traversable\\.$#"
+			count: 1
+			path: src/ResultSet.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\ResultSet\\:\\:advance\\(\\) has no return type specified\\.$#"
+			count: 1
+			path: src/ResultSet.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\ResultSet\\:\\:hasMore\\(\\) has no return type specified\\.$#"
+			count: 1
+			path: src/ResultSet.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\ResultSet\\:\\:hasResult\\(\\) has no return type specified\\.$#"
+			count: 1
+			path: src/ResultSet.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\ResultSet\\:\\:yieldTraversable\\(\\) has no return type specified\\.$#"
+			count: 1
+			path: src/ResultSet.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\ResultSet\\:\\:yieldTraversable\\(\\) has parameter \\$traversable with no value type specified in iterable type Traversable\\.$#"
+			count: 1
+			path: src/ResultSet.php
+
+		-
+			message: "#^Property ipl\\\\Orm\\\\ResultSet\\:\\:\\$cache has no type specified\\.$#"
+			count: 1
+			path: src/ResultSet.php
+
+		-
+			message: "#^Property ipl\\\\Orm\\\\ResultSet\\:\\:\\$generator has no type specified\\.$#"
+			count: 1
+			path: src/ResultSet.php
+
+		-
+			message: "#^Property ipl\\\\Orm\\\\ResultSet\\:\\:\\$limit has no type specified\\.$#"
+			count: 1
+			path: src/ResultSet.php
+
+		-
+			message: "#^Property ipl\\\\Orm\\\\ResultSet\\:\\:\\$position has no type specified\\.$#"
+			count: 1
+			path: src/ResultSet.php
+
+		-
+			message: "#^Method ipl\\\\Orm\\\\UnionModel\\:\\:getUnions\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: src/UnionModel.php
+
+		-
+			message: "#^Parameter \\#1 \\$model of method ipl\\\\Orm\\\\Query\\:\\:setModel\\(\\) expects ipl\\\\Orm\\\\Model, object given\\.$#"
+			count: 1
+			path: src/UnionQuery.php

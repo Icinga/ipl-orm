@@ -1,5 +1,11 @@
+includes:
+	- phpstan-baseline.neon
+
 parameters:
-    level: 5 # Use 'max' instead when we got the time to fix all the claims
+    level: max
+
+    checkFunctionNameCase: true
+    checkInternalClassCaseSensitivity: true
 
     paths:
         - src
@@ -10,6 +16,4 @@ parameters:
     ignoreErrors:
         - '#Unsafe usage of new static\(\)#'
 
-        - '#Method .*\\Binary::rewriteCondition\(\) should return .* but return statement is missing#'
-
-        - '#Parameter \#1 \$condition of method .*\\RewriteFilterBehavior::rewriteCondition\(\) .* ipl\\Stdlib\\Filter\\Rule given#'
+        - '#. but return statement is missing#'
