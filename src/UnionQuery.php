@@ -19,7 +19,9 @@ class UnionQuery extends Query
         if ($this->unions === null) {
             $this->unions = [];
 
-            foreach ($this->getModel()->getUnions() as list($target, $relations, $columns)) {
+            /** @var UnionModel $model */
+            $model = $this->getModel();
+            foreach ($model->getUnions() as list($target, $relations, $columns)) {
                 $query = (new Query())
                     ->setDb($this->getDb())
                     ->setModel(new $target())

@@ -33,11 +33,11 @@ class Junction extends Model
 
     public function getKeyName()
     {
-        return null;
+        return [];
     }
 
     public function getColumns()
     {
-        return null;
+        return [];
     }
 }

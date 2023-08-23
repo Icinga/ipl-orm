@@ -43,7 +43,7 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
             return;
         }
 
-        if ($filter instanceof Filter\Condition || ! $filter->isEmpty()) {
+        if (! $filter instanceof Filter\Chain || ! $filter->isEmpty()) {
             $filter = clone $filter;
             if (! $filter instanceof Filter\Chain) {
                 $filter = Filter::all($filter);
@@ -103,6 +103,7 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
 
             list($relationPath, $columnName) = preg_split('/\.(?=[^.]+$)/', $column);
 
+            $subject = null;
             $relations = new AppendIterator();
             $relations->append(new ArrayIterator([$baseTable => null]));
             $relations->append($resolver->resolveRelations($relationPath));
@@ -157,6 +158,7 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
             }
 
             $subQueryGroups = [];
+            /** @var Filter\Rule[] $outsourcedRules */
             $outsourcedRules = [];
             foreach ($filter as $child) {
                 /** @var Filter\Rule $child */
@@ -337,7 +339,7 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
                         $madeBy,
                         function ($relationFilter) use ($rule) {
                             return $rule !== $relationFilter
-                                && ($rule instanceof Filter\Condition || ! $rule->has($relationFilter));
+                                && (! $rule instanceof Filter\Chain || ! $rule->has($relationFilter));
                         }
                     );
 
