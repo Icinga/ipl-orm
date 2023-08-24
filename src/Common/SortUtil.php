@@ -11,9 +11,9 @@ class SortUtil
      *
      * @param array|string $sort
      *
-     * @return array|null Sort column(s) and direction(s) suitable for {@link OrderByInterface::orderBy()}
+     * @return array<int, mixed> Sort column(s) and direction(s) suitable for {@link OrderByInterface::orderBy()}
      */
-    public static function createOrderBy($sort)
+    public static function createOrderBy($sort): array
     {
         $columnsAndDirections = static::explodeSortSpec($sort);
         $orderBy = [];
