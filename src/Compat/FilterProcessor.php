@@ -197,7 +197,7 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
 
             foreach ($subQueryGroups as $relationPath => $columns) {
                 $generalRules = [];
-                foreach ($columns as $column => & $comparisons) {
+                foreach ($columns as $column => $comparisons) {
                     if (isset($comparisons[Filter\Unequal::class]) || isset($comparisons[Filter\Unlike::class])) {
                         // If there's a unequal (!=) comparison for any column, all other comparisons (for the same
                         // column) also need to be outsourced to their own sub query. Regardless of their amount of
@@ -210,11 +210,11 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
                     foreach ($comparisons as $conditionClass => $rules) {
                         if (count($rules) === 1) {
                             $generalRules[] = $rules[0];
-                            unset($comparisons[$conditionClass]);
+                            unset($columns[$column][$conditionClass]);
                         }
                     }
 
-                    if (empty($comparisons)) {
+                    if (empty($columns[$column])) {
                         unset($columns[$column]);
                     }
                 }
