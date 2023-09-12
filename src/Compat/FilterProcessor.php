@@ -107,6 +107,7 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
             $relations = new AppendIterator();
             $relations->append(new ArrayIterator([$baseTable => null]));
             $relations->append($resolver->resolveRelations($relationPath));
+            $behaviorsApplied = $filter->metaData()->get('behaviorsApplied', false);
             foreach ($relations as $path => $relation) {
                 $columnName = substr($column, strlen($path) + 1);
 
@@ -121,24 +122,39 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
                 // This is only used within the Binary behavior in rewriteCondition().
                 $filter->metaData()->set('originalValue', $filter->getValue());
 
-                try {
-                    // Prepare filter as if it were final to allow full control for rewrite filter behaviors
-                    $filter->setValue($subjectBehaviors->persistProperty($filter->getValue(), $columnName));
-                } catch (ValueConversionException $_) {
-                    // The search bar may submit values with wildcards or whatever the user has entered.
-                    // In this case, we can simply ignore this error instead of rendering a stack trace.
+                if (! $behaviorsApplied) {
+                    try {
+                        // Prepare filter as if it were final to allow full control for rewrite filter behaviors
+                        $filter->setValue($subjectBehaviors->persistProperty($filter->getValue(), $columnName));
+                    } catch (ValueConversionException $_) {
+                        // The search bar may submit values with wildcards or whatever the user has entered.
+                        // In this case, we can simply ignore this error instead of rendering a stack trace.
+                    }
                 }
 
                 $filter->setColumn($resolver->getAlias($subject) . '.' . $columnName);
                 $filter->metaData()->set('columnName', $columnName);
                 $filter->metaData()->set('relationPath', $path);
 
-                $rewrittenFilter = $subjectBehaviors->rewriteCondition($filter, $path . '.');
-                if ($rewrittenFilter !== null) {
-                    return $this->requireAndResolveFilterColumns($rewrittenFilter, $query, $forceOptimization)
-                        ?: $rewrittenFilter;
+                if (! $behaviorsApplied) {
+                    $rewrittenFilter = $subjectBehaviors->rewriteCondition($filter, $path . '.');
+                    if ($rewrittenFilter !== null) {
+                        return $this->requireAndResolveFilterColumns($rewrittenFilter, $query, $forceOptimization)
+                            ?: $rewrittenFilter;
+                    }
                 }
             }
+
+            /**
+             * We have applied all the subject behaviors for this filter condition, so set this metadata to prevent
+             * the behaviors from being applied for the same filter condition over again later in case of a subquery.
+             * The behaviors are processed again due to $subQueryFilter being evaluated by this processor as part of
+             * the subquery. The reason for this is the application of aliases used in said subquery. Since this is
+             * part of the filter column qualification, and the behaviors are not, this should be separately done.
+             * There's a similar comment in {@see Query::createSubQuery()} which should be considered when working
+             * on improving this.
+             */
+            $filter->metaData()->set('behaviorsApplied', true);
 
             if (! $resolver->hasSelectableColumn($subject, $columnName)) {
                 throw new InvalidColumnException($columnName, $subject);
