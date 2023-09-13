@@ -311,17 +311,7 @@ parameters:
 			path: src/Model.php
 
 		-
-			message: "#^Method ipl\\\\Orm\\\\Model\\:\\:getColumns\\(\\) return type has no value type specified in iterable type array\\.$#"
-			count: 1
-			path: src/Model.php
-
-		-
 			message: "#^Method ipl\\\\Orm\\\\Model\\:\\:getDefaultSort\\(\\) return type has no value type specified in iterable type array\\.$#"
-			count: 1
-			path: src/Model.php
-
-		-
-			message: "#^Method ipl\\\\Orm\\\\Model\\:\\:getKeyName\\(\\) return type has no value type specified in iterable type array\\.$#"
 			count: 1
 			path: src/Model.php
 
@@ -589,16 +579,6 @@ parameters:
 			message: "#^Property ipl\\\\Orm\\\\Relation\\\\BelongsToMany\\:\\:\\$through \\(ipl\\\\Orm\\\\Model\\) does not accept object\\.$#"
 			count: 1
 			path: src/Relation/BelongsToMany.php
-
-		-
-			message: "#^Method ipl\\\\Orm\\\\Relation\\\\Junction\\:\\:getColumns\\(\\) return type has no value type specified in iterable type array\\.$#"
-			count: 1
-			path: src/Relation/Junction.php
-
-		-
-			message: "#^Method ipl\\\\Orm\\\\Relation\\\\Junction\\:\\:getKeyName\\(\\) return type has no value type specified in iterable type array\\.$#"
-			count: 1
-			path: src/Relation/Junction.php
 
 		-
 			message: "#^Class ipl\\\\Orm\\\\Relations implements generic interface IteratorAggregate but does not specify its types\\: TKey, TValue$#"
