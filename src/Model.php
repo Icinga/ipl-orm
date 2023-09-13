@@ -4,6 +4,7 @@ namespace ipl\Orm;
 
 use ipl\Orm\Common\PropertiesWithDefaults;
 use ipl\Sql\Connection;
+use ipl\Sql\ExpressionInterface;
 
 /**
  * Models represent single database tables or parts of it.
@@ -32,14 +33,14 @@ abstract class Model implements \ArrayAccess, \IteratorAggregate
     /**
      * Get the column name(s) of the primary key
      *
-     * @return string|array Array if the primary key is compound, string otherwise
+     * @return string|array<string> Array if the primary key is compound, string otherwise
      */
     abstract public function getKeyName();
 
     /**
      * Get the model's queryable columns
      *
-     * @return array
+     * @return array<int|string, string|ExpressionInterface>
      */
     abstract public function getColumns();
 
