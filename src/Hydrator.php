@@ -13,6 +13,9 @@ class Hydrator
     /** @var array Additional hydration rules for the model's relations */
     protected $hydrators = [];
 
+    /** @var array<string, array<string, bool>> Map of columns to referencing paths */
+    protected $columnToTargetMap = [];
+
     /** @var Query The query the hydration rules are for */
     protected $query;
 
@@ -70,9 +73,29 @@ class Hydrator
             }
         }
 
+        $this->updateColumnToTargetMap($path, $columnToPropertyMap);
         $this->hydrators[$path] = [$target, $relation, $columnToPropertyMap, $defaults];
 
         return $this;
+    }
+
+    /**
+     * Update which columns the given path is referencing
+     *
+     * @param string $path
+     * @param array<string, string> $columnToPropertyMap
+     *
+     * @return void
+     */
+    protected function updateColumnToTargetMap(string $path, array $columnToPropertyMap): void
+    {
+        foreach ($columnToPropertyMap as $qualifiedColumnPath => $_) {
+            if (isset($this->columnToTargetMap[$qualifiedColumnPath])) {
+                $this->columnToTargetMap[$qualifiedColumnPath][$path] = true;
+            } else {
+                $this->columnToTargetMap[$qualifiedColumnPath] = [$path => true];
+            }
+        }
     }
 
     /**
@@ -120,7 +143,7 @@ class Hydrator
                 }
             }
 
-            $subject->setProperties($this->extractAndMap($data, $columnToPropertyMap));
+            $subject->setProperties($this->extractAndMap($data, $columnToPropertyMap, $path));
             $this->query->getResolver()->getBehaviors($target)->retrieve($subject);
             $defaultsToApply[] = [$subject, $defaults];
         }
@@ -181,15 +204,23 @@ class Hydrator
      *
      * @param array $data
      * @param array $columnToPropertyMap
+     * @param string $path
      *
      * @return array
      */
-    protected function extractAndMap(array &$data, array $columnToPropertyMap)
+    protected function extractAndMap(array &$data, array $columnToPropertyMap, string $path)
     {
         $extracted = [];
         foreach (array_intersect_key($columnToPropertyMap, $data) as $column => $property) {
             $extracted[$property] = $data[$column];
-            unset($data[$column]);
+
+            if (isset($this->columnToTargetMap[$column][$path])) {
+                unset($this->columnToTargetMap[$column][$path]);
+                if (empty($this->columnToTargetMap[$column])) {
+                    // Only unset a column once it's really not required anymore
+                    unset($data[$column], $this->columnToTargetMap[$column]);
+                }
+            }
         }
 
         return $extracted;
