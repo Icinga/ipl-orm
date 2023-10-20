@@ -602,12 +602,12 @@ parameters:
 
 		-
 			message: "#^Cannot access offset non\\-falsy\\-string on mixed\\.$#"
-			count: 3
+			count: 2
 			path: src/Resolver.php
 
 		-
 			message: "#^Cannot access offset string on mixed\\.$#"
-			count: 6
+			count: 5
 			path: src/Resolver.php
 
 		-
