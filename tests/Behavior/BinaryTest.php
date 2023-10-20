@@ -37,6 +37,22 @@ class BinaryTest extends \PHPUnit\Framework\TestCase
         );
     }
 
+    public function testRetrievePropertyRewindsAStreamIfAdapterIsPostgreSQL(): void
+    {
+        $stream = fopen('php://temp', 'r+');
+        fputs($stream, static::TEST_BINARY_VALUE);
+        rewind($stream);
+
+        $this->assertSame(
+            static::TEST_BINARY_VALUE,
+            $this->behavior(true)->retrieveProperty($stream, static::TEST_COLUMN)
+        );
+        $this->assertSame(
+            static::TEST_BINARY_VALUE,
+            $this->behavior(true)->retrieveProperty($stream, static::TEST_COLUMN)
+        );
+    }
+
     public function testPersistPropertyReturnsVanillaValueIfAdapterIsNotPostgreSQL(): void
     {
         $this->assertSame(
