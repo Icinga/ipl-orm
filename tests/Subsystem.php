@@ -5,11 +5,11 @@ namespace ipl\Tests\Orm;
 use ipl\Orm\Model;
 use ipl\Orm\Relations;
 
-class Audit extends Model
+class Subsystem extends Model
 {
     public function getTableName()
     {
-        return 'audit';
+        return 'subsystem';
     }
 
     public function getKeyName()
@@ -19,16 +19,11 @@ class Audit extends Model
 
     public function getColumns()
     {
-        return [
-            'user_id',
-            'activity',
-            'subsystem_id'
-        ];
+        return ['name'];
     }
 
     public function createRelations(Relations $relations)
     {
-        $relations->hasOne('user', User::class);
-        $relations->belongsToOne('subsystem', Subsystem::class);
+        $relations->hasMany('audit', Audit::class);
     }
 }

@@ -354,7 +354,8 @@ SELECT
     group_user.password AS group_user_password,
     group_user_audit.id AS group_user_audit_id,
     group_user_audit.user_id AS group_user_audit_user_id,
-    group_user_audit.activity AS group_user_audit_activity
+    group_user_audit.activity AS group_user_audit_activity,
+    group_user_audit.subsystem_id AS group_user_audit_subsystem_id
 FROM
     group
 INNER JOIN
