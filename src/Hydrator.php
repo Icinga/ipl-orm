@@ -154,23 +154,30 @@ class Hydrator
             $columnName = $column;
             $steps = explode('_', $column);
             $baseTable = array_shift($steps);
+            while (! empty($steps) && $baseTable !== $model->getTableAlias()) {
+                $baseTable .= '_' . array_shift($steps);
+            }
 
             $subject = $model;
             $target = $this->query->getModel();
             $stepsTaken = [];
-            foreach ($steps as $step) {
+            for ($i = 0; $i < count($steps); $i++) {
+                $step = $steps[$i];
                 $stepsTaken[] = $step;
                 $relationPath = "$baseTable." . implode('.', $stepsTaken);
 
                 try {
                     $relation = $this->query->getResolver()->resolveRelation($relationPath);
-                } catch (InvalidArgumentException $_) {
-                    // The base table is missing, which means the alias hasn't been qualified and is custom defined
-                    break;
                 } catch (InvalidRelationException $_) {
-                    array_pop($stepsTaken);
-                    $columnName = implode('_', array_slice($steps, count($stepsTaken)));
-                    break;
+                    if (isset($steps[$i + 1])) {
+                        $steps[$i + 1] = $step . '_' . $steps[$i + 1];
+                        array_pop($stepsTaken);
+                        continue;
+                    } else {
+                        array_pop($stepsTaken);
+                        $columnName = implode('_', array_slice($steps, $i));
+                        break;
+                    }
                 }
 
                 if (! $subject->hasProperty($step)) {

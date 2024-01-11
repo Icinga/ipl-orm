@@ -38,5 +38,8 @@ class User extends Model
 
         $relations->belongsToMany('car', Car::class)
             ->through(CarUser::class);
+
+        $relations->belongsToMany('user_custom_keys', Car::class)
+            ->through(CarUserWithCustomKeys::class);
     }
 }
