@@ -87,4 +87,25 @@ class HydratorTest extends TestCase
             'Custom aliases for relations are not correctly hydrated if their name contains an underscore'
         );
     }
+
+    public function testCustomColumnsAreProperlyHydratedIfAnAliasPrefixIsUsed()
+    {
+        $query = Car::on(new TestConnection());
+        $query->getResolver()->setAliasPrefix('test_');
+
+        $hydrator = $query->createHydrator();
+
+        $subject = new Car();
+        $hydrator->hydrate(['test_car_wheel_size' => 'xxl'], $subject);
+
+        $this->assertTrue(
+            isset($subject->wheel_size),
+            'Custom columns are not correctly hydrated if an alias prefix is in use'
+        );
+        $this->assertSame(
+            'xxl',
+            $subject->wheel_size,
+            'Custom columns are not correctly hydrated if an alias prefix is in use'
+        );
+    }
 }

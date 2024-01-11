@@ -151,6 +151,10 @@ class Hydrator
 
         // If there are any columns left, propagate them to the targeted relation if possible, to the base otherwise
         foreach ($data as $column => $value) {
+            if (($aliasPrefix = $this->query->getResolver()->getAliasPrefix())) {
+                $column = substr($column, strlen($aliasPrefix));
+            }
+
             $columnName = $column;
             $steps = explode('_', $column);
             $baseTable = array_shift($steps);
