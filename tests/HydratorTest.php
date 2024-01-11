@@ -46,4 +46,45 @@ class HydratorTest extends TestCase
             'Properly qualified relation columns are spilled onto the base model'
         );
     }
+
+    public function testCustomAliasesForTheBaseTableAndRelationsWithUnderscoresInTheirNameAreProperlyHydrated()
+    {
+        $query = CarUser::on(new TestConnection())
+            ->with('user');
+
+        $hydrator = $query->createHydrator();
+
+        $subject = new CarUser();
+        $hydrator->hydrate(['car_user_definitely' => 'custom'], $subject);
+
+        $this->assertTrue(
+            isset($subject->definitely),
+            'Custom aliases for the base table are not correctly'
+            . ' hydrated if the table name contains an underscore'
+        );
+        $this->assertSame(
+            'custom',
+            $subject->definitely,
+            'Custom aliases for the base table are not correctly'
+            . ' hydrated if the table name contains an underscore'
+        );
+
+        $query = User::on(new TestConnection())
+            ->with('user_custom_keys');
+
+        $hydrator = $query->createHydrator();
+
+        $subject = new User();
+        $hydrator->hydrate(['user_user_custom_keys_definitely' => 'custom'], $subject);
+
+        $this->assertTrue(
+            isset($subject->user_custom_keys->definitely),
+            'Custom aliases for relations are not correctly hydrated if their name contains an underscore'
+        );
+        $this->assertSame(
+            'custom',
+            $subject->user_custom_keys->definitely,
+            'Custom aliases for relations are not correctly hydrated if their name contains an underscore'
+        );
+    }
 }
