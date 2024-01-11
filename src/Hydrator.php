@@ -109,6 +109,7 @@ class Hydrator
     public function hydrate(array $data, Model $model)
     {
         $defaultsToApply = [];
+        $columnToTargetMap = $this->columnToTargetMap;
         foreach ($this->hydrators as $path => $vars) {
             list($target, $relation, $columnToPropertyMap, $defaults) = $vars;
 
@@ -143,7 +144,7 @@ class Hydrator
                 }
             }
 
-            $subject->setProperties($this->extractAndMap($data, $columnToPropertyMap, $path));
+            $subject->setProperties($this->extractAndMap($data, $columnToPropertyMap, $path, $columnToTargetMap));
             $this->query->getResolver()->getBehaviors($target)->retrieve($subject);
             $defaultsToApply[] = [$subject, $defaults];
         }
@@ -205,20 +206,21 @@ class Hydrator
      * @param array $data
      * @param array $columnToPropertyMap
      * @param string $path
+     * @param array<string, array<string, bool>> $columnToTargetMap
      *
      * @return array
      */
-    protected function extractAndMap(array &$data, array $columnToPropertyMap, string $path)
+    protected function extractAndMap(array &$data, array $columnToPropertyMap, string $path, array &$columnToTargetMap)
     {
         $extracted = [];
         foreach (array_intersect_key($columnToPropertyMap, $data) as $column => $property) {
             $extracted[$property] = $data[$column];
 
-            if (isset($this->columnToTargetMap[$column][$path])) {
-                unset($this->columnToTargetMap[$column][$path]);
-                if (empty($this->columnToTargetMap[$column])) {
+            if (isset($columnToTargetMap[$column][$path])) {
+                unset($columnToTargetMap[$column][$path]);
+                if (empty($columnToTargetMap[$column])) {
                     // Only unset a column once it's really not required anymore
-                    unset($data[$column], $this->columnToTargetMap[$column]);
+                    unset($data[$column], $columnToTargetMap[$column]);
                 }
             }
         }
