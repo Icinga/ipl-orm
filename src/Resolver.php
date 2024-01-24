@@ -227,7 +227,10 @@ class Resolver
             $this->collectColumns($subject);
         }
 
-        return array_keys($this->selectableColumns[$subject]);
+        /** @var array<string, string> $columns */
+        $columns = $this->selectableColumns[$subject];
+
+        return array_keys($columns);
     }
 
     /**

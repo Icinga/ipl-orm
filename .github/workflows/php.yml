@@ -17,7 +17,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        php: ['7.2', '7.3', '7.4', '8.0', '8.1', '8.2']
+        php: ['7.2', '7.3', '7.4', '8.0', '8.1', '8.2', '8.3']
         os: ['ubuntu-latest']
 
     steps:
@@ -32,7 +32,7 @@ jobs:
           tools: phpcs
 
       - name: Setup dependencies
-        run: composer require -n --no-progress overtrue/phplint
+        run: composer require -n --no-progress overtrue/phplint phpstan/phpstan
 
       - name: PHP Lint
         if: ${{ ! cancelled() }}
@@ -44,7 +44,7 @@ jobs:
 
       - name: PHPStan
         if: ${{ ! cancelled() }}
-        uses: php-actions/phpstan@v3
+        run: ./vendor/bin/phpstan analyse
 
   test:
     name: Unit tests with php ${{ matrix.php }} on ${{ matrix.os }}
@@ -56,7 +56,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        php: ['7.2', '7.3', '7.4', '8.0', '8.1', '8.2']
+        php: ['7.2', '7.3', '7.4', '8.0', '8.1', '8.2', '8.3']
         os: ['ubuntu-latest']
         include:
           - php: '7.2'

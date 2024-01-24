@@ -54,6 +54,7 @@ class Binary extends PropertyBehavior implements QueryAwareBehavior, RewriteFilt
             throw new ValueConversionException(sprintf('Unexpected resource for %s', $key));
         }
 
+        /** @var string $value */
         if ($value === '*') {
             /**
              * Support IS (NOT) NULL filter transformation.
