@@ -73,6 +73,7 @@ class Hydrator
             }
         }
 
+        /** @var array<string, string> $columnToPropertyMap */
         $this->updateColumnToTargetMap($path, $columnToPropertyMap);
         $this->hydrators[$path] = [$target, $relation, $columnToPropertyMap, $defaults];
 

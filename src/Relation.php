@@ -317,7 +317,10 @@ class Relation
             ));
         }
 
-        return array_combine($foreignKey, $candidateKey);
+        /** @var array<string, string> $keys */
+        $keys = array_combine($foreignKey, $candidateKey);
+
+        return $keys;
     }
 
     /**

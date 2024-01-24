@@ -123,7 +123,7 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
     /**
      * Set the class to return results as
      *
-     * @param string $class
+     * @param class-string $class
      *
      * @return $this
      *
@@ -731,7 +731,7 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
     protected function groupColumnsByTarget(Generator $columns)
     {
         $columnStorage = new SplObjectStorage();
-
+        /** @var object $target */
         foreach ($columns as list($target, $alias, $column)) {
             if (! $columnStorage->contains($target)) {
                 $resolved = new ArrayObject();
