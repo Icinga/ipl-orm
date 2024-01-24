@@ -11,11 +11,6 @@ parameters:
 			path: src/Behavior/Binary.php
 
 		-
-			message: "#^Parameter \\#1 \\$string of function bin2hex expects string, mixed given\\.$#"
-			count: 1
-			path: src/Behavior/Binary.php
-
-		-
 			message: "#^Parameter \\#2 \\.\\.\\.\\$values of function sprintf expects bool\\|float\\|int\\|string\\|null, mixed given\\.$#"
 			count: 1
 			path: src/Behavior/Binary.php
@@ -421,21 +416,6 @@ parameters:
 			path: src/Query.php
 
 		-
-			message: "#^Parameter \\#1 \\$object of method SplObjectStorage\\<object,mixed\\>\\:\\:attach\\(\\) expects object, mixed given\\.$#"
-			count: 1
-			path: src/Query.php
-
-		-
-			message: "#^Parameter \\#1 \\$object of method SplObjectStorage\\<object,mixed\\>\\:\\:contains\\(\\) expects object, mixed given\\.$#"
-			count: 1
-			path: src/Query.php
-
-		-
-			message: "#^Parameter \\#1 \\$objectOrClass of class ReflectionClass constructor expects class\\-string\\<T of object\\>\\|T of object, string given\\.$#"
-			count: 1
-			path: src/Query.php
-
-		-
 			message: "#^Parameter \\#1 \\$subject of method ipl\\\\Orm\\\\Resolver\\:\\:getSelectColumns\\(\\) expects ipl\\\\Orm\\\\Model, mixed given\\.$#"
 			count: 1
 			path: src/Query.php
@@ -707,11 +687,6 @@ parameters:
 
 		-
 			message: "#^Method ipl\\\\Orm\\\\Resolver\\:\\:resolveRelation\\(\\) should return ipl\\\\Orm\\\\Relation but returns mixed\\.$#"
-			count: 1
-			path: src/Resolver.php
-
-		-
-			message: "#^Parameter \\#1 \\$array of function array_keys expects array, mixed given\\.$#"
 			count: 1
 			path: src/Resolver.php
 
