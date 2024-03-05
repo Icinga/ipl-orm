@@ -68,7 +68,8 @@ class RelationFilterTest extends TestCase
         $this->assertSame('London', $offices[0]['city'] ?? 'not found');
         $this->assertSame('Amsterdam', $offices[1]['city'] ?? 'not found');
         $this->assertSame('Berlin', $offices[2]['city'] ?? 'not found');
-        $this->assertSame(3, count($offices));
+        $this->assertSame('Baghdad', $offices[3]['city'] ?? 'not found');
+        $this->assertSame(4, count($offices));
 
         $offices = Office::on($db)
             ->columns(['office.city'])
@@ -80,13 +81,13 @@ class RelationFilterTest extends TestCase
         $this->assertSame('London', $results[0]['city'] ?? 'not found', $sql);
         $this->assertSame('Amsterdam', $results[1]['city'] ?? 'not found', $sql);
         $this->assertSame('Berlin', $results[2]['city'] ?? 'not found', $sql);
-        $this->assertSame(3, count($results), $sql);
+        $this->assertSame('Baghdad', $results[3]['city'] ?? 'not found', $sql);
+        $this->assertSame(4, count($results), $sql);
     }
 
     /**
      * @equivalenceClass a:single, b:-, f:negation
      * @dataProvider databases
-     * @todo the ORM fails because it's a (breaking) change in semantics of the filter
      *
      * @param Connection $db
      */
@@ -96,56 +97,8 @@ class RelationFilterTest extends TestCase
 
         $offices = $db->prepexec(
             'SELECT office.city FROM office'
-            . ' LEFT JOIN employee e on e.office_id = office.id'
-            . ' WHERE e.name != ? OR e.id IS NULL'
-            . ' GROUP BY office.id'
-            . ' ORDER BY office.id',
-            ['Donald']
-        )->fetchAll();
-
-        $this->assertSame('London', $offices[0]['city'] ?? 'not found');
-        $this->assertSame('New York', $offices[1]['city'] ?? 'not found');
-        $this->assertSame('Berlin', $offices[2]['city'] ?? 'not found');
-        $this->assertSame('Cuxhaven', $offices[3]['city'] ?? 'not found');
-        $this->assertSame('Sydney', $offices[4]['city'] ?? 'not found');
-        $this->assertSame(5, count($offices));
-
-        $offices = Office::on($db)
-            ->columns(['office.city'])
-            ->orderBy('office.id')
-            ->filter(Filter::unequal('employee.name', 'Donald'));
-        $results = iterator_to_array($offices);
-        $sql = $this->getSql($offices);
-
-        // I (nilmerg) don't like that Cuxhaven is part of the results here. That's an office
-        // without employees. The unequal filter though, to me, assumes one, just not one with
-        // the name of Donald. This is actually what I expect {@see testSingleNegativeConditionWithNotOperator}
-        // to return. But I feel like we cannot change this, as this has been introduced ages ago:
-        // https://github.com/Icinga/icingaweb2/issues/2583
-
-        $this->assertSame('London', $results[0]['city'] ?? 'not found', $sql);
-        $this->assertSame('New York', $results[1]['city'] ?? 'not found', $sql);
-        $this->assertSame('Berlin', $results[2]['city'] ?? 'not found', $sql);
-        $this->assertSame('Cuxhaven', $results[3]['city'] ?? 'not found', $sql);
-        $this->assertSame('Sydney', $results[4]['city'] ?? 'not found', $sql);
-        $this->assertSame(5, count($results), $sql);
-    }
-
-    /**
-     * @equivalenceClass a:single, b:NOT, f:affirmation
-     * @dataProvider databases
-     * @todo this is what {@see testSingleNegativeCondition} did before, thus the ORM cannot succeed
-     *
-     * @param Connection $db
-     */
-    public function testSingleAffirmativeConditionWithNotOperator(Connection $db)
-    {
-        $this->createOfficesAndEmployees($db);
-
-        $offices = $db->prepexec(
-            'SELECT office.city FROM office'
             . ' LEFT JOIN employee e on e.office_id = office.id AND e.name = ?'
-            . ' WHERE NOT (e.id IS NOT NULL)'
+            . ' WHERE e.id IS NULL'
             . ' GROUP BY office.id'
             . ' ORDER BY office.id',
             ['Donald']
@@ -159,9 +112,7 @@ class RelationFilterTest extends TestCase
         $offices = Office::on($db)
             ->columns(['office.city'])
             ->orderBy('office.id')
-            ->filter(Filter::none(
-                Filter::equal('employee.name', 'Donald')
-            ));
+            ->filter(Filter::unequal('employee.name', 'Donald'));
         $results = iterator_to_array($offices);
         $sql = $this->getSql($offices);
 
@@ -172,9 +123,53 @@ class RelationFilterTest extends TestCase
     }
 
     /**
+     * @equivalenceClass a:single, b:NOT, f:affirmation
+     * @dataProvider databases
+     * @todo broken
+     *
+     * @param Connection $db
+     */
+    public function testSingleAffirmativeConditionWithNotOperator(Connection $db)
+    {
+        $this->createOfficesAndEmployees($db);
+
+        $offices = $db->prepexec(
+            'SELECT office.city FROM office'
+            . ' LEFT JOIN employee e on e.office_id = office.id'
+            . ' WHERE NOT (e.name = ?)'
+            . ' GROUP BY office.id'
+            . ' ORDER BY office.id',
+            ['Donald']
+        )->fetchAll();
+
+        $this->assertSame('London', $offices[0]['city'] ?? 'not found');
+        $this->assertSame('New York', $offices[1]['city'] ?? 'not found');
+        $this->assertSame('Berlin', $offices[2]['city'] ?? 'not found');
+        $this->assertSame('Sydney', $offices[3]['city'] ?? 'not found');
+        $this->assertSame('Baghdad', $offices[4]['city'] ?? 'not found');
+        $this->assertSame(5, count($offices));
+
+        $offices = Office::on($db)
+            ->columns(['office.city'])
+            ->orderBy('office.id')
+            ->filter(Filter::none(
+                Filter::equal('employee.name', 'Donald')
+            ));
+        $results = iterator_to_array($offices);
+        $sql = $this->getSql($offices);
+
+        $this->assertSame('London', $results[0]['city'] ?? 'not found', $sql);
+        $this->assertSame('New York', $results[1]['city'] ?? 'not found', $sql);
+        $this->assertSame('Berlin', $results[2]['city'] ?? 'not found', $sql);
+        $this->assertSame('Sydney', $results[3]['city'] ?? 'not found', $sql);
+        $this->assertSame('Baghdad', $results[4]['city'] ?? 'not found', $sql);
+        $this->assertSame(5, count($results), $sql);
+    }
+
+    /**
      * @equivalenceClass a:single, b:NOT, f:negation
      * @dataProvider databases
-     * @todo This is new and the reason for the (breaking) change in {@see testSingleNegativeCondition}
+     * @todo broken
      *
      * @param Connection $db
      */
@@ -184,20 +179,18 @@ class RelationFilterTest extends TestCase
 
         $offices = $db->prepexec(
             'SELECT office.city FROM office'
-            . ' WHERE office.id NOT IN ('
-            . '  SELECT office.id FROM office'
-            . '  LEFT JOIN employee e on e.office_id = office.id'
-            . '  WHERE e.name != ?'
-            . '  GROUP BY office.id'
-            . '  HAVING COUNT(e.id) > 0'
-            . ' )'
+            . ' LEFT JOIN employee e on e.office_id = office.id'
+            . ' WHERE NOT (e.name != ? OR e.name IS NULL)'
+            . ' GROUP BY office.id'
             . ' ORDER BY office.id',
             ['Donald']
         )->fetchAll();
 
-        $this->assertSame('Amsterdam', $offices[0]['city'] ?? 'not found');
-        $this->assertSame('Cuxhaven', $offices[1]['city'] ?? 'not found');
-        $this->assertSame(2, count($offices));
+        $this->assertSame('London', $offices[0]['city'] ?? 'not found');
+        $this->assertSame('Amsterdam', $offices[1]['city'] ?? 'not found');
+        $this->assertSame('Berlin', $offices[2]['city'] ?? 'not found');
+        $this->assertSame('Baghdad', $offices[3]['city'] ?? 'not found');
+        $this->assertSame(4, count($offices));
 
         $offices = Office::on($db)
             ->columns(['office.city'])
@@ -208,9 +201,11 @@ class RelationFilterTest extends TestCase
         $results = iterator_to_array($offices);
         $sql = $this->getSql($offices);
 
-        $this->assertSame('Amsterdam', $results[0]['city'] ?? 'not found', $sql);
-        $this->assertSame('Cuxhaven', $results[1]['city'] ?? 'not found', $sql);
-        $this->assertSame(2, count($results), $sql);
+        $this->assertSame('London', $results[0]['city'] ?? 'not found', $sql);
+        $this->assertSame('Amsterdam', $results[1]['city'] ?? 'not found', $sql);
+        $this->assertSame('Berlin', $results[2]['city'] ?? 'not found', $sql);
+        $this->assertSame('Baghdad', $results[3]['city'] ?? 'not found', $sql);
+        $this->assertSame(4, count($results), $sql);
     }
 
     /**
@@ -240,7 +235,8 @@ class RelationFilterTest extends TestCase
         $this->assertSame('Amsterdam', $offices[1]['city'] ?? 'not found');
         $this->assertSame('Berlin', $offices[2]['city'] ?? 'not found');
         $this->assertSame('Sydney', $offices[3]['city'] ?? 'not found');
-        $this->assertSame(4, count($offices));
+        $this->assertSame('Baghdad', $offices[4]['city'] ?? 'not found');
+        $this->assertSame(5, count($offices));
 
         $offices = Office::on($db)
             ->columns(['office.city'])
@@ -256,7 +252,8 @@ class RelationFilterTest extends TestCase
         $this->assertSame('Amsterdam', $results[1]['city'] ?? 'not found', $sql);
         $this->assertSame('Berlin', $results[2]['city'] ?? 'not found', $sql);
         $this->assertSame('Sydney', $results[3]['city'] ?? 'not found', $sql);
-        $this->assertSame(4, count($results), $sql);
+        $this->assertSame('Baghdad', $results[4]['city'] ?? 'not found', $sql);
+        $this->assertSame(5, count($results), $sql);
     }
 
     /**
@@ -265,9 +262,7 @@ class RelationFilterTest extends TestCase
      *
      * @equivalenceClass a:multiple, b:OR, c:single, d:same, e:same, f:negation
      * @dataProvider databases
-     * @todo the ORM fails because this test relies on the semantic change of {@see testSingleNegativeCondition}.
-     *       {@see testNotChainTargetingASingleRelationColumnWithTheSameAffirmativeOperator} is the exact opposite
-     *       and the expected results are what the ORM returns here.
+     * @todo different
      *
      * @param Connection $db
      */
@@ -294,18 +289,16 @@ class RelationFilterTest extends TestCase
         $offices = Office::on($db)
             ->columns(['office.city'])
             ->orderBy('office.id')
-            ->filter(Filter::any( // XOR, anything else wouldn't make sense: Huey != Donald || Donald != Huey
+            ->filter(Filter::any(
                 Filter::unequal('employee.name', 'Donald'),
                 Filter::unequal('employee.name', 'Huey')
             ));
         $results = iterator_to_array($offices);
         $sql = $this->getSql($offices);
 
-        $this->assertSame('Amsterdam', $results[0]['city'] ?? 'not found', $sql);
-        $this->assertSame('New York', $results[1]['city'] ?? 'not found', $sql);
-        $this->assertSame('Cuxhaven', $results[2]['city'] ?? 'not found', $sql);
-        $this->assertSame('Sydney', $results[3]['city'] ?? 'not found', $sql);
-        $this->assertSame(4, count($results), $sql);
+        $this->assertSame('New York', $results[0]['city'] ?? 'not found', $sql);
+        $this->assertSame('Cuxhaven', $results[1]['city'] ?? 'not found', $sql);
+        $this->assertSame(2, count($results), $sql);
     }
 
     /**
@@ -333,7 +326,8 @@ class RelationFilterTest extends TestCase
         $this->assertSame('New York', $offices[2]['city'] ?? 'not found');
         $this->assertSame('Berlin', $offices[3]['city'] ?? 'not found');
         $this->assertSame('Cuxhaven', $offices[4]['city'] ?? 'not found');
-        $this->assertSame(5, count($offices));
+        $this->assertSame('Baghdad', $offices[5]['city'] ?? 'not found');
+        $this->assertSame(6, count($offices));
 
         $offices = Office::on($db)
             ->columns(['office.city'])
@@ -350,7 +344,8 @@ class RelationFilterTest extends TestCase
         $this->assertSame('New York', $results[2]['city'] ?? 'not found', $sql);
         $this->assertSame('Berlin', $results[3]['city'] ?? 'not found', $sql);
         $this->assertSame('Cuxhaven', $results[4]['city'] ?? 'not found', $sql);
-        $this->assertSame(5, count($results), $sql);
+        $this->assertSame('Baghdad', $results[5]['city'] ?? 'not found', $sql);
+        $this->assertSame(6, count($results), $sql);
     }
 
     /**
@@ -378,7 +373,8 @@ class RelationFilterTest extends TestCase
 
         $this->assertSame('London', $offices[0]['city'] ?? 'not found');
         $this->assertSame('Berlin', $offices[1]['city'] ?? 'not found');
-        $this->assertSame(2, count($offices));
+        $this->assertSame('Baghdad', $offices[2]['city'] ?? 'not found');
+        $this->assertSame(3, count($offices));
 
         $offices = Office::on($db)
             ->columns(['office.city'])
@@ -392,7 +388,8 @@ class RelationFilterTest extends TestCase
 
         $this->assertSame('London', $results[0]['city'] ?? 'not found', $sql);
         $this->assertSame('Berlin', $results[1]['city'] ?? 'not found', $sql);
-        $this->assertSame(2, count($results), $sql);
+        $this->assertSame('Baghdad', $results[2]['city'] ?? 'not found', $sql);
+        $this->assertSame(3, count($results), $sql);
     }
 
     /**
@@ -401,6 +398,7 @@ class RelationFilterTest extends TestCase
      *
      * @equivalenceClass a:multiple, b:AND, c:single, d:same, e:same, f:negation
      * @dataProvider databases
+     * @todo different
      *
      * @param Connection $db
      */
@@ -412,15 +410,17 @@ class RelationFilterTest extends TestCase
             'SELECT office.city FROM office'
             . ' LEFT JOIN employee e1 on e1.office_id = office.id AND e1.name = ?'
             . ' LEFT JOIN employee e2 on e2.office_id = office.id AND e2.name = ?'
-            . ' WHERE e1.id IS NULL AND e2.id IS NULL'
+            . ' WHERE e1.id IS NULL OR e2.id IS NULL'
             . ' GROUP BY office.id'
             . ' ORDER BY office.id',
             ['Donald', 'Huey']
         )->fetchAll();
 
-        $this->assertSame('New York', $offices[0]['city'] ?? 'not found');
-        $this->assertSame('Cuxhaven', $offices[1]['city'] ?? 'not found');
-        $this->assertSame(2, count($offices));
+        $this->assertSame('Amsterdam', $offices[0]['city'] ?? 'not found');
+        $this->assertSame('New York', $offices[1]['city'] ?? 'not found');
+        $this->assertSame('Cuxhaven', $offices[2]['city'] ?? 'not found');
+        $this->assertSame('Sydney', $offices[3]['city'] ?? 'not found');
+        $this->assertSame(4, count($offices));
 
         $offices = Office::on($db)
             ->columns(['office.city'])
@@ -432,6 +432,8 @@ class RelationFilterTest extends TestCase
         $results = iterator_to_array($offices);
         $sql = $this->getSql($offices);
 
+        // TODO: Somewhat same as with IdoQuery, as it's the same result as in
+        //       {@see testOrChainTargetingASingleRelationColumnWithTheSameNegativeOperator}
         $this->assertSame('New York', $results[0]['city'] ?? 'not found', $sql);
         $this->assertSame('Cuxhaven', $results[1]['city'] ?? 'not found', $sql);
         $this->assertSame(2, count($results), $sql);
@@ -450,16 +452,15 @@ class RelationFilterTest extends TestCase
         $offices = $db->prepexec(
             'SELECT office.city FROM office'
             . ' LEFT JOIN employee e1 on e1.office_id = office.id AND e1.name = ?'
-            . ' LEFT JOIN employee e2 on e2.office_id = office.id AND e2.name != ?'
-            . ' WHERE e1.id IS NOT NULL AND (e2.name != ? OR e2.id IS NULL)'
+            . ' LEFT JOIN employee e2 on e2.office_id = office.id AND e2.name = ?'
+            . ' WHERE e1.id IS NOT NULL AND e2.id IS NULL'
             . ' GROUP BY office.id'
             . ' ORDER BY office.id',
-            ['Donald', 'Donald', 'Huey']
+            ['Donald', 'Huey']
         )->fetchAll();
 
         $this->assertSame('Amsterdam', $offices[0]['city'] ?? 'not found');
-        $this->assertSame('Berlin', $offices[1]['city'] ?? 'not found');
-        $this->assertSame(2, count($offices));
+        $this->assertSame(1, count($offices));
 
         $offices = Office::on($db)
             ->columns(['office.city'])
@@ -472,8 +473,7 @@ class RelationFilterTest extends TestCase
         $sql = $this->getSql($offices);
 
         $this->assertSame('Amsterdam', $results[0]['city'] ?? 'not found', $sql);
-        $this->assertSame('Berlin', $results[1]['city'] ?? 'not found', $sql);
-        $this->assertSame(2, count($results), $sql);
+        $this->assertSame(1, count($results), $sql);
     }
 
     /**
@@ -482,6 +482,7 @@ class RelationFilterTest extends TestCase
      *
      * @equivalenceClass a:multiple, b:NOT, c:single, d:same, e:same, f:affirmation
      * @dataProvider databases
+     * @todo broken
      *
      * @param Connection $db
      */
@@ -493,15 +494,17 @@ class RelationFilterTest extends TestCase
             'SELECT office.city FROM office'
             . ' LEFT JOIN employee e1 on e1.office_id = office.id AND e1.name = ?'
             . ' LEFT JOIN employee e2 on e2.office_id = office.id AND e2.name = ?'
-            . ' WHERE NOT (e1.id IS NOT NULL OR e2.id IS NOT NULL)'
+            . ' WHERE NOT (e1.id IS NOT NULL AND e2.id IS NOT NULL)'
             . ' GROUP BY office.id'
             . ' ORDER BY office.id',
             ['Donald', 'Huey']
         )->fetchAll();
 
-        $this->assertSame('New York', $offices[0]['city'] ?? 'not found');
-        $this->assertSame('Cuxhaven', $offices[1]['city'] ?? 'not found');
-        $this->assertSame(2, count($offices));
+        $this->assertSame('Amsterdam', $offices[0]['city'] ?? 'not found');
+        $this->assertSame('New York', $offices[1]['city'] ?? 'not found');
+        $this->assertSame('Cuxhaven', $offices[2]['city'] ?? 'not found');
+        $this->assertSame('Sydney', $offices[3]['city'] ?? 'not found');
+        $this->assertSame(4, count($offices));
 
         $offices = Office::on($db)
             ->columns(['office.city'])
@@ -513,9 +516,11 @@ class RelationFilterTest extends TestCase
         $results = iterator_to_array($offices);
         $sql = $this->getSql($offices);
 
-        $this->assertSame('New York', $results[0]['city'] ?? 'not found', $sql);
-        $this->assertSame('Cuxhaven', $results[1]['city'] ?? 'not found', $sql);
-        $this->assertSame(2, count($results), $sql);
+        $this->assertSame('Amsterdam', $results[0]['city'] ?? 'not found', $sql);
+        $this->assertSame('New York', $results[1]['city'] ?? 'not found', $sql);
+        $this->assertSame('Cuxhaven', $results[2]['city'] ?? 'not found', $sql);
+        $this->assertSame('Sydney', $results[3]['city'] ?? 'not found', $sql);
+        $this->assertSame(4, count($results), $sql);
     }
 
     /**
@@ -524,6 +529,7 @@ class RelationFilterTest extends TestCase
      *
      * @equivalenceClass a:multiple, b:NOT, c:single, d:same, e:same, f:negation
      * @dataProvider databases
+     * @todo broken
      *
      * @param Connection $db
      */
@@ -533,22 +539,21 @@ class RelationFilterTest extends TestCase
 
         $offices = $db->prepexec(
             'SELECT office.city FROM office'
-            . ' WHERE office.id NOT IN ('
+            . ' WHERE office.id IN ('
             . '  SELECT office.id FROM office'
             . '  LEFT JOIN employee e on e.office_id = office.id'
-            . '  WHERE e.name != ? AND e.name != ?'
+            . '  WHERE e.name = ? OR e.name = ?'
             . '  GROUP BY office.id'
-            . '  HAVING COUNT(e.id) > 0'
+            . '  HAVING COUNT(e.id) >= 2'
             . ' )'
             . ' ORDER BY office.id',
             ['Donald', 'Huey']
         )->fetchAll();
 
         $this->assertSame('London', $offices[0]['city'] ?? 'not found');
-        $this->assertSame('Amsterdam', $offices[1]['city'] ?? 'not found');
-        $this->assertSame('Cuxhaven', $offices[2]['city'] ?? 'not found');
-        $this->assertSame('Sydney', $offices[3]['city'] ?? 'not found');
-        $this->assertSame(4, count($offices));
+        $this->assertSame('Berlin', $offices[1]['city'] ?? 'not found');
+        $this->assertSame('Baghdad', $offices[2]['city'] ?? 'not found');
+        $this->assertSame(3, count($offices));
 
         $offices = Office::on($db)
             ->columns(['office.city'])
@@ -561,15 +566,15 @@ class RelationFilterTest extends TestCase
         $sql = $this->getSql($offices);
 
         $this->assertSame('London', $results[0]['city'] ?? 'not found', $sql);
-        $this->assertSame('Amsterdam', $results[1]['city'] ?? 'not found', $sql);
-        $this->assertSame('Cuxhaven', $results[2]['city'] ?? 'not found', $sql);
-        $this->assertSame('Sydney', $results[3]['city'] ?? 'not found', $sql);
-        $this->assertSame(4, count($results), $sql);
+        $this->assertSame('Berlin', $results[1]['city'] ?? 'not found', $sql);
+        $this->assertSame('Baghdad', $results[2]['city'] ?? 'not found', $sql);
+        $this->assertSame(3, count($results), $sql);
     }
 
     /**
      * @equivalenceClass a:multiple, b:NOT, c:single, d:same, e:different
      * @dataProvider databases
+     * @todo broken
      *
      * @param Connection $db
      */
@@ -581,14 +586,19 @@ class RelationFilterTest extends TestCase
             'SELECT office.city FROM office'
             . ' LEFT JOIN employee e1 on e1.office_id = office.id AND e1.name = ?'
             . ' LEFT JOIN employee e2 on e2.office_id = office.id AND e2.name = ?'
-            . ' WHERE NOT (e1.id IS NOT NULL OR e2.id IS NULL)'
+            . ' WHERE NOT (e1.id IS NOT NULL AND e2.id IS NULL)'
             . ' GROUP BY office.id'
             . ' ORDER BY office.id',
             ['Donald', 'Huey']
         )->fetchAll();
 
-        $this->assertSame('Sydney', $offices[0]['city'] ?? 'not found');
-        $this->assertSame(1, count($offices));
+        $this->assertSame('London', $offices[0]['city'] ?? 'not found');
+        $this->assertSame('New York', $offices[1]['city'] ?? 'not found');
+        $this->assertSame('Berlin', $offices[2]['city'] ?? 'not found');
+        $this->assertSame('Cuxhaven', $offices[3]['city'] ?? 'not found');
+        $this->assertSame('Sydney', $offices[4]['city'] ?? 'not found');
+        $this->assertSame('Baghdad', $offices[5]['city'] ?? 'not found');
+        $this->assertSame(6, count($offices));
 
         $offices = Office::on($db)
             ->columns(['office.city'])
@@ -600,8 +610,13 @@ class RelationFilterTest extends TestCase
         $results = iterator_to_array($offices);
         $sql = $this->getSql($offices);
 
-        $this->assertSame('Sydney', $results[0]['city'] ?? 'not found', $sql);
-        $this->assertSame(1, count($results), $sql);
+        $this->assertSame('London', $results[0]['city'] ?? 'not found', $sql);
+        $this->assertSame('New York', $results[1]['city'] ?? 'not found', $sql);
+        $this->assertSame('Berlin', $results[2]['city'] ?? 'not found', $sql);
+        $this->assertSame('Cuxhaven', $results[3]['city'] ?? 'not found', $sql);
+        $this->assertSame('Sydney', $results[4]['city'] ?? 'not found', $sql);
+        $this->assertSame('Baghdad', $results[5]['city'] ?? 'not found', $sql);
+        $this->assertSame(6, count($results), $sql);
     }
 
     /**
@@ -763,7 +778,8 @@ class RelationFilterTest extends TestCase
         $this->assertSame('Berlin', $offices[3]['city'] ?? 'not found');
         $this->assertSame('Cuxhaven', $offices[4]['city'] ?? 'not found');
         $this->assertSame('Sydney', $offices[5]['city'] ?? 'not found');
-        $this->assertSame(6, count($offices));
+        $this->assertSame('Baghdad', $offices[6]['city'] ?? 'not found');
+        $this->assertSame(7, count($offices));
 
         $offices = Office::on($db)
             ->columns(['office.city'])
@@ -781,7 +797,8 @@ class RelationFilterTest extends TestCase
         $this->assertSame('Berlin', $results[3]['city'] ?? 'not found', $sql);
         $this->assertSame('Cuxhaven', $results[4]['city'] ?? 'not found', $sql);
         $this->assertSame('Sydney', $results[5]['city'] ?? 'not found', $sql);
-        $this->assertSame(6, count($results), $sql);
+        $this->assertSame('Baghdad', $results[6]['city'] ?? 'not found', $sql);
+        $this->assertSame(7, count($results), $sql);
     }
 
     /**
@@ -807,7 +824,8 @@ class RelationFilterTest extends TestCase
         $this->assertSame('Amsterdam', $offices[1]['city'] ?? 'not found');
         $this->assertSame('Berlin', $offices[2]['city'] ?? 'not found');
         $this->assertSame('Sydney', $offices[3]['city'] ?? 'not found');
-        $this->assertSame(4, count($offices));
+        $this->assertSame('Baghdad', $offices[4]['city'] ?? 'not found');
+        $this->assertSame(5, count($offices));
 
         $offices = Office::on($db)
             ->columns(['office.city'])
@@ -823,12 +841,14 @@ class RelationFilterTest extends TestCase
         $this->assertSame('Amsterdam', $results[1]['city'] ?? 'not found', $sql);
         $this->assertSame('Berlin', $results[2]['city'] ?? 'not found', $sql);
         $this->assertSame('Sydney', $results[3]['city'] ?? 'not found', $sql);
-        $this->assertSame(4, count($results), $sql);
+        $this->assertSame('Baghdad', $results[4]['city'] ?? 'not found', $sql);
+        $this->assertSame(5, count($results), $sql);
     }
 
     /**
      * @equivalenceClass a:multiple, b:NOT, c:single, d:different, e:different
      * @dataProvider databases
+     * @todo broken
      *
      * @param Connection $db
      */
@@ -839,14 +859,18 @@ class RelationFilterTest extends TestCase
         $offices = $db->prepexec(
             'SELECT office.city FROM office'
             . ' LEFT JOIN employee e ON e.office_id = office.id'
-            . ' WHERE NOT (e.name = ? OR (e.role != ? OR e.role IS NULL))'
+            . ' WHERE NOT (e.name = ? AND (e.role != ? OR e.role IS NULL))'
             . ' GROUP BY office.id'
             . ' ORDER BY office.id',
             ['Huey', 'Manager']
         )->fetchAll();
 
-        $this->assertSame('New York', $offices[0]['city'] ?? 'not found');
-        $this->assertSame(1, count($offices));
+        $this->assertSame('London', $offices[0]['city'] ?? 'not found');
+        $this->assertSame('Amsterdam', $offices[1]['city'] ?? 'not found');
+        $this->assertSame('New York', $offices[2]['city'] ?? 'not found');
+        $this->assertSame('Berlin', $offices[3]['city'] ?? 'not found');
+        $this->assertSame('Baghdad', $offices[4]['city'] ?? 'not found');
+        $this->assertSame(5, count($offices));
 
         $offices = Office::on($db)
             ->columns(['office.city'])
@@ -858,13 +882,18 @@ class RelationFilterTest extends TestCase
         $results = iterator_to_array($offices);
         $sql = $this->getSql($offices);
 
-        $this->assertSame('New York', $results[0]['city'] ?? 'not found', $sql);
-        $this->assertSame(1, count($results), $sql);
+        $this->assertSame('London', $results[0]['city'] ?? 'not found', $sql);
+        $this->assertSame('Amsterdam', $results[1]['city'] ?? 'not found', $sql);
+        $this->assertSame('New York', $results[2]['city'] ?? 'not found', $sql);
+        $this->assertSame('Berlin', $results[3]['city'] ?? 'not found', $sql);
+        $this->assertSame('Baghdad', $results[4]['city'] ?? 'not found', $sql);
+        $this->assertSame(5, count($results), $sql);
     }
 
     /**
      * @equivalenceClass a:multiple, b:NOT, c:single, d:different, e:same
      * @dataProvider databases
+     * @todo broken
      *
      * @param Connection $db
      */
@@ -874,20 +903,20 @@ class RelationFilterTest extends TestCase
 
         $offices = $db->prepexec(
             'SELECT office.city FROM office'
-            . ' WHERE office.id NOT IN ('
-            . '  SELECT office.id FROM office'
-            . '  LEFT JOIN employee e ON e.office_id = office.id'
-            . '  WHERE e.name = ? OR e.role = ?'
-            . '  GROUP BY office.id'
-            . '  HAVING COUNT(e.id) > 0'
-            . ' )'
+            . ' LEFT JOIN employee e ON e.office_id = office.id'
+            . ' WHERE NOT (e.name = ? AND e.role = ?)'
+            . ' GROUP BY office.id'
             . ' ORDER BY office.id',
             ['Donald', 'Manager']
         )->fetchAll();
 
-        $this->assertSame('Cuxhaven', $offices[0]['city'] ?? 'not found');
-        $this->assertSame('Sydney', $offices[1]['city'] ?? 'not found');
-        $this->assertSame(2, count($offices));
+        $this->assertSame('London', $offices[0]['city'] ?? 'not found');
+        $this->assertSame('Amsterdam', $offices[1]['city'] ?? 'not found');
+        $this->assertSame('New York', $offices[2]['city'] ?? 'not found');
+        $this->assertSame('Berlin', $offices[3]['city'] ?? 'not found');
+        $this->assertSame('Sydney', $offices[4]['city'] ?? 'not found');
+        $this->assertSame('Baghdad', $offices[5]['city'] ?? 'not found');
+        $this->assertSame(6, count($offices));
 
         $offices = Office::on($db)
             ->columns(['office.city'])
@@ -899,14 +928,19 @@ class RelationFilterTest extends TestCase
         $results = iterator_to_array($offices);
         $sql = $this->getSql($offices);
 
-        $this->assertSame('Cuxhaven', $results[0]['city'] ?? 'not found', $sql);
-        $this->assertSame('Sydney', $results[1]['city'] ?? 'not found', $sql);
-        $this->assertSame(2, count($results), $sql);
+        $this->assertSame('London', $results[0]['city'] ?? 'not found', $sql);
+        $this->assertSame('Amsterdam', $results[1]['city'] ?? 'not found', $sql);
+        $this->assertSame('New York', $results[2]['city'] ?? 'not found', $sql);
+        $this->assertSame('Berlin', $results[3]['city'] ?? 'not found', $sql);
+        $this->assertSame('Sydney', $results[4]['city'] ?? 'not found', $sql);
+        $this->assertSame('Baghdad', $results[5]['city'] ?? 'not found', $sql);
+        $this->assertSame(5, count($results), $sql);
     }
 
     /**
      * @equivalenceClass a:multiple, b:AND, c:multiple, e:same, f:affirmation
      * @dataProvider databases
+     * @todo broken
      *
      * @param Connection $db
      */
@@ -925,7 +959,8 @@ class RelationFilterTest extends TestCase
         )->fetchAll();
 
         $this->assertSame('London', $offices[0]['city'] ?? 'not found');
-        $this->assertSame(1, count($offices));
+        $this->assertSame('Barcelona', $offices[1]['city'] ?? 'not found');
+        $this->assertSame(2, count($offices));
 
         $offices = Office::on($db)
             ->columns(['office.city'])
@@ -938,7 +973,8 @@ class RelationFilterTest extends TestCase
         $sql = $this->getSql($offices);
 
         $this->assertSame('London', $results[0]['city'] ?? 'not found', $sql);
-        $this->assertSame(1, count($results), $sql);
+        $this->assertSame('Barcelona', $results[1]['city'] ?? 'not found', $sql);
+        $this->assertSame(2, count($results), $sql);
     }
 
     /**
@@ -953,17 +989,24 @@ class RelationFilterTest extends TestCase
 
         $offices = $db->prepexec(
             'SELECT office.city FROM office'
-            . ' LEFT JOIN employee e on e.office_id = office.id'
-            . ' LEFT JOIN department d on e.department_id = d.id'
-            . ' WHERE e.name != ? AND d.name != ?'
-            . ' GROUP BY office.id'
+            . ' WHERE office.id NOT IN ('
+            . '  SELECT office.id FROM office'
+            . '  LEFT JOIN employee e on e.office_id = office.id'
+            . '  WHERE e.name = ?'
+            . '  GROUP BY office.id'
+            . ' ) AND office.id NOT IN ('
+            . '  SELECT office.id FROM office'
+            . '  LEFT JOIN employee e on e.office_id = office.id'
+            . '  LEFT JOIN department d on e.department_id = d.id'
+            . '  WHERE d.name = ?'
+            . '  GROUP BY office.id'
+            . ' )'
             . ' ORDER BY office.id',
             ['Donald', 'Accounting']
         )->fetchAll();
 
-        $this->assertSame('London', $offices[0]['city'] ?? 'not found');
-        $this->assertSame('Amsterdam', $offices[1]['city'] ?? 'not found');
-        $this->assertSame(2, count($offices));
+        $this->assertSame('Amsterdam', $offices[0]['city'] ?? 'not found');
+        $this->assertSame(1, count($offices));
 
         $offices = Office::on($db)
             ->columns(['office.city'])
@@ -975,14 +1018,14 @@ class RelationFilterTest extends TestCase
         $results = iterator_to_array($offices);
         $sql = $this->getSql($offices);
 
-        $this->assertSame('London', $results[0]['city'] ?? 'not found', $sql);
-        $this->assertSame('Amsterdam', $results[1]['city'] ?? 'not found', $sql);
-        $this->assertSame(2, count($results), $sql);
+        $this->assertSame('Amsterdam', $results[0]['city'] ?? 'not found', $sql);
+        $this->assertSame(1, count($results), $sql);
     }
 
     /**
      * @equivalenceClass a:multiple, b:AND, c:multiple, e:different
      * @dataProvider databases
+     * @todo broken
      *
      * @param Connection $db
      */
@@ -1040,7 +1083,9 @@ class RelationFilterTest extends TestCase
         $this->assertSame('London', $offices[0]['city'] ?? 'not found');
         $this->assertSame('Berlin', $offices[1]['city'] ?? 'not found');
         $this->assertSame('New York', $offices[2]['city'] ?? 'not found');
-        $this->assertSame(3, count($offices));
+        $this->assertSame('Paris', $offices[3]['city'] ?? 'not found');
+        $this->assertSame('Barcelona', $offices[4]['city'] ?? 'not found');
+        $this->assertSame(5, count($offices));
 
         $offices = Office::on($db)
             ->columns(['office.city'])
@@ -1055,12 +1100,15 @@ class RelationFilterTest extends TestCase
         $this->assertSame('London', $results[0]['city'] ?? 'not found', $sql);
         $this->assertSame('Berlin', $results[1]['city'] ?? 'not found', $sql);
         $this->assertSame('New York', $results[2]['city'] ?? 'not found', $sql);
-        $this->assertSame(3, count($results), $sql);
+        $this->assertSame('Paris', $results[3]['city'] ?? 'not found', $sql);
+        $this->assertSame('Barcelona', $results[4]['city'] ?? 'not found', $sql);
+        $this->assertSame(5, count($results), $sql);
     }
 
     /**
      * @equivalenceClass a:multiple, b:OR, c:multiple, e:same, f:negation
      * @dataProvider databases
+     * @todo broken
      *
      * @param Connection $db
      */
@@ -1081,7 +1129,9 @@ class RelationFilterTest extends TestCase
         $this->assertSame('London', $offices[0]['city'] ?? 'not found');
         $this->assertSame('Berlin', $offices[1]['city'] ?? 'not found');
         $this->assertSame('Amsterdam', $offices[2]['city'] ?? 'not found');
-        $this->assertSame(3, count($offices));
+        $this->assertSame('Paris', $offices[3]['city'] ?? 'not found');
+        $this->assertSame('Barcelona', $offices[4]['city'] ?? 'not found');
+        $this->assertSame(5, count($offices));
 
         $offices = Office::on($db)
             ->columns(['office.city'])
@@ -1096,12 +1146,15 @@ class RelationFilterTest extends TestCase
         $this->assertSame('London', $results[0]['city'] ?? 'not found', $sql);
         $this->assertSame('Berlin', $results[1]['city'] ?? 'not found', $sql);
         $this->assertSame('Amsterdam', $results[2]['city'] ?? 'not found', $sql);
-        $this->assertSame(3, count($results), $sql);
+        $this->assertSame('Paris', $results[3]['city'] ?? 'not found', $sql);
+        $this->assertSame('Barcelona', $results[4]['city'] ?? 'not found', $sql);
+        $this->assertSame(5, count($results), $sql);
     }
 
     /**
      * @equivalenceClass a:multiple, b:OR, c:multiple, e:different
      * @dataProvider databases
+     * @todo incorrect
      *
      * @param Connection $db
      */
@@ -1122,7 +1175,9 @@ class RelationFilterTest extends TestCase
         $this->assertSame('London', $offices[0]['city'] ?? 'not found');
         $this->assertSame('Berlin', $offices[1]['city'] ?? 'not found');
         $this->assertSame('Amsterdam', $offices[2]['city'] ?? 'not found');
-        $this->assertSame(3, count($offices));
+        $this->assertSame('Paris', $offices[3]['city'] ?? 'not found');
+        $this->assertSame('Barcelona', $offices[4]['city'] ?? 'not found');
+        $this->assertSame(5, count($offices));
 
         $offices = Office::on($db)
             ->columns(['office.city'])
@@ -1137,12 +1192,15 @@ class RelationFilterTest extends TestCase
         $this->assertSame('London', $results[0]['city'] ?? 'not found', $sql);
         $this->assertSame('Berlin', $results[1]['city'] ?? 'not found', $sql);
         $this->assertSame('Amsterdam', $results[2]['city'] ?? 'not found', $sql);
-        $this->assertSame(3, count($results), $sql);
+        $this->assertSame('Paris', $results[3]['city'] ?? 'not found', $sql);
+        $this->assertSame('Barcelona', $results[4]['city'] ?? 'not found', $sql);
+        $this->assertSame(5, count($results), $sql);
     }
 
     /**
      * @equivalenceClass a:multiple, b:NOT, c:multiple, e:same, f:affirmation
      * @dataProvider databases
+     * @todo broken
      *
      * @param Connection $db
      */
@@ -1152,20 +1210,20 @@ class RelationFilterTest extends TestCase
 
         $offices = $db->prepexec(
             'SELECT office.city FROM office'
-            . ' WHERE office.id NOT IN ('
-            . '  SELECT office.id FROM office'
-            . '  LEFT JOIN employee e on e.office_id = office.id'
-            . '  LEFT JOIN department d on e.department_id = d.id'
-            . '  WHERE e.name = ? OR d.name = ?'
-            . '  GROUP BY office.id'
-            . '  HAVING COUNT(e.id) > 0'
-            . ' )'
+            . ' LEFT JOIN employee e on e.office_id = office.id'
+            . ' LEFT JOIN department d on e.department_id = d.id'
+            . ' WHERE NOT (e.name = ? AND d.name = ?)'
+            . ' GROUP BY office.id'
             . ' ORDER BY office.id',
             ['Donald', 'Accounting']
         )->fetchAll();
 
-        $this->assertSame('Amsterdam', $offices[0]['city'] ?? 'not found');
-        $this->assertSame(1, count($offices));
+        $this->assertSame('London', $offices[0]['city'] ?? 'not found');
+        $this->assertSame('Berlin', $offices[1]['city'] ?? 'not found');
+        $this->assertSame('Amsterdam', $offices[2]['city'] ?? 'not found');
+        $this->assertSame('New York', $offices[3]['city'] ?? 'not found');
+        $this->assertSame('Paris', $offices[4]['city'] ?? 'not found');
+        $this->assertSame(5, count($offices));
 
         $offices = Office::on($db)
             ->columns(['office.city'])
@@ -1177,13 +1235,18 @@ class RelationFilterTest extends TestCase
         $results = iterator_to_array($offices);
         $sql = $this->getSql($offices);
 
-        $this->assertSame('Amsterdam', $results[0]['city'] ?? 'not found', $sql);
-        $this->assertSame(1, count($results), $sql);
+        $this->assertSame('London', $results[0]['city'] ?? 'not found', $sql);
+        $this->assertSame('Berlin', $results[1]['city'] ?? 'not found', $sql);
+        $this->assertSame('Amsterdam', $results[2]['city'] ?? 'not found', $sql);
+        $this->assertSame('New York', $results[3]['city'] ?? 'not found', $sql);
+        $this->assertSame('Paris', $results[4]['city'] ?? 'not found', $sql);
+        $this->assertSame(5, count($results), $sql);
     }
 
     /**
      * @equivalenceClass a:multiple, b:NOT, c:multiple, e:same, f:negation
      * @dataProvider databases
+     * @todo broken
      *
      * @param Connection $db
      */
@@ -1193,20 +1256,20 @@ class RelationFilterTest extends TestCase
 
         $offices = $db->prepexec(
             'SELECT office.city FROM office'
-            . ' WHERE office.id NOT IN ('
-            . '  SELECT office.id FROM office'
-            . '  LEFT JOIN employee e on e.office_id = office.id'
-            . '  LEFT JOIN department d on e.department_id = d.id'
-            . '  WHERE e.name != ? OR d.name != ?'
-            . '  GROUP BY office.id'
-            . '  HAVING COUNT(e.id) > 0'
-            . ' )'
+            . ' LEFT JOIN employee e on e.office_id = office.id'
+            . ' LEFT JOIN department d on e.department_id = d.id'
+            . ' WHERE NOT (e.name != ? AND d.name != ?)'
+            . ' GROUP BY office.id'
             . ' ORDER BY office.id',
             ['Donald', 'Accounting']
         )->fetchAll();
 
-        // @todo this shouldn't be empty, add some matches to the test data
-        $this->assertEmpty($offices);
+        $this->assertSame('London', $offices[0]['city'] ?? 'not found');
+        $this->assertSame('Berlin', $offices[1]['city'] ?? 'not found');
+        $this->assertSame('New York', $offices[2]['city'] ?? 'not found');
+        $this->assertSame('Paris', $offices[3]['city'] ?? 'not found');
+        $this->assertSame('Barcelona', $offices[4]['city'] ?? 'not found');
+        $this->assertSame(5, count($offices));
 
         $offices = Office::on($db)
             ->columns(['office.city'])
@@ -1218,12 +1281,18 @@ class RelationFilterTest extends TestCase
         $results = iterator_to_array($offices);
         $sql = $this->getSql($offices);
 
-        $this->assertEmpty($results, $sql);
+        $this->assertSame('London', $results[0]['city'] ?? 'not found', $sql);
+        $this->assertSame('Berlin', $results[1]['city'] ?? 'not found', $sql);
+        $this->assertSame('New York', $results[2]['city'] ?? 'not found', $sql);
+        $this->assertSame('Paris', $results[3]['city'] ?? 'not found', $sql);
+        $this->assertSame('Barcelona', $results[4]['city'] ?? 'not found', $sql);
+        $this->assertSame(5, count($results), $sql);
     }
 
     /**
      * @equivalenceClass a:multiple, b:NOT, c:multiple, e:different
      * @dataProvider databases
+     * @todo broken
      *
      * @param Connection $db
      */
@@ -1237,16 +1306,18 @@ class RelationFilterTest extends TestCase
             . '  SELECT office.id FROM office'
             . '  LEFT JOIN employee e on e.office_id = office.id'
             . '  LEFT JOIN department d on e.department_id = d.id'
-            . '  WHERE e.name = ? OR d.name != ?'
+            . '  WHERE e.name = ? AND d.name != ?'
             . '  GROUP BY office.id'
-            . '  HAVING COUNT(e.id) > 0'
             . ' )'
             . ' ORDER BY office.id',
             ['Donald', 'Accounting']
         )->fetchAll();
 
-        $this->assertSame('New York', $offices[0]['city'] ?? 'not found');
-        $this->assertSame(1, count($offices));
+        $this->assertSame('London', $offices[0]['city'] ?? 'not found');
+        $this->assertSame('Amsterdam', $offices[1]['city'] ?? 'not found');
+        $this->assertSame('New York', $offices[2]['city'] ?? 'not found');
+        $this->assertSame('Paris', $offices[3]['city'] ?? 'not found');
+        $this->assertSame(4, count($offices));
 
         $offices = Office::on($db)
             ->columns(['office.city'])
@@ -1258,8 +1329,11 @@ class RelationFilterTest extends TestCase
         $results = iterator_to_array($offices);
         $sql = $this->getSql($offices);
 
-        $this->assertSame('New York', $results[0]['city'] ?? 'not found', $sql);
-        $this->assertSame(1, count($results), $sql);
+        $this->assertSame('London', $results[0]['city'] ?? 'not found', $sql);
+        $this->assertSame('Amsterdam', $results[1]['city'] ?? 'not found', $sql);
+        $this->assertSame('New York', $results[2]['city'] ?? 'not found', $sql);
+        $this->assertSame('Paris', $results[3]['city'] ?? 'not found', $sql);
+        $this->assertSame(4, count($results), $sql);
     }
 
     /**
@@ -1318,6 +1392,8 @@ class RelationFilterTest extends TestCase
      * Louie    | Cook         | Berlin
      * -        | -            | Cuxhaven
      * Huey     | Assistant    | Sydney
+     * Donald   | Manager      | Baghdad
+     * Huey     | Accountant   | Baghdad
      *
      * @param Connection $db
      */
@@ -1337,6 +1413,9 @@ class RelationFilterTest extends TestCase
         $db->insert('office', ['id' => 5, 'city' => 'Cuxhaven']); // None
         $db->insert('office', ['id' => 6, 'city' => 'Sydney']); // The other one of the two
         $db->insert('employee', ['id' => 8, 'office_id' => 6, 'name' => 'Huey', 'role' => 'Assistant']);
+        $db->insert('office', ['id' => 7, 'city' => 'Baghdad']); // The two with switched roles
+        $db->insert('employee', ['id' => 9, 'office_id' => 7, 'name' => 'Donald', 'role' => 'Manager']);
+        $db->insert('employee', ['id' => 10, 'office_id' => 7, 'name' => 'Huey', 'role' => 'Accountant']);
     }
 
     /**
@@ -1350,8 +1429,9 @@ class RelationFilterTest extends TestCase
      * Huey     | Assistant    | Accounting | Berlin
      * Huey     | QA Lead      | Kitchen    | Amsterdam
      * Mickey   | Manager      | Accounting | New York
-     *
-     * @todo Add some false positives
+     * Mickey   | Cook         | Kitchen    | Paris
+     * Louie    | Accountant   | Accounting | Paris
+     * Donald   | Accountant   | Accounting | Barcelona
      *
      * @param Connection $db
      */
@@ -1361,6 +1441,8 @@ class RelationFilterTest extends TestCase
         $db->insert('office', ['id' => 2, 'city' => 'Berlin']);
         $db->insert('office', ['id' => 3, 'city' => 'Amsterdam']);
         $db->insert('office', ['id' => 4, 'city' => 'New York']);
+        $db->insert('office', ['id' => 5, 'city' => 'Paris']);
+        $db->insert('office', ['id' => 6, 'city' => 'Barcelona']);
         $db->insert('department', ['id' => 1, 'name' => 'Accounting']);
         $db->insert('department', ['id' => 2, 'name' => 'Kitchen']);
         $db->insert(
@@ -1386,6 +1468,18 @@ class RelationFilterTest extends TestCase
         $db->insert(
             'employee',
             ['id' => 6, 'office_id' => 4, 'department_id' => 1, 'name' => 'Mickey', 'role' => 'Manager']
+        );
+        $db->insert(
+            'employee',
+            ['id' => 7, 'office_id' => 5, 'department_id' => 2, 'name' => 'Mickey', 'role' => 'Cook']
+        );
+        $db->insert(
+            'employee',
+            ['id' => 8, 'office_id' => 5, 'department_id' => 1, 'name' => 'Louie', 'role' => 'Accountant']
+        );
+        $db->insert(
+            'employee',
+            ['id' => 9, 'office_id' => 6, 'department_id' => 1, 'name' => 'Donald', 'role' => 'Accountant']
         );
     }
 
