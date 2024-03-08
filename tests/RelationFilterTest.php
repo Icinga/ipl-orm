@@ -17,7 +17,7 @@ use PHPUnit\Framework\TestCase;
  *  b) Logical Operators: -, NOT
  *   f) Comparisons: affirmation, negation
  * a) Number of conditions: multiple
- *  b) Logical Operators: AND, OR, NOT
+ *  b) Logical Operators: AND, OR, NOT(AND), NOT(OR)
  *   c) Number of relations: single
  *    d) Columns: same
  *     e) Operators: same
@@ -40,6 +40,8 @@ use PHPUnit\Framework\TestCase;
  *  Every test contains at least one proof of concept using a manually crafted SQL query. (Not necessarily the same way
  *  the ORM constructs it) Such must not fail. If they do, the dataset has changed. The ORM query must return the same
  *  results.
+ *
+ * @todo NOT(OR) cases are missing
  */
 class RelationFilterTest extends TestCase
 {
@@ -128,7 +130,7 @@ class RelationFilterTest extends TestCase
     /**
      * Search for offices where Donald doesn't work
      *
-     * @equivalenceClass a:single, b:NOT, f:affirmation
+     * @equivalenceClass a:single, b:NOT(AND), f:affirmation
      * @dataProvider databases
      *
      * @param Connection $db
@@ -173,7 +175,7 @@ class RelationFilterTest extends TestCase
     /**
      * Search for offices where Donald works
      *
-     * @equivalenceClass a:single, b:NOT, f:negation
+     * @equivalenceClass a:single, b:NOT(AND), f:negation
      * @dataProvider databases
      *
      * @param Connection $db
@@ -483,7 +485,7 @@ class RelationFilterTest extends TestCase
     /**
      * Search for offices where either Donald or Huey doesn't work
      *
-     * @equivalenceClass a:multiple, b:NOT, c:single, d:same, e:same, f:affirmation
+     * @equivalenceClass a:multiple, b:NOT(AND), c:single, d:same, e:same, f:affirmation
      * @dataProvider databases
      *
      * @param Connection $db
@@ -511,10 +513,10 @@ class RelationFilterTest extends TestCase
         $offices = Office::on($db)
             ->columns(['office.city'])
             ->orderBy('office.id')
-            ->filter(Filter::none(
+            ->filter(Filter::none(Filter::all(
                 Filter::equal('employee.name', 'Donald'),
                 Filter::equal('employee.name', 'Huey')
-            ));
+            )));
         $results = iterator_to_array($offices);
         $sql = $this->getSql($offices);
 
@@ -528,8 +530,10 @@ class RelationFilterTest extends TestCase
     /**
      * Search for offices where Donald and Huey work
      *
-     * @equivalenceClass a:multiple, b:NOT, c:single, d:same, e:same, f:negation
+     * @equivalenceClass a:multiple, b:NOT(AND), c:single, d:same, e:same, f:negation
      * @dataProvider databases
+     * @todo Finds the exact opposite of {@see testAndChainTargetingASingleRelationColumnWithTheSameNegativeOperator}.
+     *       No wonder, actually. But monitoring doesn't behave the same way :'(
      *
      * @param Connection $db
      */
@@ -558,10 +562,10 @@ class RelationFilterTest extends TestCase
         $offices = Office::on($db)
             ->columns(['office.city'])
             ->orderBy('office.id')
-            ->filter(Filter::none(
+            ->filter(Filter::none(Filter::all(
                 Filter::unequal('employee.name', 'Donald'),
                 Filter::unequal('employee.name', 'Huey')
-            ));
+            )));
         $results = iterator_to_array($offices);
         $sql = $this->getSql($offices);
 
@@ -574,7 +578,7 @@ class RelationFilterTest extends TestCase
     /**
      * Search for offices where either Donald doesn't work or Huey does
      *
-     * @equivalenceClass a:multiple, b:NOT, c:single, d:same, e:different
+     * @equivalenceClass a:multiple, b:NOT(AND), c:single, d:same, e:different
      * @dataProvider databases
      *
      * @param Connection $db
@@ -604,10 +608,10 @@ class RelationFilterTest extends TestCase
         $offices = Office::on($db)
             ->columns(['office.city'])
             ->orderBy('office.id')
-            ->filter(Filter::none(
+            ->filter(Filter::none(Filter::all(
                 Filter::equal('employee.name', 'Donald'),
                 Filter::unequal('employee.name', 'Huey')
-            ));
+            )));
         $results = iterator_to_array($offices);
         $sql = $this->getSql($offices);
 
@@ -786,8 +790,10 @@ class RelationFilterTest extends TestCase
     /**
      * Search for offices where not just Huey works or only as a manager
      *
-     * @equivalenceClass a:multiple, b:NOT, c:single, d:different, e:different
+     * @equivalenceClass a:multiple, b:NOT(AND), c:single, d:different, e:different
      * @dataProvider databases
+     * @todo Finds the exact opposite of {@see testAndChainTargetingASingleRelationButDifferentColumnsWithDifferentOperators}.
+     *       No wonder, actually. But monitoring doesn't behave the same way :'(
      *
      * @param Connection $db
      */
@@ -814,10 +820,10 @@ class RelationFilterTest extends TestCase
         $offices = Office::on($db)
             ->columns(['office.city'])
             ->orderBy('office.id')
-            ->filter(Filter::none(
+            ->filter(Filter::none(Filter::all(
                 Filter::equal('employee.name', 'Huey'),
                 Filter::unequal('employee.role', 'Manager')
-            ));
+            )));
         $results = iterator_to_array($offices);
         $sql = $this->getSql($offices);
 
@@ -832,8 +838,9 @@ class RelationFilterTest extends TestCase
     /**
      * Search for offices where not just Donald works or not as manager
      *
-     * @equivalenceClass a:multiple, b:NOT, c:single, d:different, e:same
+     * @equivalenceClass a:multiple, b:NOT(AND), c:single, d:different, e:same
      * @dataProvider databases
+     * @todo Finds Cuxhaven instead of Baghdad. Not wrong, actually. Why does monitoring behave differently?
      *
      * @param Connection $db
      */
@@ -861,10 +868,10 @@ class RelationFilterTest extends TestCase
         $offices = Office::on($db)
             ->columns(['office.city'])
             ->orderBy('office.id')
-            ->filter(Filter::none(
+            ->filter(Filter::none(Filter::all(
                 Filter::equal('employee.name', 'Donald'),
                 Filter::equal('employee.role', 'Manager')
-            ));
+            )));
         $results = iterator_to_array($offices);
         $sql = $this->getSql($offices);
 
@@ -1162,7 +1169,7 @@ class RelationFilterTest extends TestCase
     /**
      * Search for offices where Donald doesn't work in the accounting department
      *
-     * @equivalenceClass a:multiple, b:NOT, c:multiple, e:same, f:affirmation
+     * @equivalenceClass a:multiple, b:NOT(AND), c:multiple, e:same, f:affirmation
      * @dataProvider databases
      *
      * @param Connection $db
@@ -1193,10 +1200,10 @@ class RelationFilterTest extends TestCase
         $offices = Office::on($db)
             ->columns(['office.city'])
             ->orderBy('office.id')
-            ->filter(Filter::none(
+            ->filter(Filter::none(Filter::all(
                 Filter::equal('employee.name', 'Donald'),
                 Filter::equal('employee.department.name', 'Accounting')
-            ));
+            )));
         $results = iterator_to_array($offices);
         $sql = $this->getSql($offices);
 
@@ -1212,7 +1219,7 @@ class RelationFilterTest extends TestCase
      *
      * Or for your convenience: Where Donald works
      *
-     * @equivalenceClass a:multiple, b:NOT, c:multiple, e:same, f:negation
+     * @equivalenceClass a:multiple, b:NOT(AND), c:multiple, e:same, f:negation
      * @dataProvider databases
      * @todo Just take a look at the POC and wonder how that would ever be automatically generated.
      *       Especially if you consider adding another comparison into the mix. This is way too
@@ -1250,10 +1257,10 @@ class RelationFilterTest extends TestCase
         $offices = Office::on($db)
             ->columns(['office.city'])
             ->orderBy('office.id')
-            ->filter(Filter::none(
+            ->filter(Filter::none(Filter::all(
                 Filter::unequal('employee.name', 'Donald'),
                 Filter::unequal('employee.department.name', 'Accounting')
-            ));
+            )));
         $results = iterator_to_array($offices);
         $sql = $this->getSql($offices);
 
@@ -1266,7 +1273,7 @@ class RelationFilterTest extends TestCase
     /**
      * Search for offices where Donald doesn't work or in the accounting department
      *
-     * @equivalenceClass a:multiple, b:NOT, c:multiple, e:different
+     * @equivalenceClass a:multiple, b:NOT(AND), c:multiple, e:different
      * @dataProvider databases
      *
      * @param Connection $db
@@ -1298,10 +1305,10 @@ class RelationFilterTest extends TestCase
         $offices = Office::on($db)
             ->columns(['office.city'])
             ->orderBy('office.id')
-            ->filter(Filter::none(
+            ->filter(Filter::none(Filter::all(
                 Filter::equal('employee.name', 'Donald'),
                 Filter::unequal('employee.department.name', 'Accounting')
-            ));
+            )));
         $results = iterator_to_array($offices);
         $sql = $this->getSql($offices);
 
