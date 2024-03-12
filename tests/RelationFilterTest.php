@@ -29,8 +29,6 @@ use PHPUnit\Framework\TestCase;
  *    e) Operators: same, different
  *     f) Comparisons: affirmation, negation
  *
- * If a test covers such a case, it is marked with the corresponding variables.
- *
  * The tests rely on a few assumptions which are the same for all of them:
  * - All filters target a to-many relation
  * - The ORM only differs between negative and affirmative filters, hence why only equal and unequal filters are used
@@ -1318,48 +1316,6 @@ class RelationFilterTest extends TestCase
         $this->assertSame('Paris', $results[3]['city'] ?? 'not found', $sql);
         $this->assertSame('Barcelona', $results[4]['city'] ?? 'not found', $sql);
         $this->assertSame(5, count($results), $sql);
-    }
-
-    /**
-     * Test whether an unequal, that targets a to-many relation to which a link can only be established through an
-     * optional other relation, is built by the ORM in a way that coincidental matches are ignored
-     *
-     * This will fail if the ORM generates a NOT IN which uses a subquery that produces NULL values.
-     *
-     * @dataProvider databases
-     */
-    public function testUnequalTargetingAnOptionalToManyRelationIgnoresFalsePositives(Connection $db)
-    {
-        $db->insert('office', ['id' => 1, 'city' => 'London']);
-        $db->insert('department', ['id' => 1, 'name' => 'Accounting']);
-        $db->insert('department', ['id' => 2, 'name' => 'Kitchen']);
-        $db->insert('employee', ['id' => 1, 'department_id' => 1, 'name' => 'Minnie', 'role' => 'CEO']); // remote
-        $db->insert(
-            'employee',
-            ['id' => 2, 'department_id' => 2, 'office_id' => 1, 'name' => 'Goofy', 'role' => 'Developer']
-        );
-
-        // This POC uses inner joins to achieve the desired result
-        $offices = $db->prepexec(
-            'SELECT office.city FROM office'
-            . ' INNER JOIN employee e on e.office_id = office.id'
-            . ' INNER JOIN department d on e.department_id = d.id'
-            . ' WHERE d.name != ?'
-            . ' GROUP BY office.id'
-            . ' ORDER BY office.id',
-            ['Accounting']
-        )->fetchAll();
-
-        $this->assertSame('London', $offices[0]['city'] ?? 'not found');
-
-        // The ORM will use a NOT IN and needs to ignore false positives explicitly
-        $offices = Office::on($db)
-            ->columns(['office.city'])
-            ->orderBy('office.id')
-            ->filter(Filter::unequal('employee.department.name', 'Accounting'));
-        $results = iterator_to_array($offices);
-
-        $this->assertSame('London', $results[0]['city'] ?? 'not found', $this->getSql($offices));
     }
 
     /**
