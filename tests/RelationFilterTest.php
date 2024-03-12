@@ -19,12 +19,10 @@ use PHPUnit\Framework\TestCase;
  * a) Number of conditions: multiple
  *  b) Logical Operators: AND, OR, NOT(AND), NOT(OR)
  *   c) Number of relations: single
- *    d) Columns: same
+ *    d) Columns: same, different
  *     e) Operators: same
  *      f) Comparisons: affirmation, negation
  *     e) Operators: different
- *    d) Columns: different
- *     e) Operators: same, different
  *   c) Number of relations: multiple
  *    e) Operators: same, different
  *     f) Comparisons: affirmation, negation
@@ -652,12 +650,12 @@ class RelationFilterTest extends TestCase
     /**
      * Search for offices where Donald works as accountant
      *
-     * @equivalenceClass a:multiple, b:AND, c:single, d:different, e:same
+     * @equivalenceClass a:multiple, b:AND, c:single, d:different, e:same, f:affirmation
      * @dataProvider databases
      *
      * @param Connection $db
      */
-    public function testAndChainTargetingASingleRelationButDifferentColumnsWithTheSameOperator(Connection $db)
+    public function testAndChainTargetingASingleRelationButDifferentColumnsWithTheSameAffirmativeOperator(Connection $db)
     {
         $this->createOfficesAndEmployees($db);
 
@@ -687,6 +685,55 @@ class RelationFilterTest extends TestCase
         $this->assertSame('London', $results[0]['city'] ?? 'not found', $sql);
         $this->assertSame('Berlin', $results[1]['city'] ?? 'not found', $sql);
         $this->assertSame(2, count($results), $sql);
+    }
+
+    /**
+     * Search for offices where Donald doesn't work as accountant
+     *
+     * @equivalenceClass a:multiple, b:AND, c:single, d:different, e:same, f:negation
+     * @dataProvider databases
+     *
+     * @param Connection $db
+     */
+    public function testAndChainTargetingASingleRelationButDifferentColumnsWithTheSameNegativeOperator(Connection $db)
+    {
+        $this->createOfficesAndEmployees($db);
+
+        $offices = $db->prepexec(
+            'SELECT office.city FROM office'
+            . ' WHERE office.id NOT IN ('
+            . '  SELECT office.id FROM office'
+            . '  LEFT JOIN employee e ON e.office_id = office.id'
+            . '  WHERE e.name = ? AND e.role = ?'
+            . '  GROUP BY office.id'
+            . ' )'
+            . ' ORDER BY office.id',
+            ['Donald', 'Accountant']
+        )->fetchAll();
+
+        $this->assertSame('Amsterdam', $offices[0]['city'] ?? 'not found');
+        $this->assertSame('New York', $offices[1]['city'] ?? 'not found');
+        $this->assertSame('Cuxhaven', $offices[2]['city'] ?? 'not found');
+        $this->assertSame('Sydney', $offices[3]['city'] ?? 'not found');
+        $this->assertSame('Baghdad', $offices[4]['city'] ?? 'not found');
+        $this->assertSame(5, count($offices));
+
+        $offices = Office::on($db)
+            ->columns(['office.city'])
+            ->orderBy('office.id')
+            ->filter(Filter::all(
+                Filter::unequal('employee.name', 'Donald'),
+                Filter::unequal('employee.role', 'Accountant')
+            ));
+        $results = iterator_to_array($offices);
+        $sql = $this->getSql($offices);
+
+        $this->assertSame('Amsterdam', $results[0]['city'] ?? 'not found', $sql);
+        $this->assertSame('New York', $results[1]['city'] ?? 'not found', $sql);
+        $this->assertSame('Cuxhaven', $results[2]['city'] ?? 'not found', $sql);
+        $this->assertSame('Sydney', $results[3]['city'] ?? 'not found', $sql);
+        $this->assertSame('Baghdad', $results[4]['city'] ?? 'not found', $sql);
+        $this->assertSame(5, count($results), $sql);
     }
 
     /**
@@ -742,12 +789,12 @@ class RelationFilterTest extends TestCase
     /**
      * Search for offices where either Donald works or any other assistant
      *
-     * @equivalenceClass a:multiple, b:OR, c:single, d:different, e:same
+     * @equivalenceClass a:multiple, b:OR, c:single, d:different, e:same, f:affirmation
      * @dataProvider databases
      *
      * @param Connection $db
      */
-    public function testOrChainTargetingASingleRelationButDifferentColumnsWithTheSameOperator(Connection $db)
+    public function testOrChainTargetingASingleRelationButDifferentColumnsWithTheSameAffirmativeOperator(Connection $db)
     {
         $this->createOfficesAndEmployees($db);
 
@@ -783,6 +830,58 @@ class RelationFilterTest extends TestCase
         $this->assertSame('Sydney', $results[3]['city'] ?? 'not found', $sql);
         $this->assertSame('Baghdad', $results[4]['city'] ?? 'not found', $sql);
         $this->assertSame(5, count($results), $sql);
+    }
+
+    /**
+     * Search for offices where either Donald doesn't work or no-one as manager
+     *
+     * @equivalenceClass a:multiple, b:OR, c:single, d:different, e:same, f:negation
+     * @dataProvider databases
+     *
+     * @param Connection $db
+     */
+    public function testOrChainTargetingASingleRelationButDifferentColumnsWithTheSameNegativeOperator(Connection $db)
+    {
+        $this->createOfficesAndEmployees($db);
+
+        $offices = $db->prepexec(
+            'SELECT office.city FROM office'
+            . ' WHERE office.id NOT IN ('
+            . '  SELECT office.id FROM office'
+            . '  LEFT JOIN employee e ON e.office_id = office.id'
+            . '  WHERE e.name = ?'
+            . '  GROUP BY office.id'
+            . ' ) OR office.id NOT IN ('
+            . '  SELECT office.id FROM office'
+            . '  LEFT JOIN employee e ON e.office_id = office.id'
+            . '  WHERE e.role = ?'
+            . '  GROUP BY office.id'
+            . ' )'
+            . ' ORDER BY office.id',
+            ['Donald', 'Manager']
+        )->fetchAll();
+
+        $this->assertSame('Amsterdam', $offices[0]['city'] ?? 'not found');
+        $this->assertSame('New York', $offices[1]['city'] ?? 'not found');
+        $this->assertSame('Cuxhaven', $offices[2]['city'] ?? 'not found');
+        $this->assertSame('Sydney', $offices[3]['city'] ?? 'not found');
+        $this->assertSame(4, count($offices));
+
+        $offices = Office::on($db)
+            ->columns(['office.city'])
+            ->orderBy('office.id')
+            ->filter(Filter::any(
+                Filter::unequal('employee.name', 'Donald'),
+                Filter::unequal('employee.role', 'Manager')
+            ));
+        $results = iterator_to_array($offices);
+        $sql = $this->getSql($offices);
+
+        $this->assertSame('Amsterdam', $results[0]['city'] ?? 'not found', $sql);
+        $this->assertSame('New York', $results[1]['city'] ?? 'not found', $sql);
+        $this->assertSame('Cuxhaven', $results[2]['city'] ?? 'not found', $sql);
+        $this->assertSame('Sydney', $results[3]['city'] ?? 'not found', $sql);
+        $this->assertSame(4, count($results), $sql);
     }
 
     /**
@@ -836,14 +935,15 @@ class RelationFilterTest extends TestCase
     /**
      * Search for offices where not just Donald works or not as manager
      *
-     * @equivalenceClass a:multiple, b:NOT(AND), c:single, d:different, e:same
+     * @equivalenceClass a:multiple, b:NOT(AND), c:single, d:different, e:same, f:affirmation
      * @dataProvider databases
      * @todo Finds Cuxhaven instead of Baghdad. Not wrong, actually. Why does monitoring behave differently?
      *
      * @param Connection $db
      */
-    public function testNotChainTargetingASingleRelationButDifferentColumnsWithTheSameOperator(Connection $db)
-    {
+    public function testNotChainTargetingASingleRelationButDifferentColumnsWithTheSameAffirmativeOperator(
+        Connection $db
+    ) {
         $this->createOfficesAndEmployees($db);
 
         $offices = $db->prepexec(
@@ -880,6 +980,19 @@ class RelationFilterTest extends TestCase
         $this->assertSame('Sydney', $results[4]['city'] ?? 'not found', $sql);
         $this->assertSame('Baghdad', $results[5]['city'] ?? 'not found', $sql);
         $this->assertSame(6, count($results), $sql);
+    }
+
+    /**
+     * Search for offices where ...
+     *
+     * @equivalenceClass a:multiple, b:NOT(AND), c:single, d:different, e:same, f:negation
+     * @dataProvider databases
+     *
+     * @param Connection $db
+     */
+    public function testNotChainTargetingASingleRelationButDifferentColumnsWithTheSameNegativeOperator(Connection $db)
+    {
+        $this->markTestIncomplete('This test has not been implemented yet.');
     }
 
     /**
