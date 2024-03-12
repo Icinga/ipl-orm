@@ -62,6 +62,36 @@ jobs:
           - php: '7.2'
             phpunit-version: 8.5
 
+    services:
+      mysql:
+        image: mariadb
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: icinga_unittest
+          MYSQL_USER: icinga_unittest
+          MYSQL_PASSWORD: icinga_unittest
+        options: >-
+          --health-cmd "mariadb -s -uroot -proot -e'SHOW DATABASES;' 2> /dev/null | grep icinga_unittest > test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 3306/tcp
+
+      pgsql:
+        image: postgres
+        env:
+          POSTGRES_USER: icinga_unittest
+          POSTGRES_PASSWORD: icinga_unittest
+          POSTGRES_DB: icinga_unittest
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432/tcp
+
     steps:
       - name: Checkout code base
         uses: actions/checkout@v3
@@ -77,4 +107,15 @@ jobs:
         run: composer install -n --no-progress
 
       - name: PHPUnit
+        env:
+          MYSQL_TESTDB: icinga_unittest
+          MYSQL_TESTDB_HOST: 127.0.0.1
+          MYSQL_TESTDB_PORT: ${{ job.services.mysql.ports['3306'] }}
+          MYSQL_TESTDB_USER: icinga_unittest
+          MYSQL_TESTDB_PASSWORD: icinga_unittest
+          PGSQL_TESTDB: icinga_unittest
+          PGSQL_TESTDB_HOST: 127.0.0.1
+          PGSQL_TESTDB_PORT: ${{ job.services.pgsql.ports['5432'] }}
+          PGSQL_TESTDB_USER: icinga_unittest
+          PGSQL_TESTDB_PASSWORD: icinga_unittest
         run: phpunit --verbose
