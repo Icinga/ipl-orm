@@ -328,6 +328,12 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
 
                         $subQuerySelect->having(["COUNT(DISTINCT $targetKeys) >= ?" => $count]);
                         $subQuerySelect->groupBy(array_values($subQuerySelect->getColumns()));
+
+                        if ($negate) {
+                            $subQuerySelect->where(array_map(function ($k) {
+                                return $k . ' IS NOT NULL';
+                            }, array_values($subQuerySelect->getColumns())));
+                        }
                     }
 
                     // TODO: Qualification is only necessary since the `In` and `NotIn` conditions are ignored by
