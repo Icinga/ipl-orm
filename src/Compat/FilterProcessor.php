@@ -139,6 +139,13 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
                 if (! $behaviorsApplied) {
                     $rewrittenFilter = $subjectBehaviors->rewriteCondition($filter, $path . '.');
                     if ($rewrittenFilter !== null) {
+                        if (
+                            $rewrittenFilter instanceof MetaDataProvider
+                            && $rewrittenFilter->metaData()->get('forceResolved', false)
+                        ) {
+                            return $rewrittenFilter;
+                        }
+
                         return $this->requireAndResolveFilterColumns($rewrittenFilter, $query, $forceOptimization)
                             ?: $rewrittenFilter;
                     }
