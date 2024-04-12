@@ -35,6 +35,8 @@ class ResultSet implements Iterator
     protected $pageSize;
 
     /**
+     * Construct the {@see self::class class} object
+     *
      * @param Traversable $traversable
      * @param ?int $limit
      * @param ?int $offset
@@ -48,10 +50,13 @@ class ResultSet implements Iterator
     }
 
     /**
-     * Returns the current page calculated from the {@see ResultSet::$offset} and the {@see ResultSet::$pageSize}
+     * Get the current page number
      *
-     * @return int
-     * @throws BadMethodCallException if no {@see ResultSet::$pageSize} has been provided
+     * Returns the current page, calculated by the {@see self::$position position}, {@see self::$offset offset}
+     * and the {@see self::$pageSize page size}
+     *
+     * @return int page
+     * @throws BadMethodCallException if no {@see self::$pageSize page size} has been provided
      */
     public function getCurrentPage(): int
     {
@@ -65,13 +70,13 @@ class ResultSet implements Iterator
             return 1;
         }
 
-        throw new BadMethodCallException(`The 'pageSize' property has not been set. Cannot calculate pages.`);
+        throw new BadMethodCallException("The 'pageSize' property has not been set. Cannot calculate pages.");
     }
 
     /**
-     * Sets the amount of items a page should contain (needed for pagination)
+     * Set the amount of entries a page should contain (needed for pagination)
      *
-     * @param ?int $size
+     * @param ?int $size entries per  page
      * @return $this
      */
     public function setPageSize(?int $size)
@@ -82,7 +87,7 @@ class ResultSet implements Iterator
     }
 
     /**
-     * Create a new result set from the given query
+     * Create a new result set from the given {@see Query query}
      *
      * @param Query $query
      *
@@ -96,7 +101,7 @@ class ResultSet implements Iterator
     /**
      * Do not cache query result
      *
-     * ResultSet instance can only be iterated once
+     * {@see self::class class} instance can only be iterated once
      *
      * @return $this
      */
@@ -108,6 +113,8 @@ class ResultSet implements Iterator
     }
 
     /**
+     * Check if dataset has more entries
+     *
      * @return bool
      */
     public function hasMore()
@@ -116,6 +123,8 @@ class ResultSet implements Iterator
     }
 
     /**
+     * Check if dataset has a result
+     *
      * @return bool
      */
     public function hasResult()
@@ -199,6 +208,8 @@ class ResultSet implements Iterator
     }
 
     /**
+     * Yield entry from dataset
+     *
      * @param Traversable $traversable
      * @return Generator
      */
