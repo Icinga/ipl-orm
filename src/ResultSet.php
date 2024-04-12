@@ -9,19 +9,19 @@ use Iterator;
 use Traversable;
 
 /**
- * Dataset containing hydrated data by {@see Hydrator} in form of {@see Model} entries from the given {@see Query}
+ * Dataset containing database rows
  *
- * @implements Iterator<int, Model>
+ * @implements Iterator<int, mixed>
  */
 class ResultSet implements Iterator
 {
-    /** @var ArrayIterator<int, Model> */
+    /** @var ArrayIterator<int, mixed> */
     protected $cache;
 
     /** @var bool Whether cache is disabled */
     protected $isCacheDisabled = false;
 
-    /** @var Generator<int, Model, Model, Model> */
+    /** @var Generator<int, mixed, mixed, mixed> */
     protected $generator;
 
     /** @var ?int */
@@ -37,7 +37,7 @@ class ResultSet implements Iterator
     protected $pageSize;
 
     /**
-     * @param Traversable<int, Model> $traversable
+     * @param Traversable<int, mixed> $traversable
      * @param ?int $limit
      * @param ?int $offset
      */
@@ -85,10 +85,8 @@ class ResultSet implements Iterator
         return $this->generator->valid();
     }
 
-    /**
-     * @return ?Model
-     */
-    public function current(): ?Model
+    #[\ReturnTypeWillChange]
+    public function current()
     {
         if ($this->position === null) {
             $this->advance();
@@ -111,7 +109,7 @@ class ResultSet implements Iterator
         }
     }
 
-    public function key(): int
+    public function key(): ?int
     {
         if ($this->position === null) {
             $this->advance();
@@ -163,7 +161,7 @@ class ResultSet implements Iterator
     }
 
     /**
-     * @param Traversable<int, Model> $traversable
+     * @param Traversable<int, mixed> $traversable
      * @return Generator
      */
     protected function yieldTraversable(Traversable $traversable): Generator
