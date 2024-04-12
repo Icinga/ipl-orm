@@ -61,12 +61,13 @@ class ResultSet implements Iterator
     public function getCurrentPage(): int
     {
         if ($this->pageSize) {
-            if ($this->offset && $this->offset > $this->pageSize) {
-                // offset is not on the first page anymore
-                return intval(floor($this->offset / $this->pageSize));
+            $offset = $this->offset ?: 0;
+            if ($this->position && ($this->position + $offset) > $this->pageSize) {
+                // we are not on the first page anymore, calculating proper page
+                return intval(floor(($this->position + $offset) / $this->pageSize));
             }
 
-            // no offset defined or still on page 1
+            // still on the first page
             return 1;
         }
 
