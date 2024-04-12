@@ -3,27 +3,50 @@
 namespace ipl\Orm;
 
 use ArrayIterator;
+use BadMethodCallException;
+use Generator;
 use Iterator;
 use Traversable;
 
+/**
+ * Dataset containing hydrated data by {@see Hydrator} in form of {@see Model} entries from the given {@see Query}
+ *
+ * @implements Iterator<int, Model>
+ */
 class ResultSet implements Iterator
 {
+    /** @var ArrayIterator<int, Model> */
     protected $cache;
 
     /** @var bool Whether cache is disabled */
     protected $isCacheDisabled = false;
 
+    /** @var Generator<int, Model, Model, Model> */
     protected $generator;
 
+    /** @var ?int */
     protected $limit;
 
+    /** @var ?int */
     protected $position;
 
-    public function __construct(Traversable $traversable, $limit = null)
+    /** @var ?int */
+    protected $offset;
+
+    /** @var ?int */
+    protected $pageSize;
+
+    /**
+     * @param Traversable<int, Model> $traversable
+     * @param ?int $limit
+     * @param ?int $offset
+     */
+    public function __construct(Traversable $traversable, ?int $limit = null, ?int $offset = null)
     {
         $this->cache = new ArrayIterator();
         $this->generator = $this->yieldTraversable($traversable);
         $this->limit = $limit;
+        $this->offset = $offset;
     }
 
     /**
@@ -31,11 +54,11 @@ class ResultSet implements Iterator
      *
      * @param Query $query
      *
-     * @return static
+     * @return ResultSet
      */
-    public static function fromQuery(Query $query)
+    public static function fromQuery(Query $query): ResultSet
     {
-        return new static($query->yieldResults(), $query->getLimit());
+        return new static($query->yieldResults(), $query->getLimit(), $query->getOffset());
     }
 
     /**
@@ -43,27 +66,29 @@ class ResultSet implements Iterator
      *
      * ResultSet instance can only be iterated once
      *
-     * @return $this
+     * @return ResultSet
      */
-    public function disableCache()
+    public function disableCache(): ResultSet
     {
         $this->isCacheDisabled = true;
 
         return $this;
     }
 
-    public function hasMore()
+    public function hasMore(): bool
     {
         return $this->generator->valid();
     }
 
-    public function hasResult()
+    public function hasResult(): bool
     {
         return $this->generator->valid();
     }
 
-    #[\ReturnTypeWillChange]
-    public function current()
+    /**
+     * @return ?Model
+     */
+    public function current(): ?Model
     {
         if ($this->position === null) {
             $this->advance();
@@ -117,7 +142,7 @@ class ResultSet implements Iterator
         }
     }
 
-    protected function advance()
+    protected function advance(): void
     {
         if (! $this->generator->valid()) {
             return;
@@ -137,10 +162,46 @@ class ResultSet implements Iterator
         }
     }
 
-    protected function yieldTraversable(Traversable $traversable)
+    /**
+     * @param Traversable<int, Model> $traversable
+     * @return Generator
+     */
+    protected function yieldTraversable(Traversable $traversable): Generator
     {
         foreach ($traversable as $key => $value) {
             yield $key => $value;
         }
+    }
+
+    /**
+     * Sets the amount of items a page should contain (only needed for pagination)
+     *
+     * @param ?int $size
+     * @return void
+     */
+    public function setPageSize(?int $size): void
+    {
+        $this->pageSize = $size;
+    }
+
+    /**
+     * Returns the current page calculated from the {@see ResultSet::$offset} and the {@see ResultSet::$pageSize}
+     *
+     * @return int
+     * @throws BadMethodCallException if no {@see ResultSet::$pageSize} has been provided
+     */
+    protected function getCurrentPage(): int
+    {
+        if ($this->pageSize) {
+            if ($this->offset && $this->offset > $this->pageSize) {
+                // offset is not on the first page anymore
+                return intval(floor($this->offset / $this->pageSize));
+            }
+
+            // no offset defined or still on page 1
+            return 1;
+        }
+
+        throw new BadMethodCallException(`The 'pageSize' property has not been set. Cannot calculate pages.`);
     }
 }
