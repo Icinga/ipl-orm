@@ -120,9 +120,45 @@ class ResultSetTest extends TestCase
 
         $set = (new ResultSet(new ArrayIterator(['a', 'b', 'c', 'd', 'e', 'f', 'g'])));
 
-        foreach ($set as $item) {
+        foreach ($set as $_) {
             // this raises an exception as no page size has been set
             $set->getCurrentPage();
         }
+    }
+
+    public function testResultPagingWithOffset()
+    {
+        $set = (new ResultSet(new ArrayIterator(['d', 'e', 'f', 'g', 'h', 'i', 'j']), null, 3))
+            ->setPageSize(2);
+
+        $count = 0;
+        foreach ($set as $_) {
+            ++$count;
+
+            $offsetCount = $count + 3;
+            if ($offsetCount % 2 === 0) {
+                // a multiple of two, page should equal to offsetCount / 2
+                $this->assertEquals(
+                    $set->getCurrentPage(),
+                    $offsetCount / 2
+                );
+            } elseif ($offsetCount % 2 === 1) {
+                $this->assertEquals(
+                    $set->getCurrentPage(),
+                    intval(ceil($offsetCount / 2))
+                );
+            }
+        }
+    }
+
+    public function testResultPagingBeforeIteration()
+    {
+        $set = (new ResultSet(new ArrayIterator(['a', 'b', 'c', 'd', 'e', 'f', 'g'])))
+            ->setPageSize(2);
+
+        $this->assertEquals(
+            $set->getCurrentPage(),
+            1
+        );
     }
 }

@@ -62,8 +62,8 @@ class ResultSet implements Iterator
     {
         if ($this->pageSize) {
             $offset = $this->offset ?: 0;
-            $position = $this->position + 1;
-            if ($position && ($position + $offset) > $this->pageSize) {
+            $position = ($this->position ?: 0) + 1;
+            if (($position + $offset) > $this->pageSize) {
                 // we are not on the first page anymore, calculating proper page
                 return intval(ceil(($position + $offset) / $this->pageSize));
             }
@@ -79,6 +79,7 @@ class ResultSet implements Iterator
      * Set the amount of entries a page should contain (needed for pagination)
      *
      * @param ?int $size entries per page
+     *
      * @return $this
      */
     public function setPageSize(?int $size)
@@ -103,7 +104,7 @@ class ResultSet implements Iterator
     /**
      * Do not cache query result
      *
-     * {@see self::class class} instance can only be iterated once
+     * ResultSet instance can only be iterated once
      *
      * @return $this
      */
@@ -219,6 +220,7 @@ class ResultSet implements Iterator
      * Yield entry from dataset
      *
      * @param Traversable $traversable
+     *
      * @return Generator
      */
     protected function yieldTraversable(Traversable $traversable)
