@@ -756,12 +756,12 @@ parameters:
 			path: src/Resolver.php
 
 		-
-			message: "#^Class ipl\\\\Orm\\\\ResultSet implements generic interface Iterator but does not specify its types\\: TKey, TValue$#"
+			message: "#^Cannot assign offset mixed to ArrayIterator\\.$#"
 			count: 1
 			path: src/ResultSet.php
 
 		-
-			message: "#^Method ipl\\\\Orm\\\\ResultSet\\:\\:__construct\\(\\) has parameter \\$limit with no type specified\\.$#"
+			message: "#^Class ipl\\\\Orm\\\\ResultSet implements generic interface Iterator but does not specify its types\\: TKey, TValue$#"
 			count: 1
 			path: src/ResultSet.php
 
@@ -776,17 +776,7 @@ parameters:
 			path: src/ResultSet.php
 
 		-
-			message: "#^Method ipl\\\\Orm\\\\ResultSet\\:\\:hasMore\\(\\) has no return type specified\\.$#"
-			count: 1
-			path: src/ResultSet.php
-
-		-
-			message: "#^Method ipl\\\\Orm\\\\ResultSet\\:\\:hasResult\\(\\) has no return type specified\\.$#"
-			count: 1
-			path: src/ResultSet.php
-
-		-
-			message: "#^Method ipl\\\\Orm\\\\ResultSet\\:\\:yieldTraversable\\(\\) has no return type specified\\.$#"
+			message: "#^Method ipl\\\\Orm\\\\ResultSet\\:\\:key\\(\\) should return int\\|null but returns mixed\\.$#"
 			count: 1
 			path: src/ResultSet.php
 
@@ -796,22 +786,12 @@ parameters:
 			path: src/ResultSet.php
 
 		-
-			message: "#^Property ipl\\\\Orm\\\\ResultSet\\:\\:\\$cache has no type specified\\.$#"
+			message: "#^Parameter \\#1 \\$offset of method ArrayIterator\\<\\(int\\|string\\),mixed\\>\\:\\:seek\\(\\) expects int, mixed given\\.$#"
 			count: 1
 			path: src/ResultSet.php
 
 		-
-			message: "#^Property ipl\\\\Orm\\\\ResultSet\\:\\:\\$generator has no type specified\\.$#"
-			count: 1
-			path: src/ResultSet.php
-
-		-
-			message: "#^Property ipl\\\\Orm\\\\ResultSet\\:\\:\\$limit has no type specified\\.$#"
-			count: 1
-			path: src/ResultSet.php
-
-		-
-			message: "#^Property ipl\\\\Orm\\\\ResultSet\\:\\:\\$position has no type specified\\.$#"
+			message: "#^Property ipl\\\\Orm\\\\ResultSet\\:\\:\\$cache with generic class ArrayIterator does not specify its types\\: TKey, TValue$#"
 			count: 1
 			path: src/ResultSet.php
 

@@ -35,7 +35,7 @@ class ResultSet implements Iterator
     protected $pageSize;
 
     /**
-     * Construct the {@see self::class class} object
+     * Construct the ResultSet object
      *
      * @param Traversable $traversable
      * @param ?int $limit
@@ -62,9 +62,10 @@ class ResultSet implements Iterator
     {
         if ($this->pageSize) {
             $offset = $this->offset ?: 0;
-            if ($this->position && ($this->position + $offset) > $this->pageSize) {
+            $position = $this->position + 1;
+            if ($position && ($position + $offset) > $this->pageSize) {
                 // we are not on the first page anymore, calculating proper page
-                return intval(floor(($this->position + $offset) / $this->pageSize));
+                return intval(ceil(($position + $offset) / $this->pageSize));
             }
 
             // still on the first page
@@ -77,7 +78,7 @@ class ResultSet implements Iterator
     /**
      * Set the amount of entries a page should contain (needed for pagination)
      *
-     * @param ?int $size entries per  page
+     * @param ?int $size entries per page
      * @return $this
      */
     public function setPageSize(?int $size)
@@ -157,7 +158,13 @@ class ResultSet implements Iterator
         }
     }
 
-    public function key(): ?int
+    /**
+     * Return the current item's key
+     *
+     * @return ?int
+     */
+    #[\ReturnTypeWillChange]
+    public function key()
     {
         if ($this->position === null) {
             $this->advance();

@@ -3,6 +3,7 @@
 namespace ipl\Tests\Orm;
 
 use ArrayIterator;
+use BadMethodCallException;
 use ipl\Orm\ResultSet;
 use PHPUnit\Framework\TestCase;
 
@@ -80,5 +81,48 @@ class ResultSetTest extends TestCase
             $items,
             ['a', 'b', 'a', 'b']
         );
+    }
+
+    public function testResultPaging()
+    {
+        $set = (new ResultSet(new ArrayIterator(['a', 'b', 'c', 'd', 'e', 'f', 'g'])))
+            ->setPageSize(2);
+
+        $count = 0;
+        foreach ($set as $item) {
+            ++$count;
+
+            if ($count > 2) {
+                if ($count % 2 === 0) {
+                    // a multiple of two, page should equal to count / 2
+                    $this->assertEquals(
+                        $set->getCurrentPage(),
+                        $count / 2
+                    );
+                } elseif ($count % 2 === 1) {
+                    $this->assertEquals(
+                        $set->getCurrentPage(),
+                        intval(ceil($count / 2))
+                    );
+                }
+            } else {
+                $this->assertEquals(
+                    $set->getCurrentPage(),
+                    1
+                );
+            }
+        }
+    }
+
+    public function testResultPagingWithoutPageSize()
+    {
+        $this->expectException(BadMethodCallException::class);
+
+        $set = (new ResultSet(new ArrayIterator(['a', 'b', 'c', 'd', 'e', 'f', 'g'])));
+
+        foreach ($set as $item) {
+            // this raises an exception as no page size has been set
+            $set->getCurrentPage();
+        }
     }
 }
