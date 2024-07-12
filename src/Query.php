@@ -9,18 +9,21 @@ use Generator;
 use InvalidArgumentException;
 use ipl\Orm\Common\SortUtil;
 use ipl\Orm\Compat\FilterProcessor;
+use ipl\Sql\Adapter\Mysql;
 use ipl\Sql\Connection;
 use ipl\Sql\ExpressionInterface;
 use ipl\Sql\LimitOffset;
 use ipl\Sql\LimitOffsetInterface;
 use ipl\Sql\OrderBy;
 use ipl\Sql\OrderByInterface;
+use ipl\Sql\QueryBuilder;
 use ipl\Sql\Select;
 use ipl\Stdlib\Contract\Filterable;
 use ipl\Stdlib\Contract\Paginatable;
 use ipl\Stdlib\Events;
 use ipl\Stdlib\Filter;
 use ipl\Stdlib\Filters;
+use ipl\Stdlib\Str;
 use IteratorAggregate;
 use ReflectionClass;
 use SplObjectStorage;
@@ -108,6 +111,32 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
     public function setDb(Connection $db)
     {
         $this->db = $db;
+
+        if ($db->getAdapter() instanceof Mysql) {
+            $db->getQueryBuilder()->on(QueryBuilder::ON_ASSEMBLE_SELECT, function (Select $select) {
+                $columns = $select->getColumns();
+                foreach ($columns as $alias => $column) {
+                    if (is_string($column)) {
+                        if (Str::startsWith($column, '/*+ NO_BNL() */')) {
+                            return;
+                        }
+
+                        unset($columns[$alias]);
+                        $select->resetColumns();
+
+                        if (is_int($alias)) {
+                            array_unshift($columns, "/*+ NO_BNL() */ $column");
+                        } else {
+                            $columns = [$alias => "/*+ NO_BNL() */ $column"] + $columns;
+                        }
+
+                        $select->resetColumns()->columns($columns);
+
+                        return;
+                    }
+                }
+            });
+        }
 
         return $this;
     }
