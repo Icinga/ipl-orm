@@ -309,7 +309,7 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
                     }
 
                     $relation = $query->getResolver()->resolveRelation($relationPath);
-                    $subQuery = $query->createSubQuery($relation->getTarget(), $relationPath);
+                    $subQuery = $query->createSubQuery($relation, $relationPath);
                     $subQuery->columns([new Expression('1')]);
 
                     $subQuery->filter($subQueryFilter);

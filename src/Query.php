@@ -2,6 +2,8 @@
 
 namespace ipl\Orm;
 
+use AppendIterator;
+use ArrayIterator;
 use ArrayObject;
 use Generator;
 use InvalidArgumentException;
@@ -565,7 +567,7 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
      * Derive a new query to load the specified relation from a concrete model
      *
      * @param string $relation
-     * @param Model  $source
+     * @param Model $source
      *
      * @return static
      *
@@ -584,43 +586,98 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
     /**
      * Create a sub-query linked to rows of this query
      *
-     * @param Model $target The model to query
+     * @param Model|Relation $target The model to query
      * @param string $targetPath The target's absolute relation path
      * @param Model $from The source model
      *
      * @return static
      */
-    public function createSubQuery(Model $target, $targetPath, Model $from = null)
+    public function createSubQuery($target, $targetPath, Model $from = null)
     {
         $subQuery = (new static())
             ->setDb($this->getDb())
-            ->setModel($target);
-
-        $resolver = $this->getResolver();
-        $sourceParts = array_reverse(explode('.', $targetPath));
-        $sourceParts[0] = $target->getTableAlias();
+            ->setModel($target instanceof Relation ? $target->getTarget() : $target);
 
         $subQueryResolver = $subQuery->getResolver();
-        $sourcePath = join('.', $sourceParts);
-        $subQuery->utilize($sourcePath); // TODO: Don't join if there's a matching foreign key
 
         // TODO: Should be done by the caller. Though, that's not possible until we've got a filter abstraction
         //       which allows to post-pone filter column qualification.
         $subQueryResolver->setAliasPrefix('sub_');
 
-        $baseAlias = $resolver->getAlias($this->getModel());
-        $sourceAlias = $subQueryResolver->getAlias($subQueryResolver->resolveRelation($sourcePath)->getTarget());
-
         $subQueryConditions = [];
-        foreach ((array) $this->getModel()->getKeyName() as $column) {
-            $fk = $subQueryResolver->qualifyColumn($column, $sourceAlias);
 
-            if (isset($from->$column)) {
-                $subQueryConditions["$fk = ?"] = $resolver
-                    ->getBehaviors($from)
-                    ->persistProperty($from->$column, $column);
-            } else {
-                $subQueryConditions[] = "$fk = " . $resolver->qualifyColumn($column, $baseAlias);
+        $resolver = $this->getResolver();
+
+        if ($target instanceof Relation) {
+            $joins = new AppendIterator();
+            $joins->append(new ArrayIterator($this->getWith()));
+            $joins->append(new ArrayIterator($this->getUtilize()));
+
+            /** @var Relation $join */
+            foreach ($joins as $join) {
+                if ($join->getTarget() === $target->getSource()) {
+                    $sourcePath = implode(
+                        '.',
+                        array_reverse(
+                            explode(
+                                '.',
+                                substr(
+                                    $targetPath,
+                                    strpos($targetPath, $join->getName())
+                                )
+                            )
+                        )
+                    );
+
+                    $subQuery->utilize($sourcePath);
+
+                    foreach ((array) $join->getTarget()->getKeyName() as $column) {
+                        $fk = $subQueryResolver->qualifyColumn(
+                            $column,
+                            $subQueryResolver->getAlias($subQueryResolver->resolveRelation($sourcePath)->getTarget())
+                        );
+
+                        if (isset($from->$column)) {
+                            $subQueryConditions["$fk = ?"] = $resolver
+                                ->getBehaviors($from)
+                                ->persistProperty($from->$column, $column);
+                        } else {
+                            $subQueryConditions[] = sprintf(
+                                '%s = %s',
+                                $fk,
+                                $resolver->qualifyColumn($column, $resolver->getAlias($join->getTarget()))
+                            );
+                        }
+                    }
+                }
+            }
+
+            $target = $target->getTarget();
+        }
+
+        if (empty($subQueryConditions)) {
+            $sourceParts = array_reverse(explode('.', $targetPath));
+            $sourceParts[0] = $target->getTableAlias();
+
+            $sourcePath = implode('.', $sourceParts);
+            $subQuery->utilize($sourcePath); // TODO: Don't join if there's a matching foreign key
+
+            $sourceAlias = $subQueryResolver->getAlias($subQueryResolver->resolveRelation($sourcePath)->getTarget());
+
+            foreach ((array) $this->getModel()->getKeyName() as $column) {
+                $fk = $subQueryResolver->qualifyColumn($column, $sourceAlias);
+
+                if (isset($from->$column)) {
+                    $subQueryConditions["$fk = ?"] = $resolver
+                        ->getBehaviors($from)
+                        ->persistProperty($from->$column, $column);
+                } else {
+                    $subQueryConditions[] = sprintf(
+                        '%s = %s',
+                        $fk,
+                        $resolver->qualifyColumn($column, $resolver->getAlias($this->getModel()))
+                    );
+                }
             }
         }
 
