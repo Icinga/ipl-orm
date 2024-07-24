@@ -14,6 +14,15 @@ abstract class Model implements \ArrayAccess, \IteratorAggregate
 {
     use PropertiesWithDefaults;
 
+    private $relation;
+
+    public function setRelation(Relation $relation)
+    {
+        $this->relation = $relation;
+    }
+
+    private $nullableProperties;
+
     final public function __construct(array $properties = null)
     {
         if ($this->hasProperties()) {
@@ -139,5 +148,52 @@ abstract class Model implements \ArrayAccess, \IteratorAggregate
      */
     protected function init()
     {
+    }
+
+    private function nullableColumns()
+    {
+        if ($this->nullableProperties !== null) {
+            return $this->nullableProperties;
+        }
+
+        if ($this->relation === null) {
+            $this->nullableProperties = (function (): array {
+                $ref = new \ReflectionClass($this);
+                $doc = $ref->getDocComment();
+                preg_match_all('/@property\s+([^\s]+)\s+\$([^\s]+)/', $doc, $matches);
+                $cols = [];
+                foreach ($matches[1] as $i => $type) {
+                    if (strpos($type, '?') === 0 || preg_match('~\|?null\|?~', $type)) {
+                        $cols[] = $matches[2][$i];
+                    }
+                }
+
+                return $cols;
+            })();
+        } elseif ($this->relation->getJoinType() === 'LEFT') {
+            $this->nullableProperties = array_merge($this->getColumns(), (array) $this->getKeyName());
+        } else {
+            $this->nullableProperties = [];
+        }
+
+        return $this->nullableProperties;
+    }
+
+    public function __get($key)
+    {
+        if (in_array($key, $this->nullableColumns(), true)) {
+            return null;
+        }
+
+        return $this->getProperty($key);
+    }
+
+    public function __isset($key)
+    {
+        if (in_array($key, $this->nullableColumns(), true)) {
+            return false;
+        }
+
+        return $this->hasProperty($key);
     }
 }
