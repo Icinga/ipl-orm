@@ -4,6 +4,7 @@ namespace ipl\Tests\Orm;
 
 use ipl\Orm\Exception\InvalidRelationException;
 use ipl\Orm\Query;
+use ipl\Orm\ResolvedExpression;
 use ipl\Sql\Expression;
 use ipl\Tests\Sql\TestCase;
 
@@ -401,6 +402,32 @@ SQL;
         );
     }
 
+    public function testWithColumnsSupportsAliasedExpressions()
+    {
+        $model = new class () extends User {
+            public function getColumns(): array
+            {
+                return ['username', 'aliased_expr' => new Expression('1')];
+            }
+        };
+
+        $query = (new Query())
+            ->setModel($model)
+            ->columns('username')
+            ->withColumns('aliased_expr');
+
+        $this->assertEquals(
+            [
+                'user.username',
+                'aliased_expr' => new ResolvedExpression(
+                    new Expression('1'),
+                    $query->getResolver()->requireAndResolveColumns(['aliased_expr'])
+                ),
+            ],
+            $query->assembleSelect()->getColumns()
+        );
+    }
+
     public function testWithColumnsHandlesCustomAliasesCorrectly()
     {
         $query = (new Query())
@@ -482,6 +509,28 @@ SQL;
                 'user.username',
                 'user_profile_surname' => 'user_profile.surname'
             ],
+            $query->assembleSelect()->getColumns()
+        );
+    }
+
+    public function testWithoutColumnsExcludesAliasedExpressions()
+    {
+        $model = new class () extends User {
+            public function getColumns(): array
+            {
+                return [
+                    'username',
+                    'aliased_expr' => new Expression('1')
+                ];
+            }
+        };
+
+        $query = (new Query())
+            ->setModel($model)
+            ->withoutColumns(['aliased_expr', 'id']);
+
+        $this->assertSame(
+            ['user.username'],
             $query->assembleSelect()->getColumns()
         );
     }
