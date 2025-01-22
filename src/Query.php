@@ -491,6 +491,8 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
             $select->where(...array_reverse($where));
         }
 
+        $this->order($select);
+
         $joinedRelations = [];
         foreach ($this->getWith() + $this->getUtilize() as $path => $_) {
             foreach ($resolver->resolveRelations($path) as $relationPath => $relation) {
@@ -547,8 +549,6 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
         if ($this->hasOffset()) {
             $select->offset($this->getOffset());
         }
-
-        $this->order($select);
 
         $this->emit(static::ON_SELECT_ASSEMBLED, [$select]);
 
