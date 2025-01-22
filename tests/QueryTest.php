@@ -279,6 +279,62 @@ SQL;
         );
     }
 
+    public function testOrderByJoinRequiredRelationsButDoNotSelectTheirColumns()
+    {
+        $query = (new Query())
+            ->setModel(new User())
+            ->orderBy('user.profile.given_name', 'DESC');
+
+        $sql = <<<SQL
+SELECT user.id, user.username, user.password
+FROM user
+INNER JOIN profile user_profile ON user_profile.user_id = user.id
+ORDER BY user_profile.given_name DESC
+SQL;
+
+        $this->assertSql($sql, $query->assembleSelect());
+    }
+
+    public function testOrderByDoNotJoinExistingRelationsAgain()
+    {
+        $query = (new Query())
+            ->setModel(new User())
+            ->with('user.profile')
+            ->orderBy('user.profile.given_name', 'DESC');
+
+        $sql = <<<SQL
+SELECT user.id,
+       user.username,
+       user.password,
+       user_profile.id AS user_profile_id,
+       user_profile.user_id AS user_profile_user_id,
+       user_profile.given_name AS user_profile_given_name,
+       user_profile.surname AS user_profile_surname
+FROM user
+INNER JOIN profile user_profile ON user_profile.user_id = user.id
+ORDER BY user_profile.given_name DESC
+SQL;
+
+        $this->assertSql($sql, $query->assembleSelect());
+    }
+
+    public function testOrderByJoinsWithoutRelation()
+    {
+        $query = (new Query())
+            ->setModel(new User())
+            ->without('user.profile')
+            ->orderBy('user.profile.given_name', 'DESC');
+
+        $sql = <<<SQL
+SELECT user.id, user.username, user.password
+FROM user
+INNER JOIN profile user_profile ON user_profile.user_id = user.id
+ORDER BY user_profile.given_name DESC
+SQL;
+
+        $this->assertSql($sql, $query->assembleSelect());
+    }
+
     public function testExplicitColumnsDontCauseRelationsToBeImplicitlySelected()
     {
         $query = (new Query())
