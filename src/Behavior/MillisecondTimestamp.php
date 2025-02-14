@@ -25,7 +25,11 @@ class MillisecondTimestamp extends PropertyBehavior
     public function toDb($value, $key, $context)
     {
         if (is_numeric($value)) {
-            return (int) ($value * 1000.0);
+            if (PHP_INT_SIZE===4) {
+                return $value * 1000.0;
+            } else {
+                return (int) ($value * 1000.0);
+            }
         }
 
         if (! $value instanceof DateTime) {
@@ -36,6 +40,10 @@ class MillisecondTimestamp extends PropertyBehavior
             }
         }
 
-        return (int) ($value->format('U.u') * 1000.0);
+        if (PHP_INT_SIZE===4) {
+            return $value->format('U.u') * 1000.0;
+        } else {
+            return (int) ($value->format('U.u') * 1000.0);
+        }
     }
 }
