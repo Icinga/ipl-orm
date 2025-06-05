@@ -34,6 +34,14 @@ class BoolCastTest extends \PHPUnit\Framework\TestCase
         $this->assertTrue($behavior->fromDb($behavior->getTrueValue(), 'key', 'context'));
     }
 
+    public function testFromDbAcceptsBoolean()
+    {
+        $behavior = new BoolCast([]);
+
+        $this->assertFalse($behavior->fromDb(false, 'key', 'context'));
+        $this->assertTrue($behavior->fromDb(true, 'key', 'context'));
+    }
+
     public function testToDbConvertsFromBoolean()
     {
         $behavior = new BoolCast([]);
