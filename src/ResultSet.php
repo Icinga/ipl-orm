@@ -3,31 +3,94 @@
 namespace ipl\Orm;
 
 use ArrayIterator;
+use BadMethodCallException;
+use Generator;
 use Iterator;
 use Traversable;
 
+/**
+ * Dataset containing database rows
+ */
 class ResultSet implements Iterator
 {
+    /** @var ArrayIterator */
     protected $cache;
 
     /** @var bool Whether cache is disabled */
     protected $isCacheDisabled = false;
 
+    /** @var Generator */
     protected $generator;
 
+    /** @var ?int */
     protected $limit;
 
+    /** @var ?int */
     protected $position;
 
-    public function __construct(Traversable $traversable, $limit = null)
+    /** @var ?int */
+    protected $offset;
+
+    /** @var ?int */
+    protected $pageSize;
+
+    /**
+     * Construct the ResultSet object
+     *
+     * @param Traversable $traversable
+     * @param ?int $limit
+     * @param ?int $offset
+     */
+    public function __construct(Traversable $traversable, $limit = null, $offset = null)
     {
         $this->cache = new ArrayIterator();
         $this->generator = $this->yieldTraversable($traversable);
         $this->limit = $limit;
+        $this->offset = $offset;
     }
 
     /**
-     * Create a new result set from the given query
+     * Get the current page number
+     *
+     * Returns the current page, calculated by the {@see self::$position position}, {@see self::$offset offset}
+     * and the {@see self::$pageSize page size}
+     *
+     * @return int page
+     * @throws BadMethodCallException if no {@see self::$pageSize page size} has been provided
+     */
+    public function getCurrentPage(): int
+    {
+        if ($this->pageSize) {
+            $offset = $this->offset ?: 0;
+            $position = ($this->position ?: 0) + 1;
+            if (($position + $offset) > $this->pageSize) {
+                // we are not on the first page anymore, calculating proper page
+                return intval(ceil(($position + $offset) / $this->pageSize));
+            }
+
+            // still on the first page
+            return 1;
+        }
+
+        throw new BadMethodCallException("The 'pageSize' property has not been set. Cannot calculate pages.");
+    }
+
+    /**
+     * Set the amount of entries a page should contain (needed for pagination)
+     *
+     * @param ?int $size entries per page
+     *
+     * @return $this
+     */
+    public function setPageSize(?int $size)
+    {
+        $this->pageSize = $size;
+
+        return $this;
+    }
+
+    /**
+     * Create a new result set from the given {@see Query query}
      *
      * @param Query $query
      *
@@ -35,7 +98,7 @@ class ResultSet implements Iterator
      */
     public static function fromQuery(Query $query)
     {
-        return new static($query->yieldResults(), $query->getLimit());
+        return new static($query->yieldResults(), $query->getLimit(), $query->getOffset());
     }
 
     /**
@@ -52,11 +115,21 @@ class ResultSet implements Iterator
         return $this;
     }
 
+    /**
+     * Check if dataset has more entries
+     *
+     * @return bool
+     */
     public function hasMore()
     {
         return $this->generator->valid();
     }
 
+    /**
+     * Check if dataset has a result
+     *
+     * @return bool
+     */
     public function hasResult()
     {
         return $this->generator->valid();
@@ -86,7 +159,13 @@ class ResultSet implements Iterator
         }
     }
 
-    public function key(): int
+    /**
+     * Return the current item's key
+     *
+     * @return ?int
+     */
+    #[\ReturnTypeWillChange]
+    public function key()
     {
         if ($this->position === null) {
             $this->advance();
@@ -134,6 +213,13 @@ class ResultSet implements Iterator
         }
     }
 
+    /**
+     * Yield entry from dataset
+     *
+     * @param Traversable $traversable
+     *
+     * @return Generator
+     */
     protected function yieldTraversable(Traversable $traversable)
     {
         foreach ($traversable as $key => $value) {
