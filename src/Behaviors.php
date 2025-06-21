@@ -155,6 +155,10 @@ class Behaviors implements IteratorAggregate
             $replacement = $behavior->rewriteCondition($filter ?: $condition, $relation);
             if ($replacement !== null) {
                 $filter = $replacement;
+                if (! $filter instanceof Filter\Condition) {
+                    // Other behaviors get their chance once the replacement is being processed
+                    break;
+                }
             }
         }
 
