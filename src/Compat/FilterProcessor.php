@@ -183,7 +183,16 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
             $subQueryGroups = [];
             /** @var Filter\Rule[] $outsourcedRules */
             $outsourcedRules = [];
-            foreach ($filter as $child) {
+
+            $iterator = $filter->getIterator(true);
+            for ($iterator->rewind(); $iterator->valid(); $iterator->next()) {
+                $child = $iterator->current();
+                if ($child instanceof Filter\Condition && ! $child->getChain()) {
+                    // Due to __clone() circular dependency (chain <-> rule) it's not sufficient to only set
+                    // the chain when adding the rule to that chain. Query class operates also on cloned filters
+                    $child->setChain($filter);
+                }
+
                 /** @var Filter\Rule $child */
                 $rewrittenFilter = $this->requireAndResolveFilterColumns($child, $query, $forceOptimization);
                 if ($rewrittenFilter !== null) {
