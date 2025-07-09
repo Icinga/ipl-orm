@@ -32,6 +32,7 @@ class User extends Model
 
         $relations
             ->belongsToMany('group', Group::class)
+            ->setThroughAlias('t_user_group')
             ->through('user_group');
 
         $relations->hasMany('audit', Audit::class);

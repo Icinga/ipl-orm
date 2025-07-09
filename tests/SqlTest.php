@@ -300,9 +300,9 @@ SELECT
 FROM
     user
 INNER JOIN
-    user_group user_user_group ON user_user_group.user_id = user.id
+    user_group user_t_user_group ON user_t_user_group.user_id = user.id
 INNER JOIN
-    group user_group ON user_group.id = user_user_group.group_id
+    group user_group ON user_group.id = user_t_user_group.group_id
 SQL;
 
         $this->assertSql(
@@ -359,9 +359,9 @@ SELECT
 FROM
     group
 INNER JOIN
-    user_group group_user_group ON group_user_group.group_id = group.id
+    user_group group_t_user_group ON group_t_user_group.group_id = group.id
 INNER JOIN
-    user group_user ON group_user.id = group_user_group.user_id
+    user group_user ON group_user.id = group_t_user_group.user_id
 INNER JOIN
     audit group_user_audit ON group_user_audit.user_id = group_user.id
 SQL;
