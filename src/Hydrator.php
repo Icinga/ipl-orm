@@ -140,6 +140,7 @@ class Hydrator
                 } else {
                     $subjectClass = $relation->getTargetClass();
                     $subject = new $subjectClass();
+                    $subject->setRelation($relation);
                     $parent->$relationName = $subject;
                 }
             }
@@ -187,6 +188,7 @@ class Hydrator
                 if (! $subject->hasProperty($step)) {
                     $stepClass = $relation->getTargetClass();
                     $subject->$step = new $stepClass();
+                    $subject->$step->setRelation($relation);
                 }
 
                 $subject = $subject->$step;
