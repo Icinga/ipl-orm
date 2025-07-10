@@ -22,6 +22,9 @@ class BelongsToMany extends Relation
     /** @var string Name of the join table or junction model class */
     protected $throughClass;
 
+    /** @var ?string Alias for the join table or junction model class */
+    protected ?string $throughAlias = null;
+
     /** @var Model The junction model */
     protected $through;
 
@@ -51,6 +54,30 @@ class BelongsToMany extends Relation
     public function through(string $through): self
     {
         $this->throughClass = $through;
+
+        return $this;
+    }
+
+    /**
+     * Get the alias for the join table or junction model class
+     *
+     * @return string
+     */
+    public function getThroughAlias(): string
+    {
+        return $this->throughAlias ?? $this->getThrough()->getTableAlias();
+    }
+
+    /**
+     * Set the alias for the join table or junction model class
+     *
+     * @param string $throughAlias
+     *
+     * @return $this
+     */
+    public function setThroughAlias(string $throughAlias): self
+    {
+        $this->throughAlias = $throughAlias;
 
         return $this;
     }
@@ -179,7 +206,7 @@ class BelongsToMany extends Relation
 
         $junctionClass = static::RELATION_CLASS;
         $toJunction = (new $junctionClass())
-            ->setName($junction->getTableAlias())
+            ->setName($this->getThroughAlias())
             ->setSource($source)
             ->setTarget($junction)
             ->setCandidateKey($this->extractKey($possibleCandidateKey))

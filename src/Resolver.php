@@ -567,10 +567,9 @@ class Resolver
                 $resolvedRelations[$relationPath] = $relation;
 
                 if ($relation instanceof BelongsToMany) {
-                    $through = $relation->getThrough();
-                    $this->setAlias($through, join('_', array_merge(
+                    $this->setAlias($relation->getThrough(), join('_', array_merge(
                         array_slice($segments, 0, -1),
-                        [$through->getTableAlias()]
+                        [$relation->getThroughAlias()]
                     )));
                 }
 
