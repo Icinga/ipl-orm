@@ -5,33 +5,29 @@ namespace ipl\Tests\Orm\Lib\Model;
 use ipl\Orm\Model;
 use ipl\Orm\Relations;
 
-class Employee extends Model
+class Chair extends Model
 {
     public function getTableName()
     {
-        return 'employee';
+        return 'chair';
     }
 
     public function getKeyName()
     {
-        return 'id';
+        return ['department_id', 'employee_id'];
     }
 
     public function getColumns()
     {
         return [
-            'name',
-            'role',
             'department_id',
-            'office_id'
+            'employee_id',
+            'vendor'
         ];
     }
 
     public function createRelations(Relations $relations)
     {
-        $relations->belongsTo('department', Department::class);
-        $relations->belongsTo('office', Office::class)
-            ->setJoinType('LEFT');
-        $relations->hasMany('chair', Chair::class);
+        $relations->belongsTo('employee', Employee::class);
     }
 }

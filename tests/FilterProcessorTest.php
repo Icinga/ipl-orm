@@ -7,6 +7,7 @@ use ipl\Orm\Query;
 use ipl\Sql\Connection;
 use ipl\Sql\Test\Databases;
 use ipl\Stdlib\Filter;
+use ipl\Tests\Orm\Lib\Model\Employee;
 use ipl\Tests\Orm\Lib\Model\Office;
 
 class FilterProcessorTest extends \PHPUnit\Framework\TestCase
@@ -116,6 +117,23 @@ class FilterProcessorTest extends \PHPUnit\Framework\TestCase
         $this->assertSame('London', $results[0]['city'] ?? 'not found');
     }
 
+    /** @dataProvider databases */
+    public function testNegationOfAToManyRelationWorksAcrossDatabaseAdapters(Connection $db): void
+    {
+        $db->insert('employee', ['id' => 1, 'department_id' => 1, 'name' => 'Minnie', 'role' => 'CEO']);
+        $db->insert('employee', ['id' => 2, 'department_id' => 2, 'name' => 'Goofy', 'role' => 'Developer']);
+        $db->insert('chair', ['department_id' => 1, 'employee_id' => 1, 'vendor' => 'Acme Chairs']);
+        $db->insert('chair', ['department_id' => 2, 'employee_id' => 1, 'vendor' => 'Bcme Chairs']);
+        $db->insert('chair', ['department_id' => 3, 'employee_id' => 2, 'vendor' => 'Bcme Chairs']);
+
+        $employeesWithoutAcmeChairs = Employee::on($db)
+            ->filter(Filter::unequal('chair.vendor', 'Acme Chairs'));
+        $results = iterator_to_array($employeesWithoutAcmeChairs);
+
+        $this->assertCount(1, $results);
+        $this->assertSame('Goofy', $results[0]->name);
+    }
+
     protected function createSchema(Connection $db, string $driver): void
     {
         $db->exec('CREATE TABLE office (id INT PRIMARY KEY, city VARCHAR(255))');
@@ -124,10 +142,12 @@ class FilterProcessorTest extends \PHPUnit\Framework\TestCase
             'CREATE TABLE employee (id INT PRIMARY KEY, department_id INT,'
             . ' office_id INT, name VARCHAR(255), role VARCHAR(255))'
         );
+        $db->exec('CREATE TABLE chair (department_id INT, employee_id INT, vendor VARCHAR(255))');
     }
 
     protected function dropSchema(Connection $db, string $driver): void
     {
+        $db->exec('DROP TABLE IF EXISTS chair');
         $db->exec('DROP TABLE IF EXISTS employee');
         $db->exec('DROP TABLE IF EXISTS department');
         $db->exec('DROP TABLE IF EXISTS office');

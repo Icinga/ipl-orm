@@ -9,6 +9,7 @@ use ipl\Orm\Exception\ValueConversionException;
 use ipl\Orm\Query;
 use ipl\Orm\Relation;
 use ipl\Orm\UnionQuery;
+use ipl\Sql\Adapter\Pgsql;
 use ipl\Sql\Filter\Exists;
 use ipl\Sql\Filter\In;
 use ipl\Sql\Filter\NotExists;
@@ -323,15 +324,17 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
                     $subQuerySelect = $subQuery->assembleSelect()->resetOrderBy();
 
                     if ($count !== null && ($negate || $filter instanceof Filter\All)) {
-                        $targetKeys = join(
-                            ',',
-                            array_values(
-                                $subQuery->getResolver()->qualifyColumns(
-                                    (array) $subQuery->getModel()->getKeyName(),
-                                    $subQuery->getModel()
-                                )
+                        $targetKeys = array_values(
+                            $subQuery->getResolver()->qualifyColumns(
+                                (array) $subQuery->getModel()->getKeyName(),
+                                $subQuery->getModel()
                             )
                         );
+                        if (count($targetKeys) > 1 && $query->getDb()->getAdapter() instanceof Pgsql) {
+                            $targetKeys = '(' . join(', ', $targetKeys) . ')';
+                        } else {
+                            $targetKeys = join(', ', $targetKeys);
+                        }
 
                         $subQuerySelect->having(["COUNT(DISTINCT $targetKeys) >= ?" => $count]);
                         $subQuerySelect->groupBy(array_values($subQuerySelect->getColumns()));
