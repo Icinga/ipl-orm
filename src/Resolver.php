@@ -329,14 +329,14 @@ class Resolver
      * Qualify the given columns by the specified model
      *
      * @param iterable $columns
-     * @param Model $model Leave null in case $columns is {@see Resolver::requireAndResolveColumns()}
+     * @param ?Model $model Leave null in case $columns is {@see Resolver::requireAndResolveColumns()}
      *
      * @return array
      *
      * @throws InvalidArgumentException If $columns is not iterable
      * @throws InvalidArgumentException If $model is not passed and $columns is not a generator
      */
-    public function qualifyColumns($columns, Model $model = null)
+    public function qualifyColumns($columns, ?Model $model = null)
     {
         $target = $model ?: $this->query->getModel();
         $targetAlias = $this->getAlias($target);
@@ -382,7 +382,7 @@ class Resolver
      * Qualify the given columns and aliases by the specified model
      *
      * @param iterable $columns
-     * @param Model $model Leave null in case $columns is {@see Resolver::requireAndResolveColumns()}
+     * @param ?Model $model Leave null in case $columns is {@see Resolver::requireAndResolveColumns()}
      * @param bool $autoAlias Set an alias for columns which have none
      *
      * @return array
@@ -390,7 +390,7 @@ class Resolver
      * @throws InvalidArgumentException If $columns is not iterable
      * @throws InvalidArgumentException If $model is not passed and $columns is not a generator
      */
-    public function qualifyColumnsAndAliases($columns, Model $model = null, $autoAlias = true)
+    public function qualifyColumnsAndAliases($columns, ?Model $model = null, $autoAlias = true)
     {
         $target = $model ?: $this->query->getModel();
         $targetAlias = $this->getAlias($target);
@@ -492,11 +492,11 @@ class Resolver
      * Also resolves all other relations.
      *
      * @param string $path
-     * @param Model  $subject
+     * @param ?Model $subject
      *
      * @return Relation
      */
-    public function resolveRelation($path, Model $subject = null)
+    public function resolveRelation($path, ?Model $subject = null)
     {
         $subject = $subject ?: $this->query->getModel();
         if (! $this->resolvedRelations->contains($subject) || ! isset($this->resolvedRelations[$subject][$path])) {
@@ -514,13 +514,13 @@ class Resolver
      * Traverses the entire path and yields the path travelled so far as key and the relation as value.
      *
      * @param string $path
-     * @param Model  $subject
+     * @param ?Model $subject
      *
      * @return Generator
      * @throws InvalidArgumentException In case $path is not fully qualified
      * @throws InvalidRelationException In case a relation is unknown
      */
-    public function resolveRelations($path, Model $subject = null)
+    public function resolveRelations($path, ?Model $subject = null)
     {
         $relations = explode('.', $path);
         $subject = $subject ?: $this->query->getModel();
@@ -593,14 +593,14 @@ class Resolver
      *
      * Related models will be automatically added for eager-loading.
      *
-     * @param array $columns
-     * @param Model $model
+     * @param array  $columns
+     * @param ?Model $model
      *
      * @return Generator
      *
      * @throws InvalidColumnException If a column does not exist
      */
-    public function requireAndResolveColumns(array $columns, Model $model = null)
+    public function requireAndResolveColumns(array $columns, ?Model $model = null)
     {
         $model = $model ?: $this->query->getModel();
         $tableName = $model->getTableAlias();

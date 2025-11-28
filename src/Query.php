@@ -602,7 +602,7 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
      *
      * @return static
      */
-    public function createSubQuery(Model $target, $targetPath, Model $from = null, bool $link = true)
+    public function createSubQuery(Model $target, $targetPath, ?Model $from = null, bool $link = true)
     {
         $subQuery = (new static())
             ->setDb($this->getDb())
