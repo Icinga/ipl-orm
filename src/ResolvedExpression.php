@@ -10,7 +10,7 @@ use RuntimeException;
 class ResolvedExpression extends Expression
 {
     /** @var Generator */
-    protected $resolvedColumns;
+    protected Generator $resolvedColumns;
 
     /**
      * Create a resolved database expression
@@ -28,7 +28,7 @@ class ResolvedExpression extends Expression
     /**
      * @throws RuntimeException In case the columns are not qualified yet
      */
-    public function getColumns()
+    public function getColumns(): array
     {
         if ($this->resolvedColumns->valid()) {
             throw new RuntimeException('Columns are not yet qualified');
@@ -42,7 +42,7 @@ class ResolvedExpression extends Expression
      *
      * @return Generator
      */
-    public function getResolvedColumns()
+    public function getResolvedColumns(): Generator
     {
         return $this->resolvedColumns;
     }

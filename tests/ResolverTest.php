@@ -3,7 +3,6 @@
 namespace ipl\Tests\Orm;
 
 use ipl\Orm\Query;
-use ipl\Orm\Resolver;
 use ipl\Sql\Expression;
 use ipl\Sql\QueryBuilder;
 use PHPUnit\Framework\TestCase;

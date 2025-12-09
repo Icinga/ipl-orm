@@ -9,5 +9,5 @@ use ipl\Orm\Relation;
  */
 class HasMany extends Relation
 {
-    protected $isOne = false;
+    protected bool $isOne = false;
 }

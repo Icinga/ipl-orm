@@ -14,5 +14,5 @@ interface RetrieveBehavior extends Behavior
      *
      * @param Model $model
      */
-    public function retrieve(Model $model);
+    public function retrieve(Model $model): void;
 }

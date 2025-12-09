@@ -9,5 +9,5 @@ use ipl\Orm\Relation;
  */
 class BelongsTo extends Relation
 {
-    protected $inverse = true;
+    protected bool $inverse = true;
 }

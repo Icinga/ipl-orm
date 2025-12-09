@@ -19,20 +19,20 @@ use function ipl\Stdlib\get_php_type;
 class BoolCast extends PropertyBehavior
 {
     /** @var mixed Database value for boolean `false` */
-    protected $falseValue = 'n';
+    protected mixed $falseValue = 'n';
 
     /** @var mixed Database value for boolean `true` */
-    protected $trueValue = 'y';
+    protected mixed $trueValue = 'y';
 
     /** @var bool Whether to throw an exception if the value is not equal to the value for false or true */
-    protected $strict = true;
+    protected bool $strict = true;
 
     /**
      * Get the database value representing boolean `false`
      *
      * @return mixed
      */
-    public function getFalseValue()
+    public function getFalseValue(): mixed
     {
         return $this->falseValue;
     }
@@ -44,7 +44,7 @@ class BoolCast extends PropertyBehavior
      *
      * @return $this
      */
-    public function setFalseValue($falseValue): self
+    public function setFalseValue(mixed $falseValue): self
     {
         $this->falseValue = $falseValue;
 
@@ -56,7 +56,7 @@ class BoolCast extends PropertyBehavior
      *
      * @return mixed
      */
-    public function getTrueValue()
+    public function getTrueValue(): mixed
     {
         return $this->trueValue;
     }
@@ -68,7 +68,7 @@ class BoolCast extends PropertyBehavior
      *
      * @return $this
      */
-    public function setTrueValue($trueValue): self
+    public function setTrueValue(mixed $trueValue): self
     {
         $this->trueValue = $trueValue;
 

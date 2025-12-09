@@ -6,15 +6,15 @@ use ipl\Sql\Select;
 
 class UnionQuery extends Query
 {
-    /** @var Query[] Underlying queries */
-    private $unions;
+    /** @var ?Query[] Underlying queries */
+    private ?array $unions = null;
 
     /**
      * Get the underlying queries
      *
      * @return Query[]
      */
-    public function getUnions()
+    public function getUnions(): array
     {
         if ($this->unions === null) {
             $this->unions = [];
@@ -35,7 +35,7 @@ class UnionQuery extends Query
         return $this->unions;
     }
 
-    public function getSelectBase()
+    public function getSelectBase(): Select
     {
         if ($this->selectBase === null) {
             $this->selectBase = new Select();

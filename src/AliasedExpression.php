@@ -7,7 +7,7 @@ use ipl\Sql\Expression;
 class AliasedExpression extends Expression
 {
     /** @var string */
-    protected $alias;
+    protected string $alias;
 
     /**
      * Create a new database expression

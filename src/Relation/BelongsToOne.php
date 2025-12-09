@@ -9,5 +9,5 @@ class BelongsToOne extends BelongsToMany
 {
     protected const RELATION_CLASS = HasOne::class;
 
-    protected $isOne = true;
+    protected bool $isOne = true;
 }

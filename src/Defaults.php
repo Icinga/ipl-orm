@@ -8,7 +8,7 @@ use Traversable;
 class Defaults implements IteratorAggregate
 {
     /** @var array<string, mixed> Registered defaults */
-    protected $defaults = [];
+    protected array $defaults = [];
 
     /**
      * Iterate over the defaults
@@ -31,7 +31,7 @@ class Defaults implements IteratorAggregate
      *
      * @return $this
      */
-    public function add(string $property, $default): self
+    public function add(string $property, mixed $default): self
     {
         $this->defaults[$property] = $default;
 

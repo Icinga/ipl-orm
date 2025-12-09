@@ -8,10 +8,10 @@ use ipl\Orm\Model;
 class InvalidRelationException extends Exception
 {
     /** @var string The relation name */
-    protected $relation;
+    protected string $relation;
 
-    /** @var Model The target model */
-    protected $model;
+    /** @var ?Model The target model */
+    protected ?Model $model = null;
 
     /**
      * Create a new InvalidRelationException
@@ -19,9 +19,9 @@ class InvalidRelationException extends Exception
      * @param string $relation The relation name
      * @param ?Model $model The target model
      */
-    public function __construct($relation, ?Model $model = null)
+    public function __construct(string $relation, ?Model $model = null)
     {
-        $this->relation = (string) $relation;
+        $this->relation = $relation;
         $this->model = $model;
 
         parent::__construct(sprintf(
@@ -36,7 +36,7 @@ class InvalidRelationException extends Exception
      *
      * @return string
      */
-    public function getRelation()
+    public function getRelation(): string
     {
         return $this->relation;
     }
@@ -44,9 +44,9 @@ class InvalidRelationException extends Exception
     /**
      * Get the target model
      *
-     * @return Model
+     * @return ?Model
      */
-    public function getModel()
+    public function getModel(): ?Model
     {
         return $this->model;
     }

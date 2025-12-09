@@ -3,15 +3,14 @@
 namespace ipl\Orm;
 
 use InvalidArgumentException;
-use LogicException;
 
 class ColumnDefinition
 {
     /** @var string The name of the column */
-    protected $name;
+    protected string $name;
 
     /** @var ?string The label of the column */
-    protected $label;
+    protected ?string $label = null;
 
     /**
      * Create a new column definition
@@ -63,6 +62,8 @@ class ColumnDefinition
      * @param array $options
      *
      * @return self
+     *
+     * @throws InvalidArgumentException If the given options do not provide a name
      */
     public static function fromArray(array $options): self
     {

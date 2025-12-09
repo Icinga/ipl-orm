@@ -2,8 +2,8 @@
 
 namespace ipl\Orm;
 
-use InvalidArgumentException;
 use ipl\Orm\Exception\InvalidRelationException;
+use InvalidArgumentException;
 
 /**
  * Hydrates raw database rows into concrete model instances.
@@ -11,13 +11,13 @@ use ipl\Orm\Exception\InvalidRelationException;
 class Hydrator
 {
     /** @var array Additional hydration rules for the model's relations */
-    protected $hydrators = [];
+    protected array $hydrators = [];
 
     /** @var array<string, array<string, bool>> Map of columns to referencing paths */
-    protected $columnToTargetMap = [];
+    protected array $columnToTargetMap = [];
 
     /** @var Query The query the hydration rules are for */
-    protected $query;
+    protected Query $query;
 
     /**
      * Create a new Hydrator
@@ -36,12 +36,12 @@ class Hydrator
      *
      * @return $this
      *
-     * @throws \InvalidArgumentException If a hydrator for the given path already exists
+     * @throws InvalidArgumentException If a hydrator for the given path already exists
      */
-    public function add($path)
+    public function add(string $path): static
     {
         if (isset($this->hydrators[$path])) {
-            throw new \InvalidArgumentException("Hydrator for path '$path' already exists");
+            throw new InvalidArgumentException("Hydrator for path '$path' already exists");
         }
 
         $resolver = $this->query->getResolver();
@@ -106,7 +106,7 @@ class Hydrator
      *
      * @return Model
      */
-    public function hydrate(array $data, Model $model)
+    public function hydrate(array $data, Model $model): Model
     {
         $defaultsToApply = [];
         $columnToTargetMap = $this->columnToTargetMap;
@@ -221,8 +221,12 @@ class Hydrator
      *
      * @return array
      */
-    protected function extractAndMap(array &$data, array $columnToPropertyMap, string $path, array &$columnToTargetMap)
-    {
+    protected function extractAndMap(
+        array &$data,
+        array $columnToPropertyMap,
+        string $path,
+        array &$columnToTargetMap
+    ): array {
         $extracted = [];
         foreach (array_intersect_key($columnToPropertyMap, $data) as $column => $property) {
             $extracted[$property] = $data[$column];
