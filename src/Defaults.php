@@ -31,7 +31,7 @@ class Defaults implements IteratorAggregate
      *
      * @return $this
      */
-    public function add(string $property, mixed $default): self
+    public function add(string $property, mixed $default): static
     {
         $this->defaults[$property] = $default;
 

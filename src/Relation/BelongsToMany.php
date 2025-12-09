@@ -50,7 +50,7 @@ class BelongsToMany extends Relation
      *
      * @return $this
      */
-    public function through(string $through): self
+    public function through(string $through): static
     {
         $this->throughClass = $through;
 
@@ -74,7 +74,7 @@ class BelongsToMany extends Relation
      *
      * @return $this
      */
-    public function setThroughAlias(string $throughAlias): self
+    public function setThroughAlias(string $throughAlias): static
     {
         $this->throughAlias = $throughAlias;
 
@@ -117,7 +117,7 @@ class BelongsToMany extends Relation
      *
      * @return $this
      */
-    public function setThrough(Model $through): self
+    public function setThrough(Model $through): static
     {
         $this->through = $through;
 
@@ -141,7 +141,7 @@ class BelongsToMany extends Relation
      *
      * @return $this
      */
-    public function setTargetForeignKey(string|array $targetForeignKey): self
+    public function setTargetForeignKey(string|array $targetForeignKey): static
     {
         $this->targetForeignKey = $targetForeignKey;
 
@@ -165,7 +165,7 @@ class BelongsToMany extends Relation
      *
      * @return $this
      */
-    public function setTargetCandidateKey(string|array $targetCandidateKey): self
+    public function setTargetCandidateKey(string|array $targetCandidateKey): static
     {
         $this->targetCandidateKey = $targetCandidateKey;
 

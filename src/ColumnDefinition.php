@@ -49,7 +49,7 @@ class ColumnDefinition
      *
      * @return $this
      */
-    public function setLabel(?string $label): self
+    public function setLabel(?string $label): static
     {
         $this->label = $label;
 
@@ -61,11 +61,11 @@ class ColumnDefinition
      *
      * @param array $options
      *
-     * @return self
+     * @return static
      *
      * @throws InvalidArgumentException If the given options do not provide a name
      */
-    public static function fromArray(array $options): self
+    public static function fromArray(array $options): static
     {
         if (! isset($options['name'])) {
             throw new InvalidArgumentException('$options must provide a name');

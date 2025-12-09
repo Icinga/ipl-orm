@@ -44,7 +44,7 @@ class BoolCast extends PropertyBehavior
      *
      * @return $this
      */
-    public function setFalseValue(mixed $falseValue): self
+    public function setFalseValue(mixed $falseValue): static
     {
         $this->falseValue = $falseValue;
 
@@ -68,7 +68,7 @@ class BoolCast extends PropertyBehavior
      *
      * @return $this
      */
-    public function setTrueValue(mixed $trueValue): self
+    public function setTrueValue(mixed $trueValue): static
     {
         $this->trueValue = $trueValue;
 
@@ -92,7 +92,7 @@ class BoolCast extends PropertyBehavior
      *
      * @return $this
      */
-    public function setStrict(bool $strict): self
+    public function setStrict(bool $strict): static
     {
         $this->strict = $strict;
 

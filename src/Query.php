@@ -279,7 +279,7 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
      *
      * @return $this
      */
-    public function withoutColumns(string|array $columns): self
+    public function withoutColumns(string|array $columns): static
     {
         $tableName = $this->getModel()->getTableAlias();
 
