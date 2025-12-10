@@ -9,6 +9,7 @@ use ipl\Sql\Test\Databases;
 use ipl\Stdlib\Filter;
 use ipl\Tests\Orm\Lib\Model\Employee;
 use ipl\Tests\Orm\Lib\Model\Office;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 class FilterProcessorTest extends \PHPUnit\Framework\TestCase
 {
@@ -80,9 +81,8 @@ class FilterProcessorTest extends \PHPUnit\Framework\TestCase
      * optional other relation, is built by the ORM in a way that coincidental matches are ignored
      *
      * This will fail if the ORM generates a NOT IN which uses a subquery that produces NULL values.
-     *
-     * @dataProvider databases
      */
+    #[DataProvider('databases')]
     public function testUnequalTargetingAnOptionalToManyRelationIgnoresFalsePositives(Connection $db)
     {
         $db->insert('office', ['id' => 1, 'city' => 'London']);
@@ -117,7 +117,7 @@ class FilterProcessorTest extends \PHPUnit\Framework\TestCase
         $this->assertSame('London', $results[0]['city'] ?? 'not found');
     }
 
-    /** @dataProvider databases */
+    #[DataProvider('databases')]
     public function testNegationOfAToManyRelationWorksAcrossDatabaseAdapters(Connection $db): void
     {
         $db->insert('employee', ['id' => 1, 'department_id' => 1, 'name' => 'Minnie', 'role' => 'CEO']);
