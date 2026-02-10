@@ -6,6 +6,7 @@ use ipl\Orm\Exception\InvalidRelationException;
 use ipl\Orm\Query;
 use ipl\Orm\ResolvedExpression;
 use ipl\Sql\Expression;
+use ipl\Stdlib\Filter;
 use ipl\Tests\Sql\TestCase;
 
 class QueryTest extends TestCase
@@ -604,6 +605,51 @@ SQL;
 
         $this->assertSql(
             'SELECT user.id, user.username, user.password, (1) FROM user',
+            $query->assembleSelect()
+        );
+    }
+
+    public function testSubQueriesCanBeAdjustedAfterBeingCloned()
+    {
+        $query = (new Query())
+            ->setModel(new User())
+            ->setDb(new TestConnection());
+
+        $carOneSubQuery = $query->createSubQuery(new Car(), 'user.car')
+            ->columns([new Expression('%s', ['passenger.name'])]);
+
+        $carTwoSubQuery = clone $carOneSubQuery;
+
+        $carOneSubQuery->filter(Filter::equal('manufacturer', 'wv'));
+        $carTwoSubQuery->filter(Filter::equal('manufacturer', 'taif'));
+
+        list($carOneSelect, $carOneValues) = $carOneSubQuery->dump();
+        list($carTwoSelect, $carTwoValues) = $carTwoSubQuery->dump();
+
+        $query->withColumns([
+            new Expression($carOneSelect, null, $carOneValues),
+            new Expression($carTwoSelect, null, $carTwoValues)
+        ]);
+
+        $sql = <<<'SQL'
+SELECT user.id,
+       user.username,
+       user.password,
+       (SELECT (sub_car_passenger.name) FROM car sub_car
+           INNER JOIN passenger sub_car_passenger ON sub_car_passenger.car_id = sub_car.id
+           INNER JOIN car_user sub_car_car_user ON sub_car_car_user.car_id = sub_car.id
+           INNER JOIN user sub_car_user ON sub_car_user.id = sub_car_car_user.user_id
+           WHERE (sub_car_user.id = user.id) AND (sub_car.manufacturer = ?)),
+       (SELECT (sub_car_passenger.name) FROM car sub_car
+           INNER JOIN passenger sub_car_passenger ON sub_car_passenger.car_id = sub_car.id
+           INNER JOIN car_user sub_car_car_user ON sub_car_car_user.car_id = sub_car.id
+           INNER JOIN user sub_car_user ON sub_car_user.id = sub_car_car_user.user_id
+           WHERE (sub_car_user.id = user.id) AND (sub_car.manufacturer = ?))
+       FROM user
+SQL;
+
+        $this->assertSql(
+            $sql,
             $query->assembleSelect()
         );
     }

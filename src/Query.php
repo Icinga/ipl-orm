@@ -844,7 +844,7 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
 
     public function __clone()
     {
-        $this->resolver = clone $this->resolver;
+        $this->resolver = $this->resolver->cloneMe($this);
 
         if ($this->filter !== null) {
             $this->filter = clone $this->filter;
