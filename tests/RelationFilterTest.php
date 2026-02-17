@@ -7,6 +7,7 @@ use ipl\Sql\Connection;
 use ipl\Sql\Test\Databases;
 use ipl\Stdlib\Filter;
 use ipl\Tests\Orm\Lib\Model\Office;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -47,10 +48,10 @@ class RelationFilterTest extends TestCase
      * Search for offices where Donald works
      *
      * @equivalenceClass a:single, b:-, f:affirmation
-     * @dataProvider databases
      *
      * @param Connection $db
      */
+    #[DataProvider('databases')]
     public function testSingleAffirmativeCondition(Connection $db)
     {
         $this->createOfficesAndEmployees($db);
@@ -88,10 +89,10 @@ class RelationFilterTest extends TestCase
      * Search for offices where Donald doesn't work
      *
      * @equivalenceClass a:single, b:-, f:negation
-     * @dataProvider databases
      *
      * @param Connection $db
      */
+    #[DataProvider('databases')]
     public function testSingleNegativeCondition(Connection $db)
     {
         $this->createOfficesAndEmployees($db);
@@ -127,10 +128,10 @@ class RelationFilterTest extends TestCase
      * Search for offices where Donald doesn't work
      *
      * @equivalenceClass a:single, b:NOT(AND), f:affirmation
-     * @dataProvider databases
      *
      * @param Connection $db
      */
+    #[DataProvider('databases')]
     public function testSingleAffirmativeConditionWithNotOperator(Connection $db)
     {
         $this->createOfficesAndEmployees($db);
@@ -172,10 +173,10 @@ class RelationFilterTest extends TestCase
      * Search for offices where Donald works
      *
      * @equivalenceClass a:single, b:NOT(AND), f:negation
-     * @dataProvider databases
      *
      * @param Connection $db
      */
+    #[DataProvider('databases')]
     public function testSingleNegativeConditionWithNotOperator(Connection $db)
     {
         $this->createOfficesAndEmployees($db);
@@ -215,10 +216,10 @@ class RelationFilterTest extends TestCase
      * Search for offices where either Donald or Huey works
      *
      * @equivalenceClass a:multiple, b:OR, c:single, d:same, e:same, f:affirmation
-     * @dataProvider databases
      *
      * @param Connection $db
      */
+    #[DataProvider('databases')]
     public function testOrChainTargetingASingleRelationColumnWithTheSameAffirmativeOperator(Connection $db)
     {
         $this->createOfficesAndEmployees($db);
@@ -262,13 +263,13 @@ class RelationFilterTest extends TestCase
      * Search for offices where either Donald or Huey doesn't work
      *
      * @equivalenceClass a:multiple, b:OR, c:single, d:same, e:same, f:negation
-     * @dataProvider databases
      * @todo Finds what {@see testAndChainTargetingASingleRelationColumnWithTheSameNegativeOperator}
      *       does. The exact opposite. Should they really be equal? They are in monitoring, but there
      *       the results are the other way round. (What ALL(!=) finds here, cannot be found there)
      *
      * @param Connection $db
      */
+    #[DataProvider('databases')]
     public function testOrChainTargetingASingleRelationColumnWithTheSameNegativeOperator(Connection $db)
     {
         $this->createOfficesAndEmployees($db);
@@ -310,10 +311,10 @@ class RelationFilterTest extends TestCase
      * Search for offices where Donald works or Huey doesn't
      *
      * @equivalenceClass a:multiple, b:OR, c:single, d:same, e:different
-     * @dataProvider databases
      *
      * @param Connection $db
      */
+    #[DataProvider('databases')]
     public function testOrChainTargetingASingleRelationColumnWithDifferentOperators(Connection $db)
     {
         $this->createOfficesAndEmployees($db);
@@ -359,10 +360,10 @@ class RelationFilterTest extends TestCase
      * Search for offices where both Donald and Huey work
      *
      * @equivalenceClass a:multiple, b:AND, c:single, d:same, e:same, f:affirmation
-     * @dataProvider databases
      *
      * @param Connection $db
      */
+    #[DataProvider('databases')]
     public function testAndChainTargetingASingleRelationColumnWithTheSameAffirmativeOperator(Connection $db)
     {
         $this->createOfficesAndEmployees($db);
@@ -402,10 +403,10 @@ class RelationFilterTest extends TestCase
      * Search for offices where neither Donald nor Huey work
      *
      * @equivalenceClass a:multiple, b:AND, c:single, d:same, e:same, f:negation
-     * @dataProvider databases
      *
      * @param Connection $db
      */
+    #[DataProvider('databases')]
     public function testAndChainTargetingASingleRelationColumnWithTheSameNegativeOperator(Connection $db)
     {
         $this->createOfficesAndEmployees($db);
@@ -443,10 +444,10 @@ class RelationFilterTest extends TestCase
      * Search for offices where Donald works and Huey doesn't
      *
      * @equivalenceClass a:multiple, b:AND, c:single, d:same, e:different
-     * @dataProvider databases
      *
      * @param Connection $db
      */
+    #[DataProvider('databases')]
     public function testAndChainTargetingASingleRelationColumnWithDifferentOperators(Connection $db)
     {
         $this->createOfficesAndEmployees($db);
@@ -482,10 +483,10 @@ class RelationFilterTest extends TestCase
      * Search for offices where either Donald or Huey doesn't work
      *
      * @equivalenceClass a:multiple, b:NOT(AND), c:single, d:same, e:same, f:affirmation
-     * @dataProvider databases
      *
      * @param Connection $db
      */
+    #[DataProvider('databases')]
     public function testNotChainTargetingASingleRelationColumnWithTheSameAffirmativeOperator(Connection $db)
     {
         $this->createOfficesAndEmployees($db);
@@ -527,12 +528,12 @@ class RelationFilterTest extends TestCase
      * Search for offices where Donald and Huey work
      *
      * @equivalenceClass a:multiple, b:NOT(AND), c:single, d:same, e:same, f:negation
-     * @dataProvider databases
      * @todo Finds the exact opposite of {@see testAndChainTargetingASingleRelationColumnWithTheSameNegativeOperator}.
      *       No wonder, actually. But monitoring doesn't behave the same way :'(
      *
      * @param Connection $db
      */
+    #[DataProvider('databases')]
     public function testNotChainTargetingASingleRelationColumnWithTheSameNegativeOperator(Connection $db)
     {
         $this->createOfficesAndEmployees($db);
@@ -575,10 +576,10 @@ class RelationFilterTest extends TestCase
      * Search for offices where either Donald doesn't work or Huey does
      *
      * @equivalenceClass a:multiple, b:NOT(AND), c:single, d:same, e:different
-     * @dataProvider databases
      *
      * @param Connection $db
      */
+    #[DataProvider('databases')]
     public function testNotChainTargetingASingleRelationColumnWithDifferentOperators(Connection $db)
     {
         $this->createOfficesAndEmployees($db);
@@ -624,10 +625,10 @@ class RelationFilterTest extends TestCase
      * Search for offices where Huey works but not as manager
      *
      * @equivalenceClass a:multiple, b:AND, c:single, d:different, e:different
-     * @dataProvider databases
      *
      * @param Connection $db
      */
+    #[DataProvider('databases')]
     public function testAndChainTargetingASingleRelationButDifferentColumnsWithDifferentOperators(Connection $db)
     {
         $this->createOfficesAndEmployees($db);
@@ -651,10 +652,10 @@ class RelationFilterTest extends TestCase
      * Search for offices where Donald works as accountant
      *
      * @equivalenceClass a:multiple, b:AND, c:single, d:different, e:same, f:affirmation
-     * @dataProvider databases
      *
      * @param Connection $db
      */
+    #[DataProvider('databases')]
     public function testAndChainTargetingASingleRelationButDifferentColumnsWithTheSameAffirmativeOperator(Connection $db)
     {
         $this->createOfficesAndEmployees($db);
@@ -691,10 +692,10 @@ class RelationFilterTest extends TestCase
      * Search for offices where Donald doesn't work as accountant
      *
      * @equivalenceClass a:multiple, b:AND, c:single, d:different, e:same, f:negation
-     * @dataProvider databases
      *
      * @param Connection $db
      */
+    #[DataProvider('databases')]
     public function testAndChainTargetingASingleRelationButDifferentColumnsWithTheSameNegativeOperator(Connection $db)
     {
         $this->createOfficesAndEmployees($db);
@@ -740,10 +741,10 @@ class RelationFilterTest extends TestCase
      * Search for offices where Donald works or someone else not as accountant
      *
      * @equivalenceClass a:multiple, b:OR, c:single, d:different, e:different
-     * @dataProvider databases
      *
      * @param Connection $db
      */
+    #[DataProvider('databases')]
     public function testOrChainTargetingASingleRelationButDifferentColumnsWithDifferentOperators(Connection $db)
     {
         $this->createOfficesAndEmployees($db);
@@ -790,10 +791,10 @@ class RelationFilterTest extends TestCase
      * Search for offices where either Donald works or any other assistant
      *
      * @equivalenceClass a:multiple, b:OR, c:single, d:different, e:same, f:affirmation
-     * @dataProvider databases
      *
      * @param Connection $db
      */
+    #[DataProvider('databases')]
     public function testOrChainTargetingASingleRelationButDifferentColumnsWithTheSameAffirmativeOperator(Connection $db)
     {
         $this->createOfficesAndEmployees($db);
@@ -836,10 +837,10 @@ class RelationFilterTest extends TestCase
      * Search for offices where either Donald doesn't work or no-one as manager
      *
      * @equivalenceClass a:multiple, b:OR, c:single, d:different, e:same, f:negation
-     * @dataProvider databases
      *
      * @param Connection $db
      */
+    #[DataProvider('databases')]
     public function testOrChainTargetingASingleRelationButDifferentColumnsWithTheSameNegativeOperator(Connection $db)
     {
         $this->createOfficesAndEmployees($db);
@@ -888,12 +889,12 @@ class RelationFilterTest extends TestCase
      * Search for offices where not just Huey works or only as a manager
      *
      * @equivalenceClass a:multiple, b:NOT(AND), c:single, d:different, e:different
-     * @dataProvider databases
      * @todo Finds the exact opposite of {@see testAndChainTargetingASingleRelationButDifferentColumnsWithDifferentOperators}.
      *       No wonder, actually. But monitoring doesn't behave the same way :'(
      *
      * @param Connection $db
      */
+    #[DataProvider('databases')]
     public function testNotChainTargetingASingleRelationButDifferentColumnsWithDifferentOperators(Connection $db)
     {
         $this->createOfficesAndEmployees($db);
@@ -936,11 +937,11 @@ class RelationFilterTest extends TestCase
      * Search for offices where not just Donald works or not as manager
      *
      * @equivalenceClass a:multiple, b:NOT(AND), c:single, d:different, e:same, f:affirmation
-     * @dataProvider databases
      * @todo Finds Cuxhaven instead of Baghdad. Not wrong, actually. Why does monitoring behave differently?
      *
      * @param Connection $db
      */
+    #[DataProvider('databases')]
     public function testNotChainTargetingASingleRelationButDifferentColumnsWithTheSameAffirmativeOperator(
         Connection $db
     ) {
@@ -986,10 +987,10 @@ class RelationFilterTest extends TestCase
      * Search for offices where ...
      *
      * @equivalenceClass a:multiple, b:NOT(AND), c:single, d:different, e:same, f:negation
-     * @dataProvider databases
      *
      * @param Connection $db
      */
+    #[DataProvider('databases')]
     public function testNotChainTargetingASingleRelationButDifferentColumnsWithTheSameNegativeOperator(Connection $db)
     {
         $this->markTestIncomplete('This test has not been implemented yet.');
@@ -999,10 +1000,10 @@ class RelationFilterTest extends TestCase
      * Search for offices where Donald works in the accounting department
      *
      * @equivalenceClass a:multiple, b:AND, c:multiple, e:same, f:affirmation
-     * @dataProvider databases
      *
      * @param Connection $db
      */
+    #[DataProvider('databases')]
     public function testAndChainTargetingMultipleRelationsWithTheSameAffirmativeOperator(Connection $db)
     {
         $this->createOfficesEmployeesAndDepartments($db);
@@ -1040,10 +1041,10 @@ class RelationFilterTest extends TestCase
      * Search for offices where Donald doesn't work in the accounting department
      *
      * @equivalenceClass a:multiple, b:AND, c:multiple, e:same, f:negation
-     * @dataProvider databases
      *
      * @param Connection $db
      */
+    #[DataProvider('databases')]
     public function testAndChainTargetingMultipleRelationsWithTheSameNegativeOperator(Connection $db)
     {
         $this->createOfficesEmployeesAndDepartments($db);
@@ -1088,10 +1089,10 @@ class RelationFilterTest extends TestCase
      * Search for offices where Donald works but not in the accounting department
      *
      * @equivalenceClass a:multiple, b:AND, c:multiple, e:different
-     * @dataProvider databases
      *
      * @param Connection $db
      */
+    #[DataProvider('databases')]
     public function testAndChainTargetingMultipleRelationsWithDifferentOperators(Connection $db)
     {
         $this->createOfficesEmployeesAndDepartments($db);
@@ -1127,10 +1128,10 @@ class RelationFilterTest extends TestCase
      * Search for offices where either Donald works or someone else in the accounting department
      *
      * @equivalenceClass a:multiple, b:OR, c:multiple, e:same, f:affirmation
-     * @dataProvider databases
      *
      * @param Connection $db
      */
+    #[DataProvider('databases')]
     public function testOrChainTargetingMultipleRelationsWithTheSameAffirmativeOperator(Connection $db)
     {
         $this->createOfficesEmployeesAndDepartments($db);
@@ -1174,10 +1175,10 @@ class RelationFilterTest extends TestCase
      * Search for offices where Mickey doesn't work or no-one in the accounting department
      *
      * @equivalenceClass a:multiple, b:OR, c:multiple, e:same, f:negation
-     * @dataProvider databases
      *
      * @param Connection $db
      */
+    #[DataProvider('databases')]
     public function testOrChainTargetingMultipleRelationsWithTheSameNegativeOperator(Connection $db)
     {
         $this->createOfficesEmployeesAndDepartments($db);
@@ -1228,10 +1229,10 @@ class RelationFilterTest extends TestCase
      * Search for offices where either Donald works or no-one in the accounting department
      *
      * @equivalenceClass a:multiple, b:OR, c:multiple, e:different
-     * @dataProvider databases
      *
      * @param Connection $db
      */
+    #[DataProvider('databases')]
     public function testOrChainTargetingMultipleRelationsWithDifferentOperators(Connection $db)
     {
         $this->createOfficesEmployeesAndDepartments($db);
@@ -1281,10 +1282,10 @@ class RelationFilterTest extends TestCase
      * Search for offices where Donald doesn't work in the accounting department
      *
      * @equivalenceClass a:multiple, b:NOT(AND), c:multiple, e:same, f:affirmation
-     * @dataProvider databases
      *
      * @param Connection $db
      */
+    #[DataProvider('databases')]
     public function testNotChainTargetingMultipleRelationsWithTheSameAffirmativeOperator(Connection $db)
     {
         $this->createOfficesEmployeesAndDepartments($db);
@@ -1331,13 +1332,13 @@ class RelationFilterTest extends TestCase
      * Or for your convenience: Where Donald works
      *
      * @equivalenceClass a:multiple, b:NOT(AND), c:multiple, e:same, f:negation
-     * @dataProvider databases
      * @todo Just take a look at the POC and wonder how that would ever be automatically generated.
      *       Especially if you consider adding another comparison into the mix. This is way too
      *       complex for the ORM to handle let alone for an ordinary user to understand.
      *
      * @param Connection $db
      */
+    #[DataProvider('databases')]
     public function testNotChainTargetingMultipleRelationsWithTheSameNegativeOperator(Connection $db)
     {
         $this->createOfficesEmployeesAndDepartments($db);
@@ -1385,10 +1386,10 @@ class RelationFilterTest extends TestCase
      * Search for offices where Donald doesn't work or in the accounting department
      *
      * @equivalenceClass a:multiple, b:NOT(AND), c:multiple, e:different
-     * @dataProvider databases
      *
      * @param Connection $db
      */
+    #[DataProvider('databases')]
     public function testNotChainTargetingMultipleRelationsWithDifferentOperators(Connection $db)
     {
         $this->createOfficesEmployeesAndDepartments($db);
