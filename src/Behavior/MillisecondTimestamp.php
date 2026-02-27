@@ -31,7 +31,7 @@ class MillisecondTimestamp extends PropertyBehavior
         if (! $value instanceof DateTime) {
             try {
                 $value = new DateTime($value);
-            } catch (Exception $err) {
+            } catch (Exception) {
                 throw new ValueConversionException(sprintf('Invalid date time format provided: %s', $value));
             }
         }
