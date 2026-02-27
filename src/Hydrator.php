@@ -111,7 +111,7 @@ class Hydrator
         $defaultsToApply = [];
         $columnToTargetMap = $this->columnToTargetMap;
         foreach ($this->hydrators as $path => $vars) {
-            list($target, $relation, $columnToPropertyMap, $defaults) = $vars;
+            [$target, $relation, $columnToPropertyMap, $defaults] = $vars;
 
             $subject = $model;
             if ($relation !== null) {
@@ -200,7 +200,7 @@ class Hydrator
         }
 
         // Apply defaults last, otherwise we may evaluate them during hydration
-        foreach ($defaultsToApply as list($subject, $defaults)) {
+        foreach ($defaultsToApply as [$subject, $defaults]) {
             foreach ($defaults as $name => $default) {
                 if (! $subject->hasProperty($name)) {
                     $subject->$name = $default;

@@ -39,7 +39,7 @@ class BelongsToManyTest extends \PHPUnit\Framework\TestCase
             $relations
                 ->get('user')
                 ->setSource($model)
-                ->resolve() as list($from, $to, $keys)
+                ->resolve() as [$from, $to, $keys]
         ) {
             reset($keys);
             $actual[] = [
@@ -76,7 +76,7 @@ class BelongsToManyTest extends \PHPUnit\Framework\TestCase
             $relations
                 ->get('user_custom_keys')
                 ->setSource($model)
-                ->resolve() as list($from, $to, $keys)
+                ->resolve() as [$from, $to, $keys]
         ) {
             reset($keys);
             $actual[] = [

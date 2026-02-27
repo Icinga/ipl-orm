@@ -19,7 +19,7 @@ class SortUtil
         $orderBy = [];
 
         foreach ($columnsAndDirections as $columnAndDirection) {
-            list($column, $direction) = static::splitColumnAndDirection($columnAndDirection);
+            [$column, $direction] = static::splitColumnAndDirection($columnAndDirection);
 
             $orderBy[] = [$column, $direction];
         }

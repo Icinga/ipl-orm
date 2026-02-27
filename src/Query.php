@@ -496,7 +496,7 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
                     continue;
                 }
 
-                foreach ($relation->resolve() as list($source, $target, $relatedKeys)) {
+                foreach ($relation->resolve() as [$source, $target, $relatedKeys]) {
                     /** @var Model $source */
                     /** @var Model $target */
 
@@ -739,7 +739,7 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
     {
         $columnStorage = new SplObjectStorage();
 
-        foreach ($columns as list($target, $alias, $column)) {
+        foreach ($columns as [$target, $alias, $column]) {
             if (! $columnStorage->offsetExists($target)) {
                 $resolved = new ArrayObject();
                 $columnStorage->offsetSet($target, $resolved);
@@ -787,7 +787,7 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
         $selectedColumns = $select->getColumns();
 
         foreach ($orderBy as $part) {
-            list($column, $direction) = $part;
+            [$column, $direction] = $part;
 
             if (! $column instanceof ExpressionInterface && isset($selectedColumns[$column])) {
                 // If it's a custom alias, we have no other way of knowing it,
@@ -800,7 +800,7 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
             }
         }
 
-        foreach ($resolver->requireAndResolveColumns($columns) as list($model, $alias, $column)) {
+        foreach ($resolver->requireAndResolveColumns($columns) as [$model, $alias, $column]) {
             $direction = array_shift($directions);
             $selectColumns = $resolver->getSelectColumns($model);
             $tableName = $resolver->getAlias($model);

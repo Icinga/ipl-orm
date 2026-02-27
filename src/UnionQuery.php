@@ -21,7 +21,7 @@ class UnionQuery extends Query
 
             /** @var UnionModel $model */
             $model = $this->getModel();
-            foreach ($model->getUnions() as list($target, $relations, $columns)) {
+            foreach ($model->getUnions() as [$target, $relations, $columns]) {
                 /** @var class-string<Model> $target */
                 $query = $target::on($this->getDb())
                     ->columns($columns)

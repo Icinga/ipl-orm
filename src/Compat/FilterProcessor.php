@@ -107,7 +107,7 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
 
             $filter->metaData()->set('columnPath', $column);
 
-            list($relationPath, $columnName) = preg_split('/\.(?=[^.]+$)/', $column);
+            [$relationPath, $columnName] = preg_split('/\.(?=[^.]+$)/', $column);
 
             $subject = null;
             $relations = new AppendIterator();
@@ -275,7 +275,7 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
                     $subQueryFilters[] = [$baseFilters ?: $generalRules, $count, false];
                 }
 
-                foreach ($subQueryFilters as list($filters, $count, $negate)) {
+                foreach ($subQueryFilters as [$filters, $count, $negate]) {
                     $subQueryFilter = null;
                     if ($count !== null) {
                         $aggregateFilter = Filter::any();

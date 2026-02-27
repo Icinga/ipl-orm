@@ -341,7 +341,7 @@ class Resolver
         foreach ($columns as $alias => $column) {
             if (is_int($alias) && is_array($column)) {
                 // $columns is $this->requireAndResolveColumns()
-                list($target, $alias, $columnName) = $column;
+                [$target, $alias, $columnName] = $column;
                 $targetAlias = $this->getAlias($target);
 
                 // Thanks to PHP 5.6 where `list` is evaluated from right to left. It will extract
@@ -388,7 +388,7 @@ class Resolver
         foreach ($columns as $alias => $column) {
             if (is_int($alias) && is_array($column)) {
                 // $columns is $this->requireAndResolveColumns()
-                list($target, $alias, $columnName) = $column;
+                [$target, $alias, $columnName] = $column;
                 $targetAlias = $this->getAlias($target);
 
                 // Thanks to PHP 5.6 where `list` is evaluated from right to left. It will extract
