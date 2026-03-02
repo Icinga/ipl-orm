@@ -13,7 +13,7 @@ abstract class UnionModel extends Model
      *
      * @return UnionQuery
      */
-    public static function on(Connection $db)
+    public static function on(Connection $db): UnionQuery
     {
         return (new UnionQuery())
             ->setDb($db)
@@ -25,5 +25,5 @@ abstract class UnionModel extends Model
      *
      * @return array
      */
-    abstract public function getUnions();
+    abstract public function getUnions(): array;
 }
