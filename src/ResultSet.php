@@ -3,6 +3,7 @@
 namespace ipl\Orm;
 
 use ArrayIterator;
+use Generator;
 use Iterator;
 use Traversable;
 
@@ -33,7 +34,7 @@ class ResultSet implements Iterator
      *
      * @return static
      */
-    public static function fromQuery(Query $query)
+    public static function fromQuery(Query $query): static
     {
         return new static($query->yieldResults(), $query->getLimit());
     }
@@ -62,8 +63,7 @@ class ResultSet implements Iterator
         return $this->generator->valid();
     }
 
-    #[\ReturnTypeWillChange]
-    public function current()
+    public function current(): mixed
     {
         if ($this->position === null) {
             $this->advance();
@@ -134,7 +134,7 @@ class ResultSet implements Iterator
         }
     }
 
-    protected function yieldTraversable(Traversable $traversable)
+    protected function yieldTraversable(Traversable $traversable): Generator
     {
         foreach ($traversable as $key => $value) {
             yield $key => $value;
