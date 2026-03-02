@@ -17,9 +17,9 @@ interface RewriteFilterBehavior extends Behavior
      * Processing of the condition will be restarted, hence the column has to be an absolute path again.
      *
      * @param Filter\Condition $condition
-     * @param string           $relation The absolute path (with a trailing dot) of the model
+     * @param ?string          $relation The absolute path (with a trailing dot) of the model
      *
-     * @return Filter\Rule|null
+     * @return ?Filter\Rule
      */
-    public function rewriteCondition(Filter\Condition $condition, $relation = null);
+    public function rewriteCondition(Filter\Condition $condition, ?string $relation = null): ?Filter\Rule;
 }

@@ -9,6 +9,7 @@ use ipl\Orm\Exception\ValueConversionException;
 use ipl\Orm\Query;
 use ipl\Sql\Adapter\Pgsql;
 use ipl\Stdlib\Filter\Condition;
+use ipl\Stdlib\Filter\Rule;
 use UnexpectedValueException;
 
 use function ipl\Stdlib\get_php_type;
@@ -72,7 +73,7 @@ class Binary extends PropertyBehavior implements QueryAwareBehavior, RewriteFilt
         return $this;
     }
 
-    public function rewriteCondition(Condition $condition, $relation = null)
+    public function rewriteCondition(Condition $condition, ?string $relation = null): null
     {
         /**
          * TODO(lippserd): Duplicate code because {@see RewriteFilterBehavior}s come after {@see PropertyBehavior}s.
@@ -100,5 +101,7 @@ class Binary extends PropertyBehavior implements QueryAwareBehavior, RewriteFilt
                 }
             }
         }
+
+        return null;
     }
 }
