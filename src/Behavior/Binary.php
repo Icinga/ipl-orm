@@ -66,7 +66,7 @@ class Binary extends PropertyBehavior implements QueryAwareBehavior, RewriteFilt
         return sprintf('\\x%s', bin2hex($value));
     }
 
-    public function setQuery(Query $query)
+    public function setQuery(Query $query): static
     {
         $this->isPostgres = $query->getDb()->getAdapter() instanceof Pgsql;
 
