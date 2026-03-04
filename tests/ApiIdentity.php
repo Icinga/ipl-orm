@@ -34,12 +34,14 @@ class ApiIdentity extends Model
     public function createBehaviors(Behaviors $behaviors)
     {
         $rewriteBehavior = new class () implements RewriteColumnBehavior {
-            public function rewriteColumn($column, $relation = null)
+            public function rewriteColumn(mixed $column, ?string $relation = null): ?AliasedExpression
             {
                 if ($column === 'api_token') {
                     $relation = str_replace('.', '_', $relation);
                     return new AliasedExpression("{$relation}_api_token", '"api_token retrieval not permitted"');
                 }
+
+                return null;
             }
 
             public function rewriteColumnDefinition(ColumnDefinition $def, string $relation): void
