@@ -16,32 +16,34 @@ use Traversable;
 class Behaviors implements IteratorAggregate
 {
     /** @var array Registered behaviors */
-    protected $behaviors = [];
+    protected array $behaviors = [];
 
     /** @var RetrieveBehavior[] Registered retrieve behaviors */
-    protected $retrieveBehaviors = [];
+    protected array $retrieveBehaviors = [];
 
     /** @var PersistBehavior[] Registered persist behaviors */
-    protected $persistBehaviors = [];
+    protected array $persistBehaviors = [];
 
     /** @var PropertyBehavior[] Registered property behaviors */
-    protected $propertyBehaviors = [];
+    protected array $propertyBehaviors = [];
 
     /** @var RewriteFilterBehavior[] Registered rewrite filter behaviors */
-    protected $rewriteFilterBehaviors = [];
+    protected array $rewriteFilterBehaviors = [];
 
     /** @var RewriteColumnBehavior[] Registered rewrite column behaviors */
-    protected $rewriteColumnBehaviors = [];
+    protected array $rewriteColumnBehaviors = [];
 
     /** @var RewritePathBehavior[] Registered rewrite path behaviors */
-    protected $rewritePathBehaviors = [];
+    protected array $rewritePathBehaviors = [];
 
     /**
      * Add a behavior
      *
-     * @param PersistBehavior|PropertyBehavior|RetrieveBehavior|RewriteFilterBehavior $behavior
+     * @param Behavior $behavior
+     *
+     * @return void
      */
-    public function add(Behavior $behavior)
+    public function add(Behavior $behavior): void
     {
         $this->behaviors[] = $behavior;
 
@@ -86,8 +88,10 @@ class Behaviors implements IteratorAggregate
      * Apply all retrieve behaviors on the given model
      *
      * @param Model $model
+     *
+     * @return void
      */
-    public function retrieve(Model $model)
+    public function retrieve(Model $model): void
     {
         foreach ($this->retrieveBehaviors as $behavior) {
             $behavior->retrieve($model);
@@ -98,8 +102,10 @@ class Behaviors implements IteratorAggregate
      * Apply all persist behaviors on the given model
      *
      * @param Model $model
+     *
+     * @return void
      */
-    public function persist(Model $model)
+    public function persist(Model $model): void
     {
         foreach ($this->persistBehaviors as $behavior) {
             $behavior->persist($model);
@@ -114,7 +120,7 @@ class Behaviors implements IteratorAggregate
      *
      * @return mixed
      */
-    public function retrieveProperty($value, $key)
+    public function retrieveProperty(mixed $value, string $key): mixed
     {
         foreach ($this->propertyBehaviors as $behavior) {
             $value = $behavior->retrieveProperty($value, $key);
@@ -131,7 +137,7 @@ class Behaviors implements IteratorAggregate
      *
      * @return mixed
      */
-    public function persistProperty($value, $key)
+    public function persistProperty(mixed $value, string $key): mixed
     {
         foreach ($this->propertyBehaviors as $behavior) {
             $value = $behavior->persistProperty($value, $key);
@@ -144,11 +150,11 @@ class Behaviors implements IteratorAggregate
      * Rewrite the given filter condition
      *
      * @param Filter\Condition $condition
-     * @param string           $relation Absolute path (with a trailing dot) of the model
+     * @param ?string          $relation Absolute path (with a trailing dot) of the model
      *
      * @return Filter\Rule|null
      */
-    public function rewriteCondition(Filter\Condition $condition, $relation = null)
+    public function rewriteCondition(Filter\Condition $condition, ?string $relation = null): ?Filter\Rule
     {
         $filter = null;
         foreach ($this->rewriteFilterBehaviors as $behavior) {
@@ -164,12 +170,12 @@ class Behaviors implements IteratorAggregate
     /**
      * Rewrite the given relation path
      *
-     * @param string $path
-     * @param string $relation Absolute path of the model
+     * @param string  $path
+     * @param ?string $relation Absolute path of the model
      *
      * @return string|null
      */
-    public function rewritePath($path, $relation = null)
+    public function rewritePath(string $path, ?string $relation = null): ?string
     {
         $newPath = null;
         foreach ($this->rewritePathBehaviors as $behavior) {
@@ -185,12 +191,12 @@ class Behaviors implements IteratorAggregate
     /**
      * Rewrite the given column
      *
-     * @param string $column
-     * @param string $relation Absolute path of the model
+     * @param string  $column
+     * @param ?string $relation Absolute path of the model
      *
      * @return mixed
      */
-    public function rewriteColumn($column, $relation = null)
+    public function rewriteColumn(string $column, ?string $relation = null): mixed
     {
         $newColumn = null;
         foreach ($this->rewriteColumnBehaviors as $behavior) {

@@ -4,14 +4,15 @@ namespace ipl\Orm\Common;
 
 use Closure;
 use Traversable;
+use ipl\Stdlib\Properties;
 
 trait PropertiesWithDefaults
 {
-    use \ipl\Stdlib\Properties {
-        \ipl\Stdlib\Properties::getProperty as private parentGetProperty;
+    use Properties {
+        Properties::getProperty as private parentGetProperty;
     }
 
-    protected function getProperty($key)
+    protected function getProperty(string $key): mixed
     {
         if (isset($this->properties[$key]) && $this->properties[$key] instanceof Closure) {
             $this->setProperty($key, $this->properties[$key]($this, $key));

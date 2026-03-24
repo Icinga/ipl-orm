@@ -47,44 +47,44 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
      */
     public const ON_SELECT_ASSEMBLED = 'selectAssembled';
 
-    /** @var int Count cache */
-    protected $count;
+    /** @var ?int Count cache */
+    protected ?int $count = null;
 
     /** @var Connection Database connection */
     protected $db;
 
     /** @var string Class to return results as */
-    protected $resultSetClass = ResultSet::class;
+    protected string $resultSetClass = ResultSet::class;
 
     /** @var Model Model to query */
     protected $model;
 
     /** @var array Columns to select from the model (or its relations). If empty, all columns are selected */
-    protected $columns = [];
+    protected array $columns = [];
 
     /** @var array Additional columns to select from the model (or its relations) */
-    protected $withColumns = [];
+    protected array $withColumns = [];
 
     /** @var array Columns not to select from the model (or its relations) */
-    protected $withoutColumns = [];
+    protected array $withoutColumns = [];
 
     /** @var bool Whether to peek ahead for more results */
-    protected $peekAhead = false;
+    protected bool $peekAhead = false;
 
-    /** @var Resolver Column and relation resolver */
-    protected $resolver;
+    /** @var ?Resolver Column and relation resolver */
+    protected ?Resolver $resolver = null;
 
-    /** @var Select Base SELECT query */
-    protected $selectBase;
+    /** @var ?Select Base SELECT query */
+    protected ?Select $selectBase = null;
 
     /** @var Relation[] Relations to eager load */
-    protected $with = [];
+    protected array $with = [];
 
     /** @var Relation[] Relations to utilize (join) */
-    protected $utilize = [];
+    protected array $utilize = [];
 
     /** @var bool Whether to disable the default sorts of the model */
-    protected $disableDefaultSort = false;
+    protected bool $disableDefaultSort = false;
 
     /**
      * Get the database connection
@@ -103,7 +103,7 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
      *
      * @return $this
      */
-    public function setDb(Connection $db)
+    public function setDb(Connection $db): static
     {
         $this->db = $db;
 
@@ -115,7 +115,7 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
      *
      * @return string
      */
-    public function getResultSetClass()
+    public function getResultSetClass(): string
     {
         return $this->resultSetClass;
     }
@@ -129,12 +129,8 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
      *
      * @throws InvalidArgumentException If class is not an instance of {@link ResultSet}
      */
-    public function setResultSetClass($class)
+    public function setResultSetClass(string $class): static
     {
-        if (! is_string($class)) {
-            throw new InvalidArgumentException('Argument $class must be a string');
-        }
-
         if (! (new ReflectionClass($class))->newInstanceWithoutConstructor() instanceof ResultSet) {
             throw new InvalidArgumentException(
                 $class . ' must be an instance of ' . ResultSet::class
@@ -159,11 +155,11 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
     /**
      * Set the model to query
      *
-     * @param $model
+     * @param Model $model
      *
      * @return $this
      */
-    public function setModel(Model $model)
+    public function setModel(Model $model): static
     {
         $this->model = $model;
         $this->getResolver()->setAlias($model, $model->getTableAlias());
@@ -176,7 +172,7 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
      *
      * @return array
      */
-    public function getColumns()
+    public function getColumns(): array
     {
         return $this->columns;
     }
@@ -188,7 +184,7 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
      *
      * @return $this
      */
-    public function setFilter(Filter\Chain $filter)
+    public function setFilter(Filter\Chain $filter): static
     {
         $this->filter = $filter;
 
@@ -204,9 +200,9 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
      *
      * @return $this
      */
-    public function disableDefaultSort($disable = true)
+    public function disableDefaultSort(bool $disable = true): static
     {
-        $this->disableDefaultSort = (bool) $disable;
+        $this->disableDefaultSort = $disable;
 
         return $this;
     }
@@ -216,7 +212,7 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
      *
      * @return bool
      */
-    public function defaultSortDisabled()
+    public function defaultSortDisabled(): bool
     {
         return $this->disableDefaultSort;
     }
@@ -236,7 +232,7 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
      *
      * @return $this
      */
-    public function columns($columns)
+    public function columns(string|array $columns): static
     {
         $this->columns = (array) $columns;
         $this->withColumns = [];
@@ -255,7 +251,7 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
      *
      * @return $this
      */
-    public function withColumns($columns)
+    public function withColumns(string|array $columns): static
     {
         $tableName = $this->getModel()->getTableAlias();
 
@@ -283,7 +279,7 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
      *
      * @return $this
      */
-    public function withoutColumns($columns): self
+    public function withoutColumns(string|array $columns): static
     {
         $tableName = $this->getModel()->getTableAlias();
 
@@ -304,7 +300,7 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
      *
      * @return Resolver
      */
-    public function getResolver()
+    public function getResolver(): Resolver
     {
         if ($this->resolver === null) {
             $this->resolver = new Resolver($this);
@@ -318,7 +314,7 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
      *
      * @return Select
      */
-    public function getSelectBase()
+    public function getSelectBase(): Select
     {
         if ($this->selectBase === null) {
             $this->selectBase = new Select();
@@ -336,7 +332,7 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
      *
      * @return Relation[]
      */
-    public function getWith()
+    public function getWith(): array
     {
         return $this->with;
     }
@@ -348,7 +344,7 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
      *
      * @return $this
      */
-    public function with($relations)
+    public function with(string|array $relations): static
     {
         $tableName = $this->getModel()->getTableAlias();
         foreach ((array) $relations as $relation) {
@@ -366,7 +362,7 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
      *
      * @return $this
      */
-    public function without($relations)
+    public function without(string|array $relations): static
     {
         $tableName = $this->getModel()->getTableAlias();
         foreach ((array) $relations as $relation) {
@@ -382,7 +378,7 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
      *
      * @return Relation[]
      */
-    public function getUtilize()
+    public function getUtilize(): array
     {
         return $this->utilize;
     }
@@ -394,7 +390,7 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
      *
      * @return $this
      */
-    public function utilize($path)
+    public function utilize(string $path): static
     {
         $path = $this->getResolver()->qualifyPath($path, $this->getModel()->getTableAlias());
         $this->utilize[$path] = $this->getResolver()->resolveRelation($path);
@@ -409,7 +405,7 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
      *
      * @return $this
      */
-    public function omit($path)
+    public function omit(string $path): static
     {
         $path = $this->getResolver()->qualifyPath($path, $this->getModel()->getTableAlias());
         unset($this->utilize[$path]);
@@ -422,7 +418,7 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
      *
      * @return Select
      */
-    public function assembleSelect()
+    public function assembleSelect(): Select
     {
         $columns = $this->getColumns();
         $model = $this->getModel();
@@ -500,7 +496,7 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
                     continue;
                 }
 
-                foreach ($relation->resolve() as list($source, $target, $relatedKeys)) {
+                foreach ($relation->resolve() as [$source, $target, $relatedKeys]) {
                     /** @var Model $source */
                     /** @var Model $target */
 
@@ -560,7 +556,7 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
      *
      * @return Hydrator
      */
-    public function createHydrator()
+    public function createHydrator(): Hydrator
     {
         $hydrator = new Hydrator($this);
 
@@ -582,7 +578,7 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
      *
      * @throws InvalidArgumentException If the relation with the given name does not exist
      */
-    public function derive($relation, Model $source)
+    public function derive($relation, Model $source): static
     {
         // TODO: Think of a way to merge derive() and createSubQuery()
         return $this->createSubQuery(
@@ -602,7 +598,7 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
      *
      * @return static
      */
-    public function createSubQuery(Model $target, $targetPath, ?Model $from = null, bool $link = true)
+    public function createSubQuery(Model $target, string $targetPath, ?Model $from = null, bool $link = true): static
     {
         $subQuery = (new static())
             ->setDb($this->getDb())
@@ -654,7 +650,7 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
      *
      * @return array
      */
-    public function dump()
+    public function dump(): array
     {
         return $this->getDb()->getQueryBuilder()->assembleSelect($this->assembleSelect());
     }
@@ -664,7 +660,7 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
      *
      * @return ResultSet
      */
-    public function execute()
+    public function execute(): ResultSet
     {
         $class = $this->getResultSetClass();
         /** @var ResultSet $class Just for type hinting. $class is of course a string */
@@ -677,7 +673,7 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
      *
      * @return Model|null Null in case there's no result
      */
-    public function first()
+    public function first(): ?Model
     {
         return $this->execute()->current();
     }
@@ -692,9 +688,9 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
      *
      * @return $this
      */
-    public function peekAhead($peekAhead = true)
+    public function peekAhead(bool $peekAhead = true): static
     {
-        $this->peekAhead = (bool) $peekAhead;
+        $this->peekAhead = $peekAhead;
 
         return $this;
     }
@@ -702,9 +698,9 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
     /**
      * Yield the query's results
      *
-     * @return \Generator
+     * @return Generator
      */
-    public function yieldResults()
+    public function yieldResults(): Generator
     {
         $select = $this->assembleSelect();
         $stmt = $this->getDb()->select($select);
@@ -739,11 +735,11 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
      *
      * @return SplObjectStorage
      */
-    protected function groupColumnsByTarget(Generator $columns)
+    protected function groupColumnsByTarget(Generator $columns): SplObjectStorage
     {
         $columnStorage = new SplObjectStorage();
 
-        foreach ($columns as list($target, $alias, $column)) {
+        foreach ($columns as [$target, $alias, $column]) {
             if (! $columnStorage->offsetExists($target)) {
                 $resolved = new ArrayObject();
                 $columnStorage->offsetSet($target, $resolved);
@@ -768,7 +764,7 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
      *
      * @return $this
      */
-    protected function order(Select $select)
+    protected function order(Select $select): static
     {
         $orderBy = $this->getOrderBy();
         $defaultSort = [];
@@ -791,7 +787,7 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
         $selectedColumns = $select->getColumns();
 
         foreach ($orderBy as $part) {
-            list($column, $direction) = $part;
+            [$column, $direction] = $part;
 
             if (! $column instanceof ExpressionInterface && isset($selectedColumns[$column])) {
                 // If it's a custom alias, we have no other way of knowing it,
@@ -804,7 +800,7 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
             }
         }
 
-        foreach ($resolver->requireAndResolveColumns($columns) as list($model, $alias, $column)) {
+        foreach ($resolver->requireAndResolveColumns($columns) as [$model, $alias, $column]) {
             $direction = array_shift($directions);
             $selectColumns = $resolver->getSelectColumns($model);
             $tableName = $resolver->getAlias($model);

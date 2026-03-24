@@ -6,7 +6,7 @@ use ipl\Orm\Exception\InvalidRelationException;
 use ipl\Orm\Query;
 use ipl\Orm\ResolvedExpression;
 use ipl\Sql\Expression;
-use ipl\Tests\Sql\TestCase;
+use ipl\Sql\Test\TestCase;
 
 class QueryTest extends TestCase
 {

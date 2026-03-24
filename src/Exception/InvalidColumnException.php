@@ -8,10 +8,10 @@ use ipl\Orm\Model;
 class InvalidColumnException extends Exception
 {
     /** @var string The column name */
-    protected $column;
+    protected string $column;
 
     /** @var Model The target model */
-    protected $model;
+    protected Model $model;
 
     /**
      * Create a new InvalidColumnException
@@ -19,9 +19,9 @@ class InvalidColumnException extends Exception
      * @param string $column The column name
      * @param Model $model The target model
      */
-    public function __construct($column, Model $model)
+    public function __construct(string $column, Model $model)
     {
-        $this->column = (string) $column;
+        $this->column = $column;
         $this->model = $model;
 
         parent::__construct(sprintf(
@@ -36,7 +36,7 @@ class InvalidColumnException extends Exception
      *
      * @return string
      */
-    public function getColumn()
+    public function getColumn(): string
     {
         return $this->column;
     }
@@ -46,7 +46,7 @@ class InvalidColumnException extends Exception
      *
      * @return Model
      */
-    public function getModel()
+    public function getModel(): Model
     {
         return $this->model;
     }

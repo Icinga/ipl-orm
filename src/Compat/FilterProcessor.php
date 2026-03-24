@@ -20,9 +20,9 @@ use ipl\Stdlib\Filter;
 
 class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
 {
-    protected $baseJoins = [];
+    protected array $baseJoins = [];
 
-    protected $madeJoins = [];
+    protected array $madeJoins = [];
 
     /**
      * Require and resolve the filter rule and apply it on the query
@@ -33,8 +33,10 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
      *
      * @param Filter\Rule $filter
      * @param Query $query
+     *
+     * @return void
      */
-    public static function apply(Filter\Rule $filter, Query $query)
+    public static function apply(Filter\Rule $filter, Query $query): void
     {
         if ($query instanceof UnionQuery) {
             foreach ($query->getUnions() as $union) {
@@ -71,7 +73,7 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
      *
      * @return void
      */
-    public static function resolveFilter(Filter\Chain $filter, Query $query)
+    public static function resolveFilter(Filter\Chain $filter, Query $query): void
     {
         $processor = new static();
         foreach ($query->getUtilize() as $path => $_) {
@@ -81,8 +83,11 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
         $processor->requireAndResolveFilterColumns($filter, $query);
     }
 
-    protected function requireAndResolveFilterColumns(Filter\Rule $filter, Query $query, $forceOptimization = null)
-    {
+    protected function requireAndResolveFilterColumns(
+        Filter\Rule $filter,
+        Query $query,
+        ?bool $forceOptimization = null
+    ): MetaDataProvider|Filter\Rule|null {
         if ($filter instanceof Filter\Condition) {
             if (
                 $filter instanceof Exists
@@ -90,7 +95,7 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
                 || $filter instanceof In
                 || $filter instanceof NotIn
             ) {
-                return;
+                return null;
             }
 
             $resolver = $query->getResolver();
@@ -102,7 +107,7 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
 
             $filter->metaData()->set('columnPath', $column);
 
-            list($relationPath, $columnName) = preg_split('/\.(?=[^.]+$)/', $column);
+            [$relationPath, $columnName] = preg_split('/\.(?=[^.]+$)/', $column);
 
             $subject = null;
             $relations = new AppendIterator();
@@ -270,7 +275,7 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
                     $subQueryFilters[] = [$baseFilters ?: $generalRules, $count, false];
                 }
 
-                foreach ($subQueryFilters as list($filters, $count, $negate)) {
+                foreach ($subQueryFilters as [$filters, $count, $negate]) {
                     $subQueryFilter = null;
                     if ($count !== null) {
                         $aggregateFilter = Filter::any();
@@ -387,5 +392,7 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
                 $filter->remove($rule);
             }
         }
+
+        return null;
     }
 }

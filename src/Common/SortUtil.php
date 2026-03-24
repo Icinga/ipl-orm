@@ -9,17 +9,17 @@ class SortUtil
     /**
      * Create the sort column(s) and direction(s) from the given sort spec
      *
-     * @param array|string $sort
+     * @param string|array $sort
      *
      * @return array<int, mixed> Sort column(s) and direction(s) suitable for {@link OrderByInterface::orderBy()}
      */
-    public static function createOrderBy($sort): array
+    public static function createOrderBy(string|array $sort): array
     {
         $columnsAndDirections = static::explodeSortSpec($sort);
         $orderBy = [];
 
         foreach ($columnsAndDirections as $columnAndDirection) {
-            list($column, $direction) = static::splitColumnAndDirection($columnAndDirection);
+            [$column, $direction] = static::splitColumnAndDirection($columnAndDirection);
 
             $orderBy[] = [$column, $direction];
         }
@@ -30,11 +30,11 @@ class SortUtil
     /**
      * Explode the given sort spec into its sort parts
      *
-     * @param array|string $sort
+     * @param string|array $sort
      *
      * @return array
      */
-    public static function explodeSortSpec($sort)
+    public static function explodeSortSpec(string|array $sort): array
     {
         return Str::trimSplit(implode(',', (array) $sort));
     }
@@ -42,11 +42,11 @@ class SortUtil
     /**
      * Normalize the given sort spec to a sort string
      *
-     * @param array|string $sort
+     * @param string|array $sort
      *
      * @return string
      */
-    public static function normalizeSortSpec($sort)
+    public static function normalizeSortSpec(string|array $sort): string
     {
         return implode(',', static::explodeSortSpec($sort));
     }
@@ -58,7 +58,7 @@ class SortUtil
      *
      * @return array
      */
-    public static function splitColumnAndDirection($sort)
+    public static function splitColumnAndDirection(string $sort): array
     {
         return Str::symmetricSplit($sort, ' ', 2);
     }

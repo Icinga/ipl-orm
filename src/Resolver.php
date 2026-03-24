@@ -10,13 +10,10 @@ use ipl\Orm\Contract\QueryAwareBehavior;
 use ipl\Orm\Exception\InvalidColumnException;
 use ipl\Orm\Exception\InvalidRelationException;
 use ipl\Orm\Relation\BelongsToMany;
-use ipl\Orm\Relation\BelongsToOne;
 use ipl\Sql\ExpressionInterface;
 use LogicException;
 use OutOfBoundsException;
 use SplObjectStorage;
-
-use function ipl\Stdlib\get_php_type;
 
 /**
  * Column and relation resolver. Acts as glue between queries and models
@@ -24,34 +21,34 @@ use function ipl\Stdlib\get_php_type;
 class Resolver
 {
     /** @var Query The query to resolve */
-    protected $query;
+    protected Query $query;
 
     /** @var SplObjectStorage Model relations */
-    protected $relations;
+    protected SplObjectStorage $relations;
 
     /** @var SplObjectStorage Model behaviors */
-    protected $behaviors;
+    protected SplObjectStorage $behaviors;
 
     /** @var SplObjectStorage Model defaults */
-    protected $defaults;
+    protected SplObjectStorage $defaults;
 
     /** @var SplObjectStorage Model aliases */
-    protected $aliases;
+    protected SplObjectStorage $aliases;
 
-    /** @var string The alias prefix to use */
-    protected $aliasPrefix;
+    /** @var ?string The alias prefix to use */
+    protected ?string $aliasPrefix = null;
 
     /** @var SplObjectStorage Selectable columns from resolved models */
-    protected $selectableColumns;
+    protected SplObjectStorage $selectableColumns;
 
     /** @var SplObjectStorage Select columns from resolved models */
-    protected $selectColumns;
+    protected SplObjectStorage $selectColumns;
 
     /** @var SplObjectStorage Meta data from models and their direct relations */
-    protected $metaData;
+    protected SplObjectStorage $metaData;
 
     /** @var SplObjectStorage Resolved relations */
-    protected $resolvedRelations;
+    protected SplObjectStorage $resolvedRelations;
 
     /**
      * Create a new resolver
@@ -79,7 +76,7 @@ class Resolver
      *
      * @return Relations
      */
-    public function getRelations(Model $model)
+    public function getRelations(Model $model): Relations
     {
         if (! $this->relations->offsetExists($model)) {
             $relations = new Relations();
@@ -97,7 +94,7 @@ class Resolver
      *
      * @return Behaviors
      */
-    public function getBehaviors(Model $model)
+    public function getBehaviors(Model $model): Behaviors
     {
         if (! $this->behaviors->offsetExists($model)) {
             $behaviors = new Behaviors();
@@ -141,7 +138,7 @@ class Resolver
      *
      * @throws OutOfBoundsException If no alias exists for the given model
      */
-    public function getAlias(Model $model)
+    public function getAlias(Model $model): string
     {
         if (! $this->aliases->offsetExists($model)) {
             throw new OutOfBoundsException(sprintf(
@@ -161,7 +158,7 @@ class Resolver
      *
      * @return $this
      */
-    public function setAlias(Model $model, $alias)
+    public function setAlias(Model $model, string $alias): static
     {
         $this->aliases[$model] = $alias;
 
@@ -171,9 +168,9 @@ class Resolver
     /**
      * Get the alias prefix
      *
-     * @return string
+     * @return ?string
      */
-    public function getAliasPrefix()
+    public function getAliasPrefix(): ?string
     {
         return $this->aliasPrefix;
     }
@@ -185,7 +182,7 @@ class Resolver
      *
      * @return $this
      */
-    public function setAliasPrefix($alias)
+    public function setAliasPrefix(string $alias): static
     {
         $this->aliasPrefix = $alias;
 
@@ -200,7 +197,7 @@ class Resolver
      *
      * @return bool
      */
-    public function hasSelectableColumn(Model $subject, $column)
+    public function hasSelectableColumn(Model $subject, string $column): bool
     {
         if (! $this->selectableColumns->offsetExists($subject)) {
             $this->collectColumns($subject);
@@ -221,7 +218,7 @@ class Resolver
      *
      * @return array
      */
-    public function getSelectableColumns(Model $subject)
+    public function getSelectableColumns(Model $subject): array
     {
         if (! $this->selectableColumns->offsetExists($subject)) {
             $this->collectColumns($subject);
@@ -237,7 +234,7 @@ class Resolver
      *
      * @return array Select columns suitable for {@link \ipl\Sql\Select::columns()}
      */
-    public function getSelectColumns(Model $subject)
+    public function getSelectColumns(Model $subject): array
     {
         if (! $this->selectColumns->offsetExists($subject)) {
             $this->collectColumns($subject);
@@ -253,7 +250,7 @@ class Resolver
      *
      * @return array Column paths as keys (relative to $subject) and their meta data as values
      */
-    public function getColumnDefinitions(Model $subject)
+    public function getColumnDefinitions(Model $subject): array
     {
         if (! $this->metaData->offsetExists($subject)) {
             $this->metaData->offsetSet($subject, $this->collectMetaData($subject));
@@ -307,7 +304,7 @@ class Resolver
      *
      * @return string
      */
-    public function qualifyColumnAlias($alias, $tableName)
+    public function qualifyColumnAlias(string $alias, string $tableName): string
     {
         return $tableName . '_' . $alias;
     }
@@ -320,7 +317,7 @@ class Resolver
      *
      * @return string
      */
-    public function qualifyColumn($column, $tableName)
+    public function qualifyColumn(string $column, string $tableName): string
     {
         return $tableName . '.' . $column;
     }
@@ -333,25 +330,18 @@ class Resolver
      *
      * @return array
      *
-     * @throws InvalidArgumentException If $columns is not iterable
      * @throws InvalidArgumentException If $model is not passed and $columns is not a generator
      */
-    public function qualifyColumns($columns, ?Model $model = null)
+    public function qualifyColumns(iterable $columns, ?Model $model = null): array
     {
         $target = $model ?: $this->query->getModel();
         $targetAlias = $this->getAlias($target);
-
-        if (! is_iterable($columns)) {
-            throw new InvalidArgumentException(
-                sprintf('$columns is not iterable, got %s instead', get_php_type($columns))
-            );
-        }
 
         $qualified = [];
         foreach ($columns as $alias => $column) {
             if (is_int($alias) && is_array($column)) {
                 // $columns is $this->requireAndResolveColumns()
-                list($target, $alias, $columnName) = $column;
+                [$target, $alias, $columnName] = $column;
                 $targetAlias = $this->getAlias($target);
 
                 // Thanks to PHP 5.6 where `list` is evaluated from right to left. It will extract
@@ -387,25 +377,18 @@ class Resolver
      *
      * @return array
      *
-     * @throws InvalidArgumentException If $columns is not iterable
      * @throws InvalidArgumentException If $model is not passed and $columns is not a generator
      */
-    public function qualifyColumnsAndAliases($columns, ?Model $model = null, $autoAlias = true)
+    public function qualifyColumnsAndAliases(iterable $columns, ?Model $model = null, bool $autoAlias = true): array
     {
         $target = $model ?: $this->query->getModel();
         $targetAlias = $this->getAlias($target);
-
-        if (! is_iterable($columns)) {
-            throw new InvalidArgumentException(
-                sprintf('$columns is not iterable, got %s instead', get_php_type($columns))
-            );
-        }
 
         $qualified = [];
         foreach ($columns as $alias => $column) {
             if (is_int($alias) && is_array($column)) {
                 // $columns is $this->requireAndResolveColumns()
-                list($target, $alias, $columnName) = $column;
+                [$target, $alias, $columnName] = $column;
                 $targetAlias = $this->getAlias($target);
 
                 // Thanks to PHP 5.6 where `list` is evaluated from right to left. It will extract
@@ -455,7 +438,7 @@ class Resolver
      *
      * @return string
      */
-    public function qualifyPath($path, $tableName)
+    public function qualifyPath(string $path, string $tableName): string
     {
         $segments = explode('.', $path, 2);
 
@@ -475,7 +458,7 @@ class Resolver
      *
      * @return bool
      */
-    public function isDistinctRelation($path)
+    public function isDistinctRelation(string $path): bool
     {
         foreach ($this->resolveRelations($path) as $relation) {
             if (! $relation->isOne()) {
@@ -496,7 +479,7 @@ class Resolver
      *
      * @return Relation
      */
-    public function resolveRelation($path, ?Model $subject = null)
+    public function resolveRelation(string $path, ?Model $subject = null): Relation
     {
         $subject = $subject ?: $this->query->getModel();
         if (! $this->resolvedRelations->offsetExists($subject) || ! isset($this->resolvedRelations[$subject][$path])) {
@@ -520,7 +503,7 @@ class Resolver
      * @throws InvalidArgumentException In case $path is not fully qualified
      * @throws InvalidRelationException In case a relation is unknown
      */
-    public function resolveRelations($path, ?Model $subject = null)
+    public function resolveRelations(string $path, ?Model $subject = null): Generator
     {
         $relations = explode('.', $path);
         $subject = $subject ?: $this->query->getModel();
@@ -600,7 +583,7 @@ class Resolver
      *
      * @throws InvalidColumnException If a column does not exist
      */
-    public function requireAndResolveColumns(array $columns, ?Model $model = null)
+    public function requireAndResolveColumns(array $columns, ?Model $model = null): Generator
     {
         $model = $model ?: $this->query->getModel();
         $tableName = $model->getTableAlias();
@@ -739,8 +722,10 @@ class Resolver
      * Collect all selectable columns from the given model
      *
      * @param Model $subject
+     *
+     * @return void
      */
-    protected function collectColumns(Model $subject)
+    protected function collectColumns(Model $subject): void
     {
         // Don't fail if Model::getColumns() also contains the primary key columns
         $columns = array_merge((array) $subject->getKeyName(), (array) $subject->getColumns());
@@ -768,8 +753,10 @@ class Resolver
      * @param Model $subject
      *
      * @return array
+     *
+     * @throws LogicException If a column definition's name differs from its array index
      */
-    protected function collectMetaData(Model $subject)
+    protected function collectMetaData(Model $subject): array
     {
         $definitions = [];
         foreach ($subject->getColumnDefinitions() as $name => $data) {

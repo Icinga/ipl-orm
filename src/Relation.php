@@ -2,7 +2,8 @@
 
 namespace ipl\Orm;
 
-use function ipl\Stdlib\get_php_type;
+use Generator;
+use UnexpectedValueException;
 
 /**
  * Relations represent the connection between models, i.e. the association between rows in one or more tables
@@ -16,11 +17,11 @@ class Relation
     /** @var Model Source model */
     protected $source;
 
-    /** @var string|array Column name(s) of the foreign key found in the target table */
-    protected $foreignKey;
+    /** @var string|array|null Column name(s) of the foreign key found in the target table */
+    protected string|array|null $foreignKey = null;
 
-    /** @var string|array Column name(s) of the candidate key in the source table which references the foreign key */
-    protected $candidateKey;
+    /** @var string|array|null Column name(s) of the candidate key in the source table which references the foreign key */
+    protected string|array|null $candidateKey = null;
 
     /** @var string Target model class */
     protected $targetClass;
@@ -29,13 +30,13 @@ class Relation
     protected $target;
 
     /** @var string Type of the JOIN used in the query */
-    protected $joinType = 'INNER';
+    protected string $joinType = 'INNER';
 
     /** @var bool Whether this is the inverse of a relationship */
-    protected $inverse;
+    protected bool $inverse = false;
 
     /** @var bool Whether this is a to-one relationship */
-    protected $isOne = true;
+    protected bool $isOne = true;
 
     /**
      * Get the default column name(s) in the source table used to match the foreign key
@@ -46,7 +47,7 @@ class Relation
      *
      * @return array
      */
-    public static function getDefaultCandidateKey(Model $source)
+    public static function getDefaultCandidateKey(Model $source): array
     {
         return (array) $source->getKeyName();
     }
@@ -60,7 +61,7 @@ class Relation
      *
      * @return array
      */
-    public static function getDefaultForeignKey(Model $source)
+    public static function getDefaultForeignKey(Model $source): array
     {
         $tableName = $source->getTableName();
 
@@ -77,7 +78,7 @@ class Relation
      *
      * @return bool
      */
-    public function isOne()
+    public function isOne(): bool
     {
         return $this->isOne;
     }
@@ -99,7 +100,7 @@ class Relation
      *
      * @return $this
      */
-    public function setName($name)
+    public function setName(string $name): static
     {
         $this->name = $name;
 
@@ -123,7 +124,7 @@ class Relation
      *
      * @return $this
      */
-    public function setSource(Model $source)
+    public function setSource(Model $source): static
     {
         $this->source = $source;
 
@@ -133,9 +134,9 @@ class Relation
     /**
      * Get the column name(s) of the foreign key found in the target table
      *
-     * @return string|array Array if the foreign key is compound, string otherwise
+     * @return string|array|null Array if the foreign key is compound, string otherwise
      */
-    public function getForeignKey()
+    public function getForeignKey(): string|array|null
     {
         return $this->foreignKey;
     }
@@ -143,11 +144,11 @@ class Relation
     /**
      * Set the column name(s) of the foreign key found in the target table
      *
-     * @param string|array $foreignKey Array if the foreign key is compound, string otherwise
+     * @param string|array|null $foreignKey Array if the foreign key is compound, string otherwise
      *
      * @return $this
      */
-    public function setForeignKey($foreignKey)
+    public function setForeignKey(string|array|null $foreignKey): static
     {
         $this->foreignKey = $foreignKey;
 
@@ -157,9 +158,9 @@ class Relation
     /**
      * Get the column name(s) of the candidate key in the source table which references the foreign key
      *
-     * @return string|array Array if the candidate key is compound, string otherwise
+     * @return string|array|null Array if the candidate key is compound, string otherwise
      */
-    public function getCandidateKey()
+    public function getCandidateKey(): string|array|null
     {
         return $this->candidateKey;
     }
@@ -167,11 +168,11 @@ class Relation
     /**
      * Set the column name(s) of the candidate key in the source table which references the foreign key
      *
-     * @param string|array $candidateKey Array if the candidate key is compound, string otherwise
+     * @param string|array|null $candidateKey Array if the candidate key is compound, string otherwise
      *
      * @return $this
      */
-    public function setCandidateKey($candidateKey)
+    public function setCandidateKey(string|array|null $candidateKey): static
     {
         $this->candidateKey = $candidateKey;
 
@@ -194,21 +195,9 @@ class Relation
      * @param string $targetClass
      *
      * @return $this
-     *
-     * @throws \InvalidArgumentException If the target model class is not of type string
      */
-    public function setTargetClass($targetClass)
+    public function setTargetClass(string $targetClass): static
     {
-        if (! is_string($targetClass)) {
-            // Require a class name here instead of a concrete model in oder to prevent circular references when
-            // constructing relations
-            throw new \InvalidArgumentException(sprintf(
-                '%s() expects parameter 1 to be string, %s given',
-                __METHOD__,
-                get_php_type($targetClass)
-            ));
-        }
-
         $this->targetClass = $targetClass;
 
         return $this;
@@ -239,7 +228,7 @@ class Relation
      *
      * @return $this
      */
-    public function setTarget(Model $target)
+    public function setTarget(Model $target): static
     {
         $this->target = $target;
 
@@ -251,7 +240,7 @@ class Relation
      *
      * @return string
      */
-    public function getJoinType()
+    public function getJoinType(): string
     {
         return $this->joinType;
     }
@@ -263,7 +252,7 @@ class Relation
      *
      * @return Relation
      */
-    public function setJoinType($joinType)
+    public function setJoinType(string $joinType): static
     {
         $this->joinType = $joinType;
 
@@ -277,10 +266,10 @@ class Relation
      *
      * @return array Candidate key-foreign key column name pairs
      *
-     * @throws \UnexpectedValueException If there's no candidate key to be found
+     * @throws UnexpectedValueException If there's no candidate key to be found
      *                                   or the foreign key count does not match the candidate key count
      */
-    public function determineKeys(Model $source)
+    public function determineKeys(Model $source): array
     {
         $candidateKey = (array) $this->getCandidateKey();
 
@@ -291,7 +280,7 @@ class Relation
         }
 
         if (empty($candidateKey)) {
-            throw new \UnexpectedValueException(sprintf(
+            throw new UnexpectedValueException(sprintf(
                 "Can't join relation '%s' in model '%s'. No candidate key found.",
                 $this->getName(),
                 get_class($source)
@@ -307,7 +296,7 @@ class Relation
         }
 
         if (count($foreignKey) !== count($candidateKey)) {
-            throw new \UnexpectedValueException(sprintf(
+            throw new UnexpectedValueException(sprintf(
                 "Can't join relation '%s' in model '%s'."
                 . " Foreign key count (%s) does not match candidate key count (%s).",
                 $this->getName(),
@@ -325,9 +314,9 @@ class Relation
      *
      * Yields a three-element array consisting of the source model, target model and the join keys.
      *
-     * @return \Generator
+     * @return Generator
      */
-    public function resolve()
+    public function resolve(): Generator
     {
         $source = $this->getSource();
 

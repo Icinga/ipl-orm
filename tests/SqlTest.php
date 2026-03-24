@@ -382,7 +382,7 @@ SQL;
         // Reduce whitespaces to just one space
         $sql = preg_replace('/\s+/', ' ', trim($sql));
 
-        list($stmt, $bind) = $this->queryBuilder->assemble($query);
+        [$stmt, $bind] = $this->queryBuilder->assemble($query);
 
         $this->assertSame($sql, $stmt);
 

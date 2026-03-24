@@ -2,12 +2,11 @@
 
 namespace ipl\Orm\Relation;
 
+use Generator;
 use ipl\Orm\Model;
 use ipl\Orm\Relation;
 use ipl\Orm\Relations;
 use LogicException;
-
-use function ipl\Stdlib\get_php_type;
 
 /**
  * Many-to-many relationship
@@ -17,22 +16,22 @@ class BelongsToMany extends Relation
     /** @var string Relation class */
     protected const RELATION_CLASS = HasMany::class;
 
-    protected $isOne = false;
+    protected bool $isOne = false;
 
-    /** @var string Name of the join table or junction model class */
-    protected $throughClass;
+    /** @var ?string Name of the join table or junction model class */
+    protected ?string $throughClass = null;
 
     /** @var ?string Alias for the join table or junction model class */
     protected ?string $throughAlias = null;
 
-    /** @var Model The junction model */
-    protected $through;
+    /** @var ?Model The junction model */
+    protected ?Model $through = null;
 
-    /** @var string|array Column name(s) of the target model's foreign key found in the join table */
-    protected $targetForeignKey;
+    /** @var string|array|null Column name(s) of the target model's foreign key found in the join table */
+    protected string|array|null $targetForeignKey = null;
 
-    /** @var string|array Candidate key column name(s) in the target table which references the target foreign key */
-    protected $targetCandidateKey;
+    /** @var string|array|null Candidate key column name(s) in the target table which references the target foreign key */
+    protected string|array|null $targetCandidateKey = null;
 
     /**
      * Get the name of the join table or junction model class
@@ -51,7 +50,7 @@ class BelongsToMany extends Relation
      *
      * @return $this
      */
-    public function through(string $through): self
+    public function through(string $through): static
     {
         $this->throughClass = $through;
 
@@ -75,7 +74,7 @@ class BelongsToMany extends Relation
      *
      * @return $this
      */
-    public function setThroughAlias(string $throughAlias): self
+    public function setThroughAlias(string $throughAlias): static
     {
         $this->throughAlias = $throughAlias;
 
@@ -85,7 +84,9 @@ class BelongsToMany extends Relation
     /**
      * Get the junction model
      *
-     * @return Model|Junction
+     * @return Model
+     *
+     * @throws LogicException If no through class is configured
      */
     public function getThrough(): Model
     {
@@ -116,7 +117,7 @@ class BelongsToMany extends Relation
      *
      * @return $this
      */
-    public function setThrough(Model $through): self
+    public function setThrough(Model $through): static
     {
         $this->through = $through;
 
@@ -126,9 +127,9 @@ class BelongsToMany extends Relation
     /**
      * Get the column name(s) of the target model's foreign key found in the join table
      *
-     * @return string|array Array if the foreign key is compound, string otherwise
+     * @return string|array|null Array if the foreign key is compound, string otherwise
      */
-    public function getTargetForeignKey()
+    public function getTargetForeignKey(): string|array|null
     {
         return $this->targetForeignKey;
     }
@@ -140,7 +141,7 @@ class BelongsToMany extends Relation
      *
      * @return $this
      */
-    public function setTargetForeignKey($targetForeignKey): self
+    public function setTargetForeignKey(string|array $targetForeignKey): static
     {
         $this->targetForeignKey = $targetForeignKey;
 
@@ -150,9 +151,9 @@ class BelongsToMany extends Relation
     /**
      * Get the candidate key column name(s) in the target table which references the target foreign key
      *
-     * @return string|array Array if the foreign key is compound, string otherwise
+     * @return string|array|null Array if the foreign key is compound, string otherwise
      */
-    public function getTargetCandidateKey()
+    public function getTargetCandidateKey(): string|array|null
     {
         return $this->targetCandidateKey;
     }
@@ -164,14 +165,14 @@ class BelongsToMany extends Relation
      *
      * @return $this
      */
-    public function setTargetCandidateKey($targetCandidateKey): self
+    public function setTargetCandidateKey(string|array $targetCandidateKey): static
     {
         $this->targetCandidateKey = $targetCandidateKey;
 
         return $this;
     }
 
-    public function resolve()
+    public function resolve(): Generator
     {
         $source = $this->getSource();
 
@@ -229,7 +230,7 @@ class BelongsToMany extends Relation
         }
     }
 
-    protected function extractKey(array $possibleKey)
+    protected function extractKey(array $possibleKey): string|array|null
     {
         $filtered = array_filter($possibleKey);
 

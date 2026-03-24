@@ -8,7 +8,7 @@ use OutOfBoundsException;
 abstract class PropertyBehavior implements RetrieveBehavior, PersistBehavior
 {
     /** @var array Property names of which the value should be processed */
-    protected $properties;
+    protected array $properties;
 
     /**
      * PropertyBehavior constructor
@@ -24,7 +24,7 @@ abstract class PropertyBehavior implements RetrieveBehavior, PersistBehavior
         }
     }
 
-    public function retrieve(Model $model)
+    public function retrieve(Model $model): void
     {
         foreach ($this->properties as $key => $ctx) {
             if ($model->hasProperty($key)) {
@@ -33,7 +33,7 @@ abstract class PropertyBehavior implements RetrieveBehavior, PersistBehavior
         }
     }
 
-    public function persist(Model $model)
+    public function persist(Model $model): void
     {
         foreach ($this->properties as $key => $ctx) {
             try {
@@ -52,7 +52,7 @@ abstract class PropertyBehavior implements RetrieveBehavior, PersistBehavior
      *
      * @return mixed
      */
-    public function retrieveProperty($value, $key)
+    public function retrieveProperty(mixed $value, string $key): mixed
     {
         if (! isset($this->properties[$key])) {
             return $value;
@@ -69,7 +69,7 @@ abstract class PropertyBehavior implements RetrieveBehavior, PersistBehavior
      *
      * @return mixed
      */
-    public function persistProperty($value, $key)
+    public function persistProperty(mixed $value, string $key): mixed
     {
         if (! isset($this->properties[$key])) {
             return $value;

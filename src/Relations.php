@@ -3,6 +3,7 @@
 namespace ipl\Orm;
 
 use ArrayIterator;
+use InvalidArgumentException;
 use ipl\Orm\Exception\InvalidRelationException;
 use ipl\Orm\Relation\BelongsTo;
 use ipl\Orm\Relation\BelongsToMany;
@@ -20,7 +21,7 @@ use function ipl\Stdlib\get_php_type;
 class Relations implements IteratorAggregate
 {
     /** @var Relation[] */
-    protected $relations = [];
+    protected array $relations = [];
 
     /**
      * Get whether a relation with the given name exists
@@ -29,7 +30,7 @@ class Relations implements IteratorAggregate
      *
      * @return bool
      */
-    public function has($name)
+    public function has(string $name): bool
     {
         return isset($this->relations[$name]);
     }
@@ -41,9 +42,9 @@ class Relations implements IteratorAggregate
      *
      * @return Relation
      *
-     * @throws \InvalidArgumentException If the relation with the given name does not exist
+     * @throws InvalidArgumentException If the relation with the given name does not exist
      */
-    public function get($name)
+    public function get(string $name): Relation
     {
         $this->assertRelationExists($name);
 
@@ -57,9 +58,9 @@ class Relations implements IteratorAggregate
      *
      * @return $this
      *
-     * @throws \InvalidArgumentException If a relation with the given name already exists
+     * @throws InvalidArgumentException If a relation with the given name already exists
      */
-    public function add(Relation $relation)
+    public function add(Relation $relation): static
     {
         $name = $relation->getName();
 
@@ -79,14 +80,14 @@ class Relations implements IteratorAggregate
      *
      * @return BelongsTo|BelongsToOne|BelongsToMany|HasMany|HasOne|Relation
      *
-     * @throws \InvalidArgumentException If the target model class is not of type string
+     * @throws InvalidArgumentException If the target model class is not of type string
      */
-    public function create($class, $name, $targetClass)
+    public function create(string $class, string $name, string $targetClass): Relation
     {
         $relation = new $class();
 
         if (! $relation instanceof Relation) {
-            throw new \InvalidArgumentException(sprintf(
+            throw new InvalidArgumentException(sprintf(
                 '%s() expects parameter 1 to be a subclass of %s, %s given',
                 __METHOD__,
                 Relation::class,
@@ -97,7 +98,7 @@ class Relations implements IteratorAggregate
         // Test target model
         $target = new $targetClass();
         if (! $target instanceof Model) {
-            throw new \InvalidArgumentException(sprintf(
+            throw new InvalidArgumentException(sprintf(
                 '%s() expects parameter 3 to be a subclass of %s, %s given',
                 __METHOD__,
                 Model::class,
@@ -122,7 +123,7 @@ class Relations implements IteratorAggregate
      *
      * @return HasOne
      */
-    public function hasOne($name, $targetClass)
+    public function hasOne(string $name, string $targetClass): HasOne
     {
         /** @var HasOne $relation */
         $relation = $this->create(HasOne::class, $name, $targetClass);
@@ -140,7 +141,7 @@ class Relations implements IteratorAggregate
      *
      * @return HasMany
      */
-    public function hasMany($name, $targetClass)
+    public function hasMany(string $name, string $targetClass): HasMany
     {
         /** @var HasMany $relation */
         $relation = $this->create(HasMany::class, $name, $targetClass);
@@ -158,7 +159,7 @@ class Relations implements IteratorAggregate
      *
      * @return BelongsTo
      */
-    public function belongsTo($name, $targetClass)
+    public function belongsTo(string $name, string $targetClass): BelongsTo
     {
         /** @var BelongsTo $relation */
         $relation = $this->create(BelongsTo::class, $name, $targetClass);
@@ -194,7 +195,7 @@ class Relations implements IteratorAggregate
      *
      * @return BelongsToMany
      */
-    public function belongsToMany($name, $targetClass)
+    public function belongsToMany(string $name, string $targetClass): BelongsToMany
     {
         /** @var BelongsToMany $relation */
         $relation = $this->create(BelongsToMany::class, $name, $targetClass);
@@ -213,11 +214,15 @@ class Relations implements IteratorAggregate
      * Throw exception if a relation with the given name already exists
      *
      * @param string $name
+     *
+     * @return void
+     *
+     * @throws InvalidArgumentException
      */
-    protected function assertRelationDoesNotYetExist($name)
+    protected function assertRelationDoesNotYetExist(string $name): void
     {
         if ($this->has($name)) {
-            throw new \InvalidArgumentException("Relation '$name' already exists");
+            throw new InvalidArgumentException("Relation '$name' already exists");
         }
     }
 
@@ -225,8 +230,10 @@ class Relations implements IteratorAggregate
      * Throw exception if a relation with the given name does not exist
      *
      * @param string $name
+     *
+     * @throws InvalidArgumentException
      */
-    protected function assertRelationExists($name)
+    protected function assertRelationExists(string $name): void
     {
         if (! $this->has($name)) {
             throw new InvalidRelationException($name);

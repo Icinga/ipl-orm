@@ -6,22 +6,22 @@ use ipl\Sql\Select;
 
 class UnionQuery extends Query
 {
-    /** @var Query[] Underlying queries */
-    private $unions;
+    /** @var ?Query[] Underlying queries */
+    private ?array $unions = null;
 
     /**
      * Get the underlying queries
      *
      * @return Query[]
      */
-    public function getUnions()
+    public function getUnions(): array
     {
         if ($this->unions === null) {
             $this->unions = [];
 
             /** @var UnionModel $model */
             $model = $this->getModel();
-            foreach ($model->getUnions() as list($target, $relations, $columns)) {
+            foreach ($model->getUnions() as [$target, $relations, $columns]) {
                 /** @var class-string<Model> $target */
                 $query = $target::on($this->getDb())
                     ->columns($columns)
@@ -35,7 +35,7 @@ class UnionQuery extends Query
         return $this->unions;
     }
 
-    public function getSelectBase()
+    public function getSelectBase(): Select
     {
         if ($this->selectBase === null) {
             $this->selectBase = new Select();

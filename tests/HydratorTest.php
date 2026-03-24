@@ -2,7 +2,7 @@
 
 namespace ipl\Tests\Orm;
 
-use ipl\Tests\Sql\TestCase;
+use ipl\Sql\Test\TestCase;
 
 class HydratorTest extends TestCase
 {

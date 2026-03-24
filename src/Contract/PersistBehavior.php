@@ -14,5 +14,5 @@ interface PersistBehavior extends Behavior
      *
      * @param Model $model
      */
-    public function persist(Model $model);
+    public function persist(Model $model): void;
 }
