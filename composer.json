@@ -12,8 +12,8 @@
   "require": {
     "php": ">=8.2",
     "ext-pdo": "*",
-    "ipl/sql": ">=0.7.0",
-    "ipl/stdlib": ">=0.12.0"
+    "ipl/sql": ">=0.9.1",
+    "ipl/stdlib": ">=0.15.0"
   },
   "autoload": {
     "psr-4": {
@@ -27,8 +27,7 @@
   },
   "autoload-dev": {
     "psr-4": {
-      "ipl\\Tests\\Orm\\": "tests",
-      "ipl\\Tests\\Sql\\": "vendor/ipl/sql/tests"
+      "ipl\\Tests\\Orm\\": "tests"
     }
   }
 }
