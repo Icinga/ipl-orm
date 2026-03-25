@@ -3,23 +3,24 @@
 namespace ipl\Orm;
 
 use ArrayIterator;
+use Generator;
 use Iterator;
 use Traversable;
 
 class ResultSet implements Iterator
 {
-    protected $cache;
+    protected ArrayIterator $cache;
 
     /** @var bool Whether cache is disabled */
-    protected $isCacheDisabled = false;
+    protected bool $isCacheDisabled = false;
 
-    protected $generator;
+    protected Generator $generator;
 
-    protected $limit;
+    protected ?int $limit;
 
-    protected $position;
+    protected ?int $position = null;
 
-    public function __construct(Traversable $traversable, $limit = null)
+    public function __construct(Traversable $traversable, ?int $limit = null)
     {
         $this->cache = new ArrayIterator();
         $this->generator = $this->yieldTraversable($traversable);
@@ -45,19 +46,19 @@ class ResultSet implements Iterator
      *
      * @return $this
      */
-    public function disableCache()
+    public function disableCache(): static
     {
         $this->isCacheDisabled = true;
 
         return $this;
     }
 
-    public function hasMore()
+    public function hasMore(): bool
     {
         return $this->generator->valid();
     }
 
-    public function hasResult()
+    public function hasResult(): bool
     {
         return $this->generator->valid();
     }
@@ -117,7 +118,7 @@ class ResultSet implements Iterator
         }
     }
 
-    protected function advance()
+    protected function advance(): void
     {
         if (! $this->generator->valid()) {
             return;
