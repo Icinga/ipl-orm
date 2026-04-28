@@ -16,7 +16,7 @@ interface RewriteColumnBehavior extends RewriteFilterBehavior
      *
      * @return mixed
      */
-    public function rewriteColumn($column, ?string $relation = null);
+    public function rewriteColumn(mixed $column, ?string $relation = null): mixed;
 
     /**
      * Get whether {@see rewriteColumn} might return an otherwise unknown column or expression

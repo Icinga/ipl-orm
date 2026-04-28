@@ -9,6 +9,7 @@ use ipl\Orm\Exception\ValueConversionException;
 use ipl\Orm\Query;
 use ipl\Sql\Adapter\Pgsql;
 use ipl\Stdlib\Filter\Condition;
+use ipl\Stdlib\Filter\Rule;
 use UnexpectedValueException;
 
 /**
@@ -63,14 +64,14 @@ class Binary extends PropertyBehavior implements QueryAwareBehavior, RewriteFilt
         return sprintf('\\x%s', bin2hex($value));
     }
 
-    public function setQuery(Query $query)
+    public function setQuery(Query $query): static
     {
         $this->isPostgres = $query->getDb()->getAdapter() instanceof Pgsql;
 
         return $this;
     }
 
-    public function rewriteCondition(Condition $condition, $relation = null)
+    public function rewriteCondition(Condition $condition, ?string $relation = null): null
     {
         /**
          * TODO(lippserd): Duplicate code because {@see RewriteFilterBehavior}s come after {@see PropertyBehavior}s.
@@ -98,5 +99,7 @@ class Binary extends PropertyBehavior implements QueryAwareBehavior, RewriteFilt
                 }
             }
         }
+
+        return null;
     }
 }
