@@ -16,7 +16,7 @@ abstract class Model implements \ArrayAccess, \IteratorAggregate
 
     final public function __construct(?array $properties = null)
     {
-        if ($this->hasProperties()) {
+        if (! empty($properties)) {
             $this->setProperties($properties);
         }
 
