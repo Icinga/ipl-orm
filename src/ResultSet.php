@@ -7,19 +7,34 @@ use Generator;
 use Iterator;
 use Traversable;
 
+/**
+ * @template TRow of Model
+ * @implements Iterator<int, TRow>
+ */
 class ResultSet implements Iterator
 {
+    /** @var ArrayIterator<int, TRow> */
     protected ArrayIterator $cache;
 
     /** @var bool Whether cache is disabled */
     protected bool $isCacheDisabled = false;
 
+    /**
+     * @var Generator<mixed, int, TRow, void>
+     * @phpstan-var Generator<int, TRow, mixed, void>
+     */
     protected Generator $generator;
 
     protected ?int $limit;
 
     protected ?int $position = null;
 
+    /**
+     * Create a new result set from the given traversable
+     *
+     * @param Traversable<int, TRow> $traversable
+     * @param ?int $limit
+     */
     public function __construct(Traversable $traversable, ?int $limit = null)
     {
         $this->cache = new ArrayIterator();
@@ -30,9 +45,10 @@ class ResultSet implements Iterator
     /**
      * Create a new result set from the given query
      *
-     * @param Query $query
+     * @template TQueryRow of Model
+     * @param Query<TQueryRow> $query
      *
-     * @return static
+     * @return static<TQueryRow>
      */
     public static function fromQuery(Query $query)
     {
@@ -63,6 +79,7 @@ class ResultSet implements Iterator
         return $this->generator->valid();
     }
 
+    /** @return TRow */
     #[\ReturnTypeWillChange]
     public function current()
     {
@@ -135,6 +152,14 @@ class ResultSet implements Iterator
         }
     }
 
+    /**
+     * Yield the given traversable
+     *
+     * @param Traversable<int, TRow> $traversable
+     *
+     * @return Generator<mixed, int, TRow, void>
+     * @phpstan-return Generator<int, TRow, mixed, void>
+     */
     protected function yieldTraversable(Traversable $traversable)
     {
         foreach ($traversable as $key => $value) {
