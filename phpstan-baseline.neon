@@ -67,26 +67,8 @@ parameters:
 			path: src/Behaviors.php
 
 		-
-			message: '#^Method ipl\\Orm\\Behaviors\:\:add\(\) has no return type specified\.$#'
-			identifier: missingType.return
-			count: 1
-			path: src/Behaviors.php
-
-		-
 			message: '#^Method ipl\\Orm\\Behaviors\:\:getIterator\(\) return type with generic class ArrayIterator does not specify its types\: TKey, TValue$#'
 			identifier: missingType.generics
-			count: 1
-			path: src/Behaviors.php
-
-		-
-			message: '#^Method ipl\\Orm\\Behaviors\:\:persist\(\) has no return type specified\.$#'
-			identifier: missingType.return
-			count: 1
-			path: src/Behaviors.php
-
-		-
-			message: '#^Method ipl\\Orm\\Behaviors\:\:retrieve\(\) has no return type specified\.$#'
-			identifier: missingType.return
 			count: 1
 			path: src/Behaviors.php
 
@@ -139,30 +121,6 @@ parameters:
 			path: src/Common/SortUtil.php
 
 		-
-			message: '#^Method ipl\\Orm\\Compat\\FilterProcessor\:\:apply\(\) has no return type specified\.$#'
-			identifier: missingType.return
-			count: 1
-			path: src/Compat/FilterProcessor.php
-
-		-
-			message: '#^Method ipl\\Orm\\Compat\\FilterProcessor\:\:requireAndResolveFilterColumns\(\) has no return type specified\.$#'
-			identifier: missingType.return
-			count: 1
-			path: src/Compat/FilterProcessor.php
-
-		-
-			message: '#^Method ipl\\Orm\\Compat\\FilterProcessor\:\:requireAndResolveFilterColumns\(\) has parameter \$forceOptimization with no type specified\.$#'
-			identifier: missingType.parameter
-			count: 1
-			path: src/Compat/FilterProcessor.php
-
-		-
-			message: '#^Parameter \#1 \$filter of method ipl\\Orm\\Query\:\:filter\(\) expects ipl\\Stdlib\\Filter\\Rule, ipl\\Stdlib\\Filter\\Chain\|null given\.$#'
-			identifier: argument.type
-			count: 1
-			path: src/Compat/FilterProcessor.php
-
-		-
 			message: '#^Parameter \#1 \$path of method ipl\\Orm\\Resolver\:\:isDistinctRelation\(\) expects string, mixed given\.$#'
 			identifier: argument.type
 			count: 1
@@ -187,44 +145,8 @@ parameters:
 			path: src/Compat/FilterProcessor.php
 
 		-
-			message: '#^Parameter \#2 \$value of static method ipl\\Stdlib\\Filter\:\:like\(\) expects array\<string\>\|string, mixed given\.$#'
-			identifier: argument.type
-			count: 1
-			path: src/Compat/FilterProcessor.php
-
-		-
-			message: '#^Property ipl\\Orm\\Compat\\FilterProcessor\:\:\$baseJoins has no type specified\.$#'
-			identifier: missingType.property
-			count: 1
-			path: src/Compat/FilterProcessor.php
-
-		-
-			message: '#^Property ipl\\Orm\\Compat\\FilterProcessor\:\:\$madeJoins has no type specified\.$#'
-			identifier: missingType.property
-			count: 1
-			path: src/Compat/FilterProcessor.php
-
-		-
-			message: '#^Method ipl\\Orm\\Contract\\PersistBehavior\:\:persist\(\) has no return type specified\.$#'
-			identifier: missingType.return
-			count: 1
-			path: src/Contract/PersistBehavior.php
-
-		-
 			message: '#^Method ipl\\Orm\\Contract\\PropertyBehavior\:\:__construct\(\) has parameter \$properties with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
-			count: 1
-			path: src/Contract/PropertyBehavior.php
-
-		-
-			message: '#^Method ipl\\Orm\\Contract\\PropertyBehavior\:\:persist\(\) has no return type specified\.$#'
-			identifier: missingType.return
-			count: 1
-			path: src/Contract/PropertyBehavior.php
-
-		-
-			message: '#^Method ipl\\Orm\\Contract\\PropertyBehavior\:\:retrieve\(\) has no return type specified\.$#'
-			identifier: missingType.return
 			count: 1
 			path: src/Contract/PropertyBehavior.php
 
@@ -233,12 +155,6 @@ parameters:
 			identifier: missingType.iterableValue
 			count: 1
 			path: src/Contract/PropertyBehavior.php
-
-		-
-			message: '#^Method ipl\\Orm\\Contract\\RetrieveBehavior\:\:retrieve\(\) has no return type specified\.$#'
-			identifier: missingType.return
-			count: 1
-			path: src/Contract/RetrieveBehavior.php
 
 		-
 			message: '#^Class ipl\\Orm\\Defaults implements generic interface IteratorAggregate but does not specify its types\: TKey, TValue$#'
@@ -257,12 +173,6 @@ parameters:
 			identifier: missingType.iterableValue
 			count: 1
 			path: src/Defaults.php
-
-		-
-			message: '#^Property ipl\\Orm\\Exception\\InvalidRelationException\:\:\$model \(ipl\\Orm\\Model\) does not accept ipl\\Orm\\Model\|null\.$#'
-			identifier: assign.propertyType
-			count: 1
-			path: src/Exception/InvalidRelationException.php
 
 		-
 			message: '#^Cannot call method getName\(\) on mixed\.$#'
@@ -355,18 +265,6 @@ parameters:
 			path: src/Model.php
 
 		-
-			message: '#^Method ipl\\Orm\\Model\:\:getProperty\(\) has no return type specified\.$#'
-			identifier: missingType.return
-			count: 1
-			path: src/Model.php
-
-		-
-			message: '#^Method ipl\\Orm\\Model\:\:getProperty\(\) has parameter \$key with no type specified\.$#'
-			identifier: missingType.parameter
-			count: 1
-			path: src/Model.php
-
-		-
 			message: '#^Method ipl\\Orm\\Model\:\:getSearchColumns\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -375,12 +273,6 @@ parameters:
 		-
 			message: '#^Method ipl\\Orm\\Model\:\:init\(\) has no return type specified\.$#'
 			identifier: missingType.return
-			count: 1
-			path: src/Model.php
-
-		-
-			message: '#^Parameter \#1 \$properties of method ipl\\Orm\\Model\:\:setProperties\(\) expects array, array\|null given\.$#'
-			identifier: argument.type
 			count: 1
 			path: src/Model.php
 
@@ -415,12 +307,6 @@ parameters:
 			path: src/Query.php
 
 		-
-			message: '#^Class ipl\\Orm\\Query implements generic interface IteratorAggregate but does not specify its types\: TKey, TValue$#'
-			identifier: missingType.generics
-			count: 1
-			path: src/Query.php
-
-		-
 			message: '#^Method ipl\\Orm\\Query\:\:columns\(\) has parameter \$columns with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -429,12 +315,6 @@ parameters:
 		-
 			message: '#^Method ipl\\Orm\\Query\:\:dump\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
-			count: 1
-			path: src/Query.php
-
-		-
-			message: '#^Method ipl\\Orm\\Query\:\:first\(\) should return ipl\\Orm\\Model\|null but returns mixed\.$#'
-			identifier: return.type
 			count: 1
 			path: src/Query.php
 
@@ -475,12 +355,6 @@ parameters:
 			path: src/Query.php
 
 		-
-			message: '#^Parameter \#1 \$objectOrClass of class ReflectionClass constructor expects class\-string\<T of object\>\|T of object, string given\.$#'
-			identifier: argument.type
-			count: 1
-			path: src/Query.php
-
-		-
 			message: '#^Parameter \#1 \$subject of method ipl\\Orm\\Resolver\:\:getSelectColumns\(\) expects ipl\\Orm\\Model, mixed given\.$#'
 			identifier: argument.type
 			count: 1
@@ -501,12 +375,6 @@ parameters:
 		-
 			message: '#^Property ipl\\Orm\\Query\:\:\$columns type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
-			count: 1
-			path: src/Query.php
-
-		-
-			message: '#^Property ipl\\Orm\\Query\:\:\$count \(int\) does not accept int\|string\|false\|null\.$#'
-			identifier: assign.propertyType
 			count: 1
 			path: src/Query.php
 
@@ -595,12 +463,6 @@ parameters:
 			path: src/Relation/BelongsToMany.php
 
 		-
-			message: '#^Method ipl\\Orm\\Relation\\BelongsToMany\:\:extractKey\(\) has no return type specified\.$#'
-			identifier: missingType.return
-			count: 1
-			path: src/Relation/BelongsToMany.php
-
-		-
 			message: '#^Method ipl\\Orm\\Relation\\BelongsToMany\:\:extractKey\(\) has parameter \$possibleKey with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -615,12 +477,6 @@ parameters:
 		-
 			message: '#^Method ipl\\Orm\\Relation\\BelongsToMany\:\:getTargetForeignKey\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
-			count: 1
-			path: src/Relation/BelongsToMany.php
-
-		-
-			message: '#^Method ipl\\Orm\\Relation\\BelongsToMany\:\:getThrough\(\) should return ipl\\Orm\\Model but returns object\.$#'
-			identifier: return.type
 			count: 1
 			path: src/Relation/BelongsToMany.php
 
@@ -649,26 +505,8 @@ parameters:
 			path: src/Relation/BelongsToMany.php
 
 		-
-			message: '#^Property ipl\\Orm\\Relation\\BelongsToMany\:\:\$through \(ipl\\Orm\\Model\) does not accept object\.$#'
-			identifier: assign.propertyType
-			count: 1
-			path: src/Relation/BelongsToMany.php
-
-		-
 			message: '#^Class ipl\\Orm\\Relations implements generic interface IteratorAggregate but does not specify its types\: TKey, TValue$#'
 			identifier: missingType.generics
-			count: 1
-			path: src/Relations.php
-
-		-
-			message: '#^Method ipl\\Orm\\Relations\:\:assertRelationDoesNotYetExist\(\) has no return type specified\.$#'
-			identifier: missingType.return
-			count: 1
-			path: src/Relations.php
-
-		-
-			message: '#^Method ipl\\Orm\\Relations\:\:assertRelationExists\(\) has no return type specified\.$#'
-			identifier: missingType.return
 			count: 1
 			path: src/Relations.php
 
@@ -699,12 +537,6 @@ parameters:
 		-
 			message: '#^Cannot call method isOne\(\) on mixed\.$#'
 			identifier: method.nonObject
-			count: 1
-			path: src/Resolver.php
-
-		-
-			message: '#^Method ipl\\Orm\\Resolver\:\:collectColumns\(\) has no return type specified\.$#'
-			identifier: missingType.return
 			count: 1
 			path: src/Resolver.php
 
@@ -863,78 +695,6 @@ parameters:
 			identifier: missingType.generics
 			count: 1
 			path: src/Resolver.php
-
-		-
-			message: '#^Class ipl\\Orm\\ResultSet implements generic interface Iterator but does not specify its types\: TKey, TValue$#'
-			identifier: missingType.generics
-			count: 1
-			path: src/ResultSet.php
-
-		-
-			message: '#^Method ipl\\Orm\\ResultSet\:\:__construct\(\) has parameter \$limit with no type specified\.$#'
-			identifier: missingType.parameter
-			count: 1
-			path: src/ResultSet.php
-
-		-
-			message: '#^Method ipl\\Orm\\ResultSet\:\:__construct\(\) has parameter \$traversable with no value type specified in iterable type Traversable\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/ResultSet.php
-
-		-
-			message: '#^Method ipl\\Orm\\ResultSet\:\:advance\(\) has no return type specified\.$#'
-			identifier: missingType.return
-			count: 1
-			path: src/ResultSet.php
-
-		-
-			message: '#^Method ipl\\Orm\\ResultSet\:\:hasMore\(\) has no return type specified\.$#'
-			identifier: missingType.return
-			count: 1
-			path: src/ResultSet.php
-
-		-
-			message: '#^Method ipl\\Orm\\ResultSet\:\:hasResult\(\) has no return type specified\.$#'
-			identifier: missingType.return
-			count: 1
-			path: src/ResultSet.php
-
-		-
-			message: '#^Method ipl\\Orm\\ResultSet\:\:yieldTraversable\(\) has no return type specified\.$#'
-			identifier: missingType.return
-			count: 1
-			path: src/ResultSet.php
-
-		-
-			message: '#^Method ipl\\Orm\\ResultSet\:\:yieldTraversable\(\) has parameter \$traversable with no value type specified in iterable type Traversable\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/ResultSet.php
-
-		-
-			message: '#^Property ipl\\Orm\\ResultSet\:\:\$cache has no type specified\.$#'
-			identifier: missingType.property
-			count: 1
-			path: src/ResultSet.php
-
-		-
-			message: '#^Property ipl\\Orm\\ResultSet\:\:\$generator has no type specified\.$#'
-			identifier: missingType.property
-			count: 1
-			path: src/ResultSet.php
-
-		-
-			message: '#^Property ipl\\Orm\\ResultSet\:\:\$limit has no type specified\.$#'
-			identifier: missingType.property
-			count: 1
-			path: src/ResultSet.php
-
-		-
-			message: '#^Property ipl\\Orm\\ResultSet\:\:\$position has no type specified\.$#'
-			identifier: missingType.property
-			count: 1
-			path: src/ResultSet.php
 
 		-
 			message: '#^Method ipl\\Orm\\UnionModel\:\:getUnions\(\) return type has no value type specified in iterable type array\.$#'

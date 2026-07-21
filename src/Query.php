@@ -26,6 +26,9 @@ use Traversable;
 
 /**
  * Represents a database query which is associated to a model and a database connection.
+ *
+ * @template TRow of Model
+ * @implements IteratorAggregate<int, TRow>
  */
 class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Paginatable, IteratorAggregate
 {
@@ -53,10 +56,10 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
     /** @var Connection Database connection */
     protected $db;
 
-    /** @var string Class to return results as */
+    /** @var class-string<ResultSet<TRow>> Class to return results as */
     protected string $resultSetClass = ResultSet::class;
 
-    /** @var Model Model to query */
+    /** @var TRow Model to query */
     protected $model;
 
     /** @var array Columns to select from the model (or its relations). If empty, all columns are selected */
@@ -113,7 +116,7 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
     /**
      * Get the class to return results as
      *
-     * @return string
+     * @return class-string<ResultSet<TRow>>
      */
     public function getResultSetClass(): string
     {
@@ -123,7 +126,7 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
     /**
      * Set the class to return results as
      *
-     * @param string $class
+     * @param class-string<ResultSet<TRow>> $class
      *
      * @return $this
      *
@@ -145,7 +148,7 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
     /**
      * Get the model to query
      *
-     * @return Model
+     * @return TRow
      */
     public function getModel()
     {
@@ -155,7 +158,7 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
     /**
      * Set the model to query
      *
-     * @param Model $model
+     * @param TRow $model
      *
      * @return $this
      */
@@ -572,7 +575,7 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
      * Derive a new query to load the specified relation from a concrete model
      *
      * @param string $relation
-     * @param Model  $source
+     * @param TRow $source
      *
      * @return static
      *
@@ -593,7 +596,7 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
      *
      * @param Model $target The model to query
      * @param string $targetPath The target's absolute relation path
-     * @param ?Model $from The source model
+     * @param ?TRow $from The source model
      * @param bool $link Whether the query should be linked to the parent query
      *
      * @return static
@@ -658,12 +661,11 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
     /**
      * Execute the query
      *
-     * @return ResultSet
+     * @return ResultSet<TRow>
      */
     public function execute(): ResultSet
     {
         $class = $this->getResultSetClass();
-        /** @var ResultSet $class Just for type hinting. $class is of course a string */
 
         return $class::fromQuery($this);
     }
@@ -671,7 +673,7 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
     /**
      * Fetch and return the first result
      *
-     * @return Model|null Null in case there's no result
+     * @return ?TRow Null in case there's no result
      */
     public function first(): ?Model
     {
@@ -698,7 +700,8 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
     /**
      * Yield the query's results
      *
-     * @return Generator
+     * @return Generator<mixed, int, TRow, void>
+     * @phpstan-return Generator<int, TRow, mixed, void>
      */
     public function yieldResults(): Generator
     {
@@ -723,6 +726,11 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
         return $this->count;
     }
 
+    /**
+     * Get the query's result set
+     *
+     * @return Traversable<int, TRow>
+     */
     public function getIterator(): Traversable
     {
         return $this->execute();

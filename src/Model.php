@@ -76,7 +76,7 @@ abstract class Model implements \ArrayAccess, \IteratorAggregate
      *
      * @param Connection $db
      *
-     * @return Query
+     * @return Query<static>
      */
     public static function on(Connection $db)
     {
