@@ -15,6 +15,11 @@ class MillisecondTimestampBehaviorTest extends TestCase
         $this->assertNull((new MillisecondTimestamp([]))->fromDb(null, 'key', null));
     }
 
+    public function testToDbReturnsNullWhenNullIsPassed()
+    {
+        $this->assertNull((new MillisecondTimestamp([]))->toDb(null, 'key', null));
+    }
+
     public function testToDbReturnsUtcTimestampWithNonUtcInput()
     {
         $sometime = DateTime::createFromFormat(
