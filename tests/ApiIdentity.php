@@ -9,6 +9,7 @@ use ipl\Orm\Contract\RewriteColumnBehavior;
 use ipl\Orm\Model;
 use ipl\Orm\Relations;
 use ipl\Stdlib\Filter\Condition;
+use ipl\Stdlib\Filter\Rule;
 
 class ApiIdentity extends Model
 {
@@ -33,12 +34,14 @@ class ApiIdentity extends Model
     public function createBehaviors(Behaviors $behaviors)
     {
         $rewriteBehavior = new class () implements RewriteColumnBehavior {
-            public function rewriteColumn($column, $relation = null)
+            public function rewriteColumn(mixed $column, ?string $relation = null): ?AliasedExpression
             {
                 if ($column === 'api_token') {
                     $relation = str_replace('.', '_', $relation);
                     return new AliasedExpression("{$relation}_api_token", '"api_token retrieval not permitted"');
                 }
+
+                return null;
             }
 
             public function rewriteColumnDefinition(ColumnDefinition $def, string $relation): void
@@ -50,8 +53,9 @@ class ApiIdentity extends Model
                 return $name === 'api_token';
             }
 
-            public function rewriteCondition(Condition $condition, $relation = null)
+            public function rewriteCondition(Condition $condition, ?string $relation = null): ?Rule
             {
+                return null;
             }
         };
 

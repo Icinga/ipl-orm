@@ -14,5 +14,5 @@ interface QueryAwareBehavior extends Behavior
      *
      * @return $this
      */
-    public function setQuery(Query $query);
+    public function setQuery(Query $query): static;
 }
