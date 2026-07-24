@@ -717,10 +717,13 @@ class Resolver
 
                 $relation = $targetRelations->get($relationName);
                 $relation->setSource($target);
+                $this->resolveRelationFilter($relation->getFilter(), $target, $relation->getTarget());
 
                 $resolvedRelations[$relationPath] = $relation;
 
                 if ($relation instanceof BelongsToMany) {
+                    $this->resolveRelationFilter($relation->getThroughFilter(), $target, $relation->getThrough());
+
                     $this->setAlias($relation->getThrough(), join('_', array_merge(
                         array_slice($segments, 0, -1),
                         [$relation->getThroughAlias()]
