@@ -10,6 +10,7 @@ use ipl\Orm\Contract\QueryAwareBehavior;
 use ipl\Orm\Exception\InvalidColumnException;
 use ipl\Orm\Exception\InvalidRelationException;
 use ipl\Orm\Relation\BelongsToMany;
+use ipl\Orm\Relation\Junction;
 use ipl\Sql\ExpressionInterface;
 use ipl\Stdlib\Filter;
 use LogicException;
@@ -450,6 +451,71 @@ class Resolver
         $path = implode('.', $segments);
 
         return $path;
+    }
+
+    /**
+     * Resolve the given relation filter
+     *
+     * Resolves each condition's column according to the referenced subject or, by default, the target.
+     * The target may also be referenced by the relation's name.
+     *
+     * @param Filter\Chain $filter
+     * @param string $name The name of the relation
+     * @param Model $source
+     * @param Model $target
+     *
+     * @throws InvalidArgumentException If a non-condition rule or invalid column is used in the filter
+     */
+    public function resolveRelationFilter(Filter\Chain $filter, string $name, Model $source, Model $target): void
+    {
+        $resolveColumn = function (string $column) use ($name, $source, $target): string {
+            // A column may reference the source or target table by its alias, defaulting to the target
+            if (str_contains($column, '.')) {
+                [$alias, $column] = explode('.', $column, 2);
+            } else {
+                $alias = $target->getTableAlias();
+            }
+
+            $subject = match ($alias) {
+                $name => $target,
+                $source->getTableAlias() => $source,
+                $target->getTableAlias() => $target,
+                default => throw new InvalidArgumentException(sprintf(
+                    'Invalid relation alias "%s" for models "%s" and "%s"',
+                    $alias,
+                    get_class($source),
+                    get_class($target)
+                ))
+            };
+
+            if (! $subject instanceof Junction && ! $this->hasSelectableColumn($subject, $column)) {
+                throw new InvalidArgumentException(sprintf(
+                    'Relation filter for model "%s" contains a non-selectable column "%s"',
+                    get_class($subject),
+                    $column
+                ));
+            }
+
+            return "$alias.$column";
+        };
+
+        foreach ($filter->yieldRules() as $rule) {
+            if (! $rule instanceof Filter\Condition) {
+                throw new InvalidArgumentException(sprintf(
+                    'Relation filter for model "%s" contains a non-condition rule of type "%s"',
+                    get_class($target),
+                    get_class($rule)
+                ));
+            }
+
+            $rule->setColumn($resolveColumn($rule->getColumn()));
+            if ($rule->getValue() instanceof ExpressionInterface) {
+                $rule->setValue(
+                    (clone $rule->getValue())
+                        ->setColumns(array_map($resolveColumn(...), $rule->getValue()->getColumns()))
+                );
+            }
+        }
     }
 
     /**
