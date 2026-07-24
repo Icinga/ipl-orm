@@ -11,6 +11,7 @@ use ipl\Orm\Exception\InvalidColumnException;
 use ipl\Orm\Exception\InvalidRelationException;
 use ipl\Orm\Relation\BelongsToMany;
 use ipl\Sql\ExpressionInterface;
+use ipl\Stdlib\Filter;
 use LogicException;
 use OutOfBoundsException;
 use SplObjectStorage;
@@ -449,6 +450,66 @@ class Resolver
         $path = implode('.', $segments);
 
         return $path;
+    }
+
+    /**
+     * Qualify the columns of the given filter
+     *
+     * @param Filter\Chain $filter
+     * @param Model|Relation $subject
+     *
+     * @return Filter\Chain
+     *
+     * @throws InvalidArgumentException If a non-condition rule is used or an unknown model is referenced
+     */
+    public function qualifyFilter(Filter\Chain $filter, Model|Relation $subject): Filter\Chain
+    {
+        $qualifyColumn = function (string $column) use ($subject): string {
+            [$alias, $column] = explode('.', $column, 2);
+
+            if ($subject instanceof Model) {
+                if ($subject->getTableAlias() !== $alias) {
+                    throw new InvalidArgumentException(sprintf(
+                        'Unknown model alias "%s" for filter column "%s"',
+                        $alias,
+                        $column
+                    ));
+                }
+
+                return $this->qualifyColumn($column, $this->getAlias($subject));
+            }
+
+            return $this->qualifyColumn(
+                $column,
+                match ($alias) {
+                    $subject->getSource()->getTableAlias() => $this->getAlias($subject->getSource()),
+                    $subject->getTarget()->getTableAlias() => $this->getAlias($subject->getTarget()),
+                    $subject->getName() => $this->getAlias($subject->getTarget()),
+                    default => throw new InvalidArgumentException(sprintf(
+                        'Unknown model alias "%s" for filter column "%s"',
+                        $alias,
+                        $column
+                    ))
+                }
+            );
+        };
+
+        $filter = clone $filter; // Deep clone
+        foreach ($filter->yieldRules() as $rule) {
+            if (! $rule instanceof Filter\Condition) {
+                throw new InvalidArgumentException(sprintf('Invalid filter rule "%s"', get_class($rule)));
+            }
+
+            $rule->setColumn($qualifyColumn($rule->getColumn()));
+            if ($rule->getValue() instanceof ExpressionInterface) {
+                $rule->setValue(
+                    (clone $rule->getValue())
+                        ->setColumns(array_map($qualifyColumn(...), $rule->getValue()->getColumns()))
+                );
+            }
+        }
+
+        return $filter;
     }
 
     /**
