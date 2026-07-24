@@ -351,14 +351,15 @@ class Relation
     /**
      * Resolve the relation
      *
-     * Yields a three-element array consisting of the source model, target model and the join keys.
+     * Yields the relation to join as key and a three-element array consisting of the source model,
+     * target model and the join keys as value.
      *
-     * @return Generator
+     * @return Generator<void, static, array{0: Model, 1: Model, 2: array<string, string>}, void>
      */
     public function resolve(): Generator
     {
         $source = $this->getSource();
 
-        yield [$source, $this->getTarget(), $this->determineKeys($source)];
+        yield $this => [$source, $this->getTarget(), $this->determineKeys($source)];
     }
 }

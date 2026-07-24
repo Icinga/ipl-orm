@@ -251,7 +251,10 @@ class BelongsToMany extends Relation
             ->setTarget($junction)
             ->setFilter($this->getThroughFilter())
             ->setCandidateKey($this->extractKey($possibleCandidateKey))
-            ->setForeignKey($this->extractKey($possibleForeignKey));
+            ->setForeignKey($this->extractKey($possibleForeignKey))
+            ->setJoinType($this->getJoinType());
+
+        yield from $toJunction->resolve();
 
         $targetClass = static::RELATION_CLASS;
         $toTarget = (new $targetClass())
@@ -260,15 +263,10 @@ class BelongsToMany extends Relation
             ->setTarget($target)
             ->setFilter($this->getFilter())
             ->setCandidateKey($this->extractKey($possibleTargetCandidateKey))
-            ->setForeignKey($this->extractKey($possibleTargetForeignKey));
+            ->setForeignKey($this->extractKey($possibleTargetForeignKey))
+            ->setJoinType($this->getJoinType());
 
-        foreach ($toJunction->resolve() as $k => $v) {
-            yield $k => $v;
-        }
-
-        foreach ($toTarget->resolve() as $k => $v) {
-            yield $k => $v;
-        }
+        yield from $toTarget->resolve();
     }
 
     protected function extractKey(array $possibleKey): string|array|null

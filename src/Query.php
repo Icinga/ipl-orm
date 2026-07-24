@@ -7,6 +7,7 @@ use Generator;
 use InvalidArgumentException;
 use ipl\Orm\Common\SortUtil;
 use ipl\Orm\Compat\FilterProcessor;
+use ipl\Orm\Relation\BelongsToMany;
 use ipl\Sql\Connection;
 use ipl\Sql\ExpressionInterface;
 use ipl\Sql\LimitOffset;
@@ -328,6 +329,16 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
             $this->selectBase->from([
                 $this->getResolver()->getAlias($this->getModel()) => $this->getModel()->getTableName()
             ]);
+
+            $visibilityFilter = FilterProcessor::assembleFilter(
+                $this->getResolver()->qualifyFilter(
+                    $this->getResolver()->getVisibilityFilter($this->getModel()),
+                    $this->getModel()
+                )
+            );
+            if ($visibilityFilter) {
+                $this->selectBase->where(...array_reverse($visibilityFilter));
+            }
         }
 
         return $this->selectBase;
@@ -502,7 +513,18 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
                     continue;
                 }
 
-                foreach ($relation->resolve() as [$source, $target, $relatedKeys]) {
+                foreach ($relation->resolve() as $targetRelation => [$source, $target, $relatedKeys]) {
+                    if (is_int($targetRelation)) {
+                        $targetRelation = $relation;
+                        trigger_error(sprintf(
+                            'Relation implementation of %s::resolve() returned a numeric key for the target'
+                            . ' relation. This is deprecated and will be removed in a future version. Please return'
+                            . ' the target relation as key instead.',
+                            $relation::class
+                        ), E_USER_DEPRECATED);
+                    }
+
+                    /** @var Relation $targetRelation */
                     /** @var Model $source */
                     /** @var Model $target */
 
@@ -518,9 +540,17 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
                         );
                     }
 
+                    $visibilityConditions = FilterProcessor::assembleFilter(Filter::all(
+                        $resolver->qualifyFilter($targetRelation->getFilter(), $targetRelation),
+                        $resolver->qualifyFilter($resolver->getVisibilityFilter($target), $target)
+                    ));
+                    if ($visibilityConditions) {
+                        $conditions[] = $visibilityConditions;
+                    }
+
                     $table = [$targetAlias => $target->getTableName()];
 
-                    switch ($relation->getJoinType()) {
+                    switch ($targetRelation->getJoinType()) {
                         case 'LEFT':
                             $select->joinLeft($table, $conditions);
 
@@ -617,7 +647,20 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
 
         $subQueryResolver = $subQuery->getResolver();
         $sourcePath = join('.', $sourceParts);
-        $subQueryTarget = $subQueryResolver->resolveRelation($sourcePath)->getTarget();
+
+        $originalRelations = iterator_to_array($this->getResolver()->resolveRelations($targetPath, $from), false);
+        foreach ($subQuery->getResolver()->resolveRelations($sourcePath) as $relation) {
+            $original = array_pop($originalRelations);
+
+            if ($relation instanceof BelongsToMany) {
+                $relation->setFilter($original->getThroughFilter());
+                $relation->setThroughFilter($original->getFilter());
+            } else {
+                $relation->setFilter($original->getFilter());
+            }
+
+            $subQueryTarget = $relation->getTarget();
+        }
 
         $subQuery->utilize($sourcePath); // TODO: Don't join if there's a matching foreign key
 
