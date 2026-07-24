@@ -3,6 +3,7 @@
 namespace ipl\Tests\Orm;
 
 use ipl\Orm\Relation;
+use ipl\Stdlib\Filter;
 
 class RelationTest extends \PHPUnit\Framework\TestCase
 {
@@ -161,5 +162,48 @@ class RelationTest extends \PHPUnit\Framework\TestCase
 
         $this->assertSame($target, $relation->getTarget());
         $this->assertSame($target, $relation->getTarget());
+    }
+
+    public function testGetFilterReturnsAnEmptyChainByDefault()
+    {
+        $filter = (new Relation())->getFilter();
+
+        $this->assertInstanceOf(Filter\Chain::class, $filter);
+        $this->assertTrue($filter->isEmpty(), 'Default filter is not empty');
+    }
+
+    public function testSetFilterWrapsABareConditionInAnAllChain()
+    {
+        $condition = Filter::equal('foo', 'bar');
+        $filter = (new Relation())
+            ->setFilter($condition)
+            ->getFilter();
+
+        $this->assertInstanceOf(Filter\All::class, $filter);
+        $this->assertSame([$condition], iterator_to_array($filter));
+    }
+
+    public function testSetFilterKeepsAChainAsIs()
+    {
+        $chain = Filter::any(Filter::equal('foo', 'bar'));
+        $relation = (new Relation())
+            ->setFilter($chain);
+
+        $this->assertSame($chain, $relation->getFilter());
+    }
+
+    public function testResolveYieldsTheRelationItselfAsKey()
+    {
+        $relation = (new Relation())
+            ->setName('test')
+            ->setSource(new TestModelWithPrimaryKey())
+            ->setTargetClass(TestModelWithPrimaryKey::class);
+
+        $keys = [];
+        foreach ($relation->resolve() as $key => $_) {
+            $keys[] = $key;
+        }
+
+        $this->assertSame([$relation], $keys);
     }
 }

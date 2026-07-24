@@ -6,11 +6,11 @@ use ipl\Orm\Model;
 use ipl\Orm\Relations;
 use ipl\Stdlib\Filter;
 
-class Employee extends Model
+class Node extends Model
 {
     public function getTableName()
     {
-        return 'employee';
+        return 'node';
     }
 
     public function getKeyName()
@@ -22,22 +22,20 @@ class Employee extends Model
     {
         return [
             'name',
-            'active',
-            'deleted',
-            'role',
-            'department_id',
-            'office_id'
+            'parent_id',
+            'deleted'
         ];
     }
 
     public function createRelations(Relations $relations)
     {
-        $relations->belongsTo('department', Department::class);
-        $relations->belongsTo('office', Office::class)
+        $relations->belongsTo('parent', self::class)
+            ->setCandidateKey('parent_id')
             ->setJoinType('LEFT');
-        $relations->hasMany('chair', Chair::class);
-        $relations->hasMany('ticket', Ticket::class)
-            ->setFilter(Filter::equal('open', 'y'));
+
+        $relations->hasMany('child', self::class)
+            ->setForeignKey('parent_id')
+            ->setFilter(Filter::equal('child.name', 'foo'));
     }
 
     public function createVisibilityFilter(Filter\Chain $filter): void

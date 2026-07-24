@@ -120,8 +120,14 @@ class FilterProcessorTest extends \PHPUnit\Framework\TestCase
     #[DataProvider('databases')]
     public function testNegationOfAToManyRelationWorksAcrossDatabaseAdapters(Connection $db): void
     {
-        $db->insert('employee', ['id' => 1, 'department_id' => 1, 'name' => 'Minnie', 'role' => 'CEO']);
-        $db->insert('employee', ['id' => 2, 'department_id' => 2, 'name' => 'Goofy', 'role' => 'Developer']);
+        $db->insert(
+            'employee',
+            ['id' => 1, 'department_id' => 1, 'name' => 'Minnie', 'role' => 'CEO', 'deleted' => 'n']
+        );
+        $db->insert(
+            'employee',
+            ['id' => 2, 'department_id' => 2, 'name' => 'Goofy', 'role' => 'Developer', 'deleted' => 'n']
+        );
         $db->insert('chair', ['department_id' => 1, 'employee_id' => 1, 'vendor' => 'Acme Chairs']);
         $db->insert('chair', ['department_id' => 2, 'employee_id' => 1, 'vendor' => 'Bcme Chairs']);
         $db->insert('chair', ['department_id' => 3, 'employee_id' => 2, 'vendor' => 'Bcme Chairs']);
@@ -140,7 +146,7 @@ class FilterProcessorTest extends \PHPUnit\Framework\TestCase
         $db->exec('CREATE TABLE department (id INT PRIMARY KEY, name VARCHAR(255))');
         $db->exec(
             'CREATE TABLE employee (id INT PRIMARY KEY, department_id INT,'
-            . ' office_id INT, name VARCHAR(255), role VARCHAR(255))'
+            . ' office_id INT, name VARCHAR(255), role VARCHAR(255), active VARCHAR(1), deleted VARCHAR(1))'
         );
         $db->exec('CREATE TABLE chair (department_id INT, employee_id INT, vendor VARCHAR(255))');
     }

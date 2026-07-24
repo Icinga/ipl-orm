@@ -3,8 +3,10 @@
 namespace ipl\Tests\Orm;
 
 use ipl\Orm\Query;
+use ipl\Orm\Relation\BelongsToMany;
 use ipl\Orm\Relations;
 use ipl\Sql\Test\SqlAssertions;
+use ipl\Stdlib\Filter;
 
 class BelongsToManyTest extends \PHPUnit\Framework\TestCase
 {
@@ -108,5 +110,68 @@ FROM group
 SQL;
 
         $this->assertSql($sql, $profile->assembleSelect());
+    }
+
+    public function testGetThroughFilterReturnsAnEmptyChainByDefault()
+    {
+        $filter = (new BelongsToMany())->getThroughFilter();
+
+        $this->assertInstanceOf(Filter\Chain::class, $filter);
+        $this->assertTrue($filter->isEmpty(), 'Default through filter is not empty');
+    }
+
+    public function testSetThroughFilterWrapsABareConditionInAnAllChain()
+    {
+        $condition = Filter::equal('foo', 'bar');
+        $filter = (new BelongsToMany())
+            ->setThroughFilter($condition)
+            ->getThroughFilter();
+
+        $this->assertInstanceOf(Filter\All::class, $filter);
+        $this->assertSame([$condition], iterator_to_array($filter));
+    }
+
+    public function testResolveYieldsJunctionAndTargetRelationsWithTheirFiltersAndJoinType()
+    {
+        $model = new Car();
+        $relations = new Relations();
+        $model->createRelations($relations);
+
+        $throughFilter = Filter::equal('user_id', 5);
+        $targetFilter = Filter::equal('username', 'root');
+
+        $relation = $relations
+            ->get('user')
+            ->setSource($model)
+            ->setJoinType('LEFT')
+            ->setThroughFilter($throughFilter)
+            ->setFilter($targetFilter);
+
+        $resolved = [];
+        foreach ($relation->resolve() as $key => $_) {
+            $resolved[] = $key;
+        }
+
+        $this->assertCount(2, $resolved, 'A many-to-many relation must resolve to two joins');
+
+        [$toJunction, $toTarget] = $resolved;
+
+        // The join type is propagated to both joins
+        $this->assertSame('LEFT', $toJunction->getJoinType());
+        $this->assertSame('LEFT', $toTarget->getJoinType());
+
+        // The junction join carries the through filter ...
+        $this->assertSame(
+            [$throughFilter],
+            iterator_to_array($toJunction->getFilter()),
+            'The junction join does not carry the through filter'
+        );
+
+        // ... and the target join carries the relation filter
+        $this->assertSame(
+            [$targetFilter],
+            iterator_to_array($toTarget->getFilter()),
+            'The target join does not carry the relation filter'
+        );
     }
 }
