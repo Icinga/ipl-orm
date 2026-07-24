@@ -3,6 +3,8 @@
 namespace ipl\Orm;
 
 use Generator;
+use ipl\Stdlib\Filter;
+use ipl\Stdlib\Filter\Rule;
 use UnexpectedValueException;
 
 /**
@@ -37,6 +39,9 @@ class Relation
 
     /** @var bool Whether this is a to-one relationship */
     protected bool $isOne = true;
+
+    /** @var ?Filter\Chain Additional JOIN conditions */
+    protected ?Filter\Chain $filter = null;
 
     /**
      * Get the default column name(s) in the source table used to match the foreign key
@@ -255,6 +260,40 @@ class Relation
     public function setJoinType(string $joinType): static
     {
         $this->joinType = $joinType;
+
+        return $this;
+    }
+
+    /**
+     * Get the filter to constrain results of the target model
+     *
+     * @return Filter\Chain
+     */
+    public function getFilter(): Filter\Chain
+    {
+        return $this->filter ?? Filter::all();
+    }
+
+    /**
+     * Set a filter that constraints results of the target model
+     *
+     * Only actual columns of the source's or target's table itself are allowed. Qualification happens at runtime.
+     * Use the source's table alias or the relation name (default) to reference one or the other. Comparison values are
+     * passed as-is to ipl-sql's query builder, thus any behaviors by either the source or target are not applied.
+     * Custom filter types other than those extending {@see Filter\Condition} are not allowed. Condition values of
+     * type {@see ExpressionInterface} are supported and must adhere to the same assumptions.
+     *
+     * @param Rule $filter
+     *
+     * @return $this
+     */
+    public function setFilter(Filter\Rule $filter): static
+    {
+        if (! $filter instanceof Filter\Chain) {
+            $filter = Filter::all($filter);
+        }
+
+        $this->filter = $filter;
 
         return $this;
     }
