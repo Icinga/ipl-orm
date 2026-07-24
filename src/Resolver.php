@@ -52,6 +52,9 @@ class Resolver
     /** @var SplObjectStorage Resolved relations */
     protected SplObjectStorage $resolvedRelations;
 
+    /** @var SplObjectStorage Visibility filters from resolved models */
+    protected SplObjectStorage $visibilityFilters;
+
     /**
      * Create a new resolver
      *
@@ -69,6 +72,7 @@ class Resolver
         $this->selectColumns = new SplObjectStorage();
         $this->metaData = new SplObjectStorage();
         $this->resolvedRelations = new SplObjectStorage();
+        $this->visibilityFilters = new SplObjectStorage();
     }
 
     /**
@@ -87,6 +91,46 @@ class Resolver
         }
 
         return $this->relations[$model];
+    }
+
+    /**
+     * Get a model's visibility filter
+     *
+     * @param Model $model
+     *
+     * @return Filter\Chain
+     *
+     * @throws LogicException If a non-condition rule is used in the filter
+     */
+    public function getVisibilityFilter(Model $model): Filter\Chain
+    {
+        if (! isset($this->visibilityFilters[$model])) {
+            $visibilityFilter = Filter::all();
+            $model->createVisibilityFilter($visibilityFilter);
+            foreach ($visibilityFilter->yieldRules() as $rule) {
+                if (! $rule instanceof Filter\Condition) {
+                    throw new LogicException(sprintf(
+                        'Visibility filter for model "%s" contains a non-condition rule of type "%s"',
+                        get_class($model),
+                        get_class($rule)
+                    ));
+                }
+
+                $rule->setColumn($this->qualifyColumn($rule->getColumn(), $model->getTableAlias()));
+                if ($rule->getValue() instanceof ExpressionInterface) {
+                    $resolvedColumns = [];
+                    foreach ($rule->getValue()->getColumns() as $column) {
+                        $resolvedColumns[] = $this->qualifyColumn($column, $model->getTableAlias());
+                    }
+
+                    $rule->setValue((clone $rule->getValue())->setColumns($resolvedColumns));
+                }
+            }
+
+            $this->visibilityFilters[$model] = $visibilityFilter;
+        }
+
+        return $this->visibilityFilters[$model];
     }
 
     /**
