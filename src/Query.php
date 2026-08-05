@@ -158,7 +158,10 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
     /**
      * Set the model to query
      *
-     * @param TRow $model
+     * @template TNew of Model
+     * @phpstan-self-out static<TNew>
+     *
+     * @param TNew $model
      *
      * @return $this
      */
@@ -577,7 +580,7 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
      * @param string $relation
      * @param TRow $source
      *
-     * @return static
+     * @return static<*>
      *
      * @throws InvalidArgumentException If the relation with the given name does not exist
      */
@@ -594,12 +597,14 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
     /**
      * Create a sub-query linked to rows of this query
      *
-     * @param Model $target The model to query
+     * @template TTarget of Model
+     *
+     * @param TTarget $target The model to query
      * @param string $targetPath The target's absolute relation path
      * @param ?TRow $from The source model
      * @param bool $link Whether the query should be linked to the parent query
      *
-     * @return static
+     * @return static<TTarget>
      */
     public function createSubQuery(Model $target, string $targetPath, ?Model $from = null, bool $link = true): static
     {
@@ -617,9 +622,11 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
         $subQuery->utilize($sourcePath); // TODO: Don't join if there's a matching foreign key
 
         if (! $link) {
-            return $subQuery->columns(array_map(function ($keyName) use ($sourcePath) {
+            $subQuery->columns(array_map(function ($keyName) use ($sourcePath) {
                 return "$sourcePath.$keyName";
             }, (array) $subQueryTarget->getKeyName()));
+
+            return $subQuery;
         }
 
         // TODO: Should be done by the caller. Though, that's not possible until we've got a filter abstraction

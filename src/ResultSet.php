@@ -46,6 +46,7 @@ class ResultSet implements Iterator
      * Create a new result set from the given query
      *
      * @template TQueryRow of Model
+     *
      * @param Query<TQueryRow> $query
      *
      * @return static<TQueryRow>
