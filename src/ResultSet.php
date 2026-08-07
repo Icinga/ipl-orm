@@ -3,15 +3,17 @@
 namespace ipl\Orm;
 
 use ArrayIterator;
+use Countable;
 use Generator;
 use Iterator;
+use RuntimeException;
 use Traversable;
 
 /**
  * @template TRow of Model
  * @implements Iterator<int, TRow>
  */
-class ResultSet implements Iterator
+class ResultSet implements Iterator, Countable
 {
     /** @var ArrayIterator<int, TRow> */
     protected ArrayIterator $cache;
@@ -28,6 +30,8 @@ class ResultSet implements Iterator
     protected ?int $limit;
 
     protected ?int $position = null;
+
+    protected ?int $count = null;
 
     /**
      * Create a new result set from the given traversable
@@ -98,6 +102,10 @@ class ResultSet implements Iterator
         }
 
         if ($this->isCacheDisabled || ! $this->cache->valid()) {
+            // Raise count during the first loop only after each iteration, so
+            // that it is synchronized with how many times a loop has been run.
+            $this->count += 1;
+
             $this->generator->next();
             $this->advance();
         } else {
@@ -131,9 +139,26 @@ class ResultSet implements Iterator
 
         if ($this->position === null) {
             $this->advance();
+            $this->count = 0;
         } else {
             $this->position = 0;
         }
+    }
+
+    public function count(): int
+    {
+        if (! $this->isCacheDisabled && $this->count === null && $this->cache->count() === 0) {
+            foreach ($this as $_) {
+                // exhaust the generator and establish the cache
+            }
+        } elseif (
+            $this->count === null
+            || ($this->limit === null || $this->count < $this->limit) && $this->hasMore()
+        ) {
+            throw new RuntimeException('Cannot count result set while it is not fully iterated');
+        }
+
+        return $this->count;
     }
 
     protected function advance(): void
