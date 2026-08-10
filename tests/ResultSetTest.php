@@ -39,8 +39,8 @@ class ResultSetTest extends TestCase
         }
 
         $this->assertEquals(
-            $items,
-            ['a', 'b', 'c']
+            ['a', 'b', 'c'],
+            $items
         );
     }
 
@@ -58,8 +58,8 @@ class ResultSetTest extends TestCase
         }
 
         $this->assertEquals(
-            $items,
-            ['a', 'b', 'c', 'a', 'b', 'c']
+            ['a', 'b', 'c', 'a', 'b', 'c'],
+            $items
         );
     }
 
@@ -77,8 +77,8 @@ class ResultSetTest extends TestCase
         }
 
         $this->assertEquals(
-            $items,
-            ['a', 'b', 'a', 'b']
+            ['a', 'b', 'a', 'b'],
+            $items
         );
     }
 
