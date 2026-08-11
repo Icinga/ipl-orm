@@ -4,6 +4,7 @@ namespace ipl\Tests\Orm;
 
 use ipl\Orm\Model;
 use ipl\Orm\Relations;
+use ipl\Tests\Orm\Lib\Model\RestrictedUser;
 
 class Car extends Model
 {
@@ -35,5 +36,8 @@ class Car extends Model
 
         $relations->belongsToMany('user_custom_keys', User::class)
             ->through(CarUserWithCustomKeys::class);
+
+        $relations->belongsToMany('restricted_user', RestrictedUser::class)
+            ->through(CarUser::class);
     }
 }
