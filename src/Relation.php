@@ -5,6 +5,7 @@ namespace ipl\Orm;
 use Generator;
 use ipl\Stdlib\Filter;
 use ipl\Stdlib\Filter\Rule;
+use LogicException;
 use UnexpectedValueException;
 
 /**
@@ -43,6 +44,8 @@ class Relation
     /** @var ?Filter\Chain Additional JOIN conditions */
     protected ?Filter\Chain $filter = null;
 
+    /** @var ?array<string, Model> Models additional JOIN conditions may reference, keyed by their alias */
+    protected ?array $filterSubjects = null;
     /**
      * Get the default column name(s) in the source table used to match the foreign key
      *
@@ -299,6 +302,34 @@ class Relation
     }
 
     /**
+     * Get subjects the relation filter may reference
+     *
+     * @return array<string, Model>
+     */
+    public function getFilterSubjects(): array
+    {
+        return $this->filterSubjects ?? throw new LogicException(sprintf(
+            'Cannot get filter subjects of an unbound relation. Please call %s::bindTo() first.',
+            static::class
+        ));
+    }
+
+    /**
+     * Add subjects the relation filter may reference, while keeping existing ones
+     *
+     * @param array<string, Model> ...$subjects
+     *
+     * @return $this
+     */
+    public function addFilterSubjects(Model ...$subjects): static
+    {
+        $this->filterSubjects ??= [];
+        $this->filterSubjects += $subjects;
+
+        return $this;
+    }
+
+    /**
      * Determine the candidate key-foreign key construct of the relation
      *
      * @param Model $source
@@ -349,12 +380,41 @@ class Relation
     }
 
     /**
+     * Bind the relation to the given source using the passed resolver
+     *
+     * @param Model $source The model to use as source
+     * @param string $path The path the relation has been resolved at
+     * @param Resolver $resolver The resolver to register the relation's target alias
+     *
+     * @return $this
+     */
+    public function bindTo(Model $source, string $path, Resolver $resolver): static
+    {
+        $this->setSource($source);
+        $target = $this->getTarget();
+
+        $subjects = [
+            $this->getName() => $target,
+            $target->getTableAlias() => $target,
+            $source->getTableAlias() => $source
+        ];
+
+        $this->addFilterSubjects(...$subjects);
+
+        $resolver->resolveRelationFilter($this->getFilter(), $this->getName(), ...$subjects);
+        $resolver->setAlias($target, str_replace('.', '_', $path));
+
+        return $this;
+    }
+
+    /**
      * Resolve the relation
      *
      * Yields the relation to join as key and a three-element array consisting of the source model,
      * target model and the join keys as value.
      *
-     * @return Generator<void, static, array{0: Model, 1: Model, 2: array<string, string>}, void>
+     * @return Generator<mixed, static, array{0: Model, 1: Model, 2: array<string, string>}, void>
+     * @phpstan-return Generator<static, array{0: Model, 1: Model, 2: array<string, string>}, mixed, void>
      */
     public function resolve(): Generator
     {

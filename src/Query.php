@@ -333,7 +333,7 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
             $visibilityFilter = FilterProcessor::assembleFilter(
                 $this->getResolver()->qualifyFilter(
                     $this->getResolver()->getVisibilityFilter($this->getModel()),
-                    $this->getModel()
+                    ...[$this->getModel()->getTableAlias() => $this->getModel()]
                 )
             );
             if ($visibilityFilter) {
@@ -516,15 +516,21 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
                 foreach ($relation->resolve() as $targetRelation => [$source, $target, $relatedKeys]) {
                     if (is_int($targetRelation)) {
                         $targetRelation = $relation;
+                        $relationFilter = Filter::any();
                         trigger_error(sprintf(
                             'Relation implementation of %s::resolve() returned a numeric key for the target'
                             . ' relation. This is deprecated and will be removed in a future version. Please return'
                             . ' the target relation as key instead.',
                             $relation::class
                         ), E_USER_DEPRECATED);
+                    } else {
+                        /** @var Relation $targetRelation */
+                        $relationFilter = $resolver->qualifyFilter(
+                            $targetRelation->getFilter(),
+                            ...$targetRelation->getFilterSubjects()
+                        );
                     }
 
-                    /** @var Relation $targetRelation */
                     /** @var Model $source */
                     /** @var Model $target */
 
@@ -541,8 +547,11 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
                     }
 
                     $visibilityConditions = FilterProcessor::assembleFilter(Filter::all(
-                        $resolver->qualifyFilter($targetRelation->getFilter(), $targetRelation),
-                        $resolver->qualifyFilter($resolver->getVisibilityFilter($target), $target)
+                        $relationFilter,
+                        $resolver->qualifyFilter(
+                            $resolver->getVisibilityFilter($target),
+                            ...[$target->getTableAlias() => $target]
+                        )
                     ));
                     if ($visibilityConditions) {
                         $conditions[] = $visibilityConditions;
