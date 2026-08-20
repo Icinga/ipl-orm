@@ -7,7 +7,10 @@ use Generator;
 use InvalidArgumentException;
 use ipl\Orm\Common\SortUtil;
 use ipl\Orm\Compat\FilterProcessor;
+use ipl\Orm\Relation\BelongsTo;
 use ipl\Orm\Relation\BelongsToMany;
+use ipl\Orm\Relation\BelongsToOne;
+use ipl\Orm\Relation\HasOne;
 use ipl\Sql\Connection;
 use ipl\Sql\ExpressionInterface;
 use ipl\Sql\LimitOffset;
@@ -22,6 +25,7 @@ use ipl\Stdlib\Filter;
 use ipl\Stdlib\Filters;
 use IteratorAggregate;
 use ReflectionClass;
+use RuntimeException;
 use SplObjectStorage;
 use Traversable;
 
@@ -616,21 +620,63 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
     /**
      * Derive a new query to load the specified relation from a concrete model
      *
+     * The passed source can be referenced in filters using the `self` relation path.
+     *
      * @param string $relation
      * @param TRow $source
      *
      * @return static<*>
      *
      * @throws InvalidArgumentException If the relation with the given name does not exist
+     * @throws RuntimeException If the reversed relation does not meet the expected target
      */
     public function derive($relation, Model $source): static
     {
-        // TODO: Think of a way to merge derive() and createSubQuery()
-        return $this->createSubQuery(
-            $this->getResolver()->getRelations($source)->get($relation)->getTarget(),
+        $relation = clone $this->getResolver()->resolveRelation(
             $this->getResolver()->qualifyPath($relation, $source->getTableAlias()),
             $source
         );
+        $relation
+            ->setReverseName('self')
+            ->setReverseClass(match (get_class($relation)) {
+                BelongsToMany::class, BelongsToOne::class => BelongsToOne::class,
+                BelongsTo::class => HasOne::class,
+                default => BelongsTo::class
+            });
+
+        $query = $relation->getTargetClass()::on($this->getDb());
+        $resolver = $query->getResolver();
+
+        $reversed = $relation->reverse($resolver);
+
+        // This will fail if the name ("self") is occupied, but that's fine…
+        $resolver->getRelations($query->getModel())->add($reversed);
+        $reversed->bindTo($query->getModel(), $reversed->getName(), $resolver);
+
+        $relatedKeys = null;
+        foreach ($reversed->resolve() as [$_, $target, $relatedKeys]) {
+            if ($target === $relation->getTarget()) {
+                break;
+            }
+        }
+
+        if ($relatedKeys === null) {
+            throw new RuntimeException(sprintf(
+                'Reversed relation "%s" (%s) does not resolve to the expected target: %s)',
+                $relation->getName(),
+                get_class($source),
+                $relation->getTargetClass()
+            ));
+        }
+
+        foreach ($relatedKeys as $fk => $_) {
+            $query->filter(Filter::equal(
+                sprintf('%s.%s', $reversed->getName(), $fk),
+                $source->$fk
+            ));
+        }
+
+        return $query;
     }
 
     /**
@@ -651,27 +697,49 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
             ->setDb($this->getDb())
             ->setModel($target);
 
-        $sourceParts = array_reverse(explode('.', $targetPath));
-        $sourceParts[0] = $target->getTableAlias();
-
         $subQueryResolver = $subQuery->getResolver();
-        $sourcePath = join('.', $sourceParts);
 
-        $originalRelations = iterator_to_array($this->getResolver()->resolveRelations($targetPath, $from), false);
-        foreach ($subQuery->getResolver()->resolveRelations($sourcePath) as $relation) {
-            $original = array_pop($originalRelations);
+        $forwardHops = array_slice(explode('.', $targetPath), 0, -1);
+        $forwardRelations = iterator_to_array($this->getResolver()->resolveRelations($targetPath, $from));
 
-            if ($relation instanceof BelongsToMany) {
-                $relation->setFilter($original->getThroughFilter());
-                $relation->setThroughFilter($original->getFilter());
-            } else {
-                $relation->setFilter($original->getFilter());
+        $previousHop = $target;
+        $sourceHops = [$target->getTableAlias()];
+        foreach (array_reverse($forwardRelations) as $forwardPath => $relation) {
+            /** @var Relation $relation */
+            $oppositeRelation = $relation->reverse($subQueryResolver);
+
+            $predecessor = array_pop($forwardHops);
+            if ($relation->getReverseName() === null && $predecessor !== $oppositeRelation->getName()) {
+                trigger_error(sprintf(
+                    'Relation "%s" still uses the default table alias during reversal.'
+                    . ' Use `%s::setReverseName("%s")` to get rid of this deprecation notice.',
+                    $forwardPath,
+                    $relation::class,
+                    $predecessor
+                ), E_USER_DEPRECATED);
+                $oppositeRelation->setName($predecessor);
             }
 
-            $subQueryTarget = $relation->getTarget();
+            $relations = new Relations();
+            $relations->add($oppositeRelation);
+            foreach ($subQueryResolver->getRelations($previousHop) as $detour) {
+                // Keep remaining relations. I did not want this initially, but it seems to be required…
+                if ($detour->getName() !== $oppositeRelation->getName()) {
+                    $relations->add($detour);
+                }
+            }
+
+            $subQueryResolver->setRelations($previousHop, $relations);
+
+            $sourceHops[] = $oppositeRelation->getName();
+            $previousHop = $oppositeRelation->getTarget();
         }
 
-        $subQuery->utilize($sourcePath); // TODO: Don't join if there's a matching foreign key
+        unset($previousHop);
+        $sourcePath = join('.', $sourceHops);
+
+        // Up until here only the required relations are eagerly registered but not used yet
+        $subQueryTarget = $subQuery->utilize($sourcePath)->getResolver()->resolveRelation($sourcePath)->getTarget();
 
         if (! $link) {
             $subQuery->columns(array_map(function ($keyName) use ($sourcePath) {

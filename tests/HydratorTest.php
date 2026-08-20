@@ -30,10 +30,10 @@ class HydratorTest extends TestCase
 
         $hydrator = $query->createHydrator();
 
-        $subject = new Car();
+        $subject = new Car(['id' => 1]);
         $hydrator->hydrate(['car_user_custom_keys_username' => 'foo'], $subject);
 
-        $subject2 = new Car();
+        $subject2 = new Car(['id' => 2]);
         $hydrator->hydrate(['car_user_custom_keys_username' => 'bar'], $subject2);
 
         $this->assertFalse(

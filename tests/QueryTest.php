@@ -7,6 +7,7 @@ use ipl\Orm\Query;
 use ipl\Orm\ResolvedExpression;
 use ipl\Sql\Expression;
 use ipl\Sql\Test\TestCase;
+use ipl\Stdlib\Filter;
 
 class QueryTest extends TestCase
 {
@@ -605,6 +606,37 @@ SQL;
         $this->assertSql(
             'SELECT user.id, user.username, user.password, (1) FROM user',
             $query->assembleSelect()
+        );
+    }
+
+    /**
+     * This test asserts that passing an unreferenced target model to {@see \ipl\Orm\Query::createSubQuery}
+     * works without an error, to ensure that path reversal keeps model references intact.
+     */
+    public function testUnreferencedTargetCanBePassedToCreateSubQuery(): void
+    {
+        $query = Profile::on(new TestConnection())
+            ->createSubQuery(new User(), 'profile.user');
+
+        $this->assertInstanceOf(Query::class, $query);
+    }
+
+    public function testDeriveLetsTheBaseModelBeReferencedAsSelfInFilters(): void
+    {
+        $user = new User(['id' => 1, 'username' => 'test']);
+        $profile = (new Query())->setDb(new TestConnection())->derive('profile', $user);
+        $profile->filter(Filter::equal('self.username', 'test'));
+
+        $this->assertSql(
+            <<<'SQL'
+SELECT profile.id, profile.user_id, profile.given_name, profile.surname
+FROM profile
+INNER JOIN user profile_self ON profile_self.id = profile.user_id
+WHERE (profile_self.id = ?) AND (profile_self.username = ?)
+SQL,
+            $profile->assembleSelect(),
+            [1, 'test'],
+            'The base model should be referenced as "self" in filters when deriving a query'
         );
     }
 }
