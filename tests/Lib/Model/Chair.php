@@ -28,6 +28,6 @@ class Chair extends Model
 
     public function createRelations(Relations $relations)
     {
-        $relations->belongsTo('employee', Employee::class);
+        $relations->hasOne('employee', Employee::class);
     }
 }

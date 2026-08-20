@@ -8,6 +8,8 @@ use ipl\Orm\Relations;
 use ipl\Orm\Resolver;
 use ipl\Sql\Test\SqlAssertions;
 use ipl\Stdlib\Filter;
+use ipl\Tests\Orm\Lib\Model\Book;
+use RuntimeException;
 
 class BelongsToManyTest extends \PHPUnit\Framework\TestCase
 {
@@ -132,6 +134,44 @@ SQL;
         $this->assertSame([$condition], iterator_to_array($filter));
     }
 
+    public function testThroughFilterSupportsSourceAndJunctionReferencesAtAllTimes(): void
+    {
+        $resolver = new Resolver($this->createStub(Query::class));
+        $target = new User();
+        $source = new Car();
+
+        $relation = (new BelongsToMany())
+            ->setName('user')
+            ->setTarget($target)
+            ->through(CarUser::class)
+            ->setThroughAlias('my_through')
+            ->bindTo($source, 'car.user', $resolver);
+
+        $this->assertSame(
+            [
+                'car' => $source,
+                'car_user' => $relation->getThrough(),
+                'my_through' => $relation->getThrough()
+            ],
+            $relation->getThroughFilterSubjects()
+        );
+
+        $reversed = $relation->reverse($resolver);
+
+        $newSource = new User();
+        $reversed->bindTo($newSource, 'user.car', $resolver);
+
+        $this->assertSame(
+            [
+                'car' => $source,
+                'user' => $newSource,
+                'car_user' => $relation->getThrough(),
+                'my_through' => $relation->getThrough()
+            ],
+            $reversed->getThroughFilterSubjects()
+        );
+    }
+
     public function testResolveYieldsJunctionAndTargetRelationsWithTheirFiltersAndJoinType()
     {
         $query = (new Query())->setModel(new Car());
@@ -189,5 +229,52 @@ SQL;
     public function testSetTargetCandidateKeyAcceptsNull()
     {
         $this->assertNull((new BelongsToMany())->setTargetCandidateKey(null)->getTargetCandidateKey());
+    }
+
+    public function testReverseYieldsAnInverseBelongsToManyPreservingTheJunctionAndSwappingTheKeys()
+    {
+        $source = new Book();
+        $resolver = (new Query())->setModel($source)->getResolver();
+        // Book->author: many-to-many through a plain junction with explicit keys; Author declares no inverse,
+        // so it is created eagerly during reversal (which is where the key pairs must be exchanged)
+        $forward = $resolver->getRelations($source)->get('author')->bindTo($source, 'book.author', $resolver);
+
+        $inverse = $forward->reverse($resolver);
+
+        $this->assertInstanceOf(BelongsToMany::class, $inverse);
+        $this->assertSame('book', $inverse->getName());
+        $this->assertSame($source, $inverse->getTarget());
+
+        // The junction is preserved ...
+        $this->assertSame($forward->getThroughClass(), $inverse->getThroughClass());
+        $this->assertSame($forward->getThroughAlias(), $inverse->getThroughAlias());
+
+        // ... and the source-side and target-side key pairs are exchanged as a whole
+        $this->assertSame($forward->getTargetCandidateKey(), $inverse->getCandidateKey());
+        $this->assertSame($forward->getTargetForeignKey(), $inverse->getForeignKey());
+        $this->assertSame($forward->getCandidateKey(), $inverse->getTargetCandidateKey());
+        $this->assertSame($forward->getForeignKey(), $inverse->getTargetForeignKey());
+    }
+
+    public function testReverseThrowsInCaseTheThroughTableIsDifferent(): void
+    {
+        $resolver = new Resolver($this->createStub(Query::class));
+
+        $relation = (new BelongsToMany())
+            ->setName('user')
+            ->setTargetClass(User::class)
+            ->through('car_user')
+            ->bindTo(new Car(), 'car.user', $resolver);
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage(sprintf(
+            'The junction model of the relation "user" (%s) is not compatible'
+            . ' with the junction model of the inverse relation (%s != %s)',
+            Car::class,
+            CarUser::class,
+            'car_user'
+        ));
+
+        $relation->reverse($resolver);
     }
 }
