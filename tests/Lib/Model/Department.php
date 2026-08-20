@@ -33,7 +33,7 @@ class Department extends Model
         // Relation filter referencing the target (default) and the source table alias
         $relations->hasMany('lead', Employee::class)
             ->setFilter(Filter::all(
-                Filter::equal('employee.role', 'lead'),
+                Filter::equal('role', 'lead'),
                 Filter::equal('department.name', 'Engineering')
             ));
     }
