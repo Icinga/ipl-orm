@@ -6,6 +6,7 @@ use Generator;
 use ipl\Stdlib\Filter;
 use ipl\Stdlib\Filter\Rule;
 use LogicException;
+use RuntimeException;
 use UnexpectedValueException;
 
 /**
@@ -16,6 +17,12 @@ class Relation
 {
     /** @var string Name of the relation */
     protected $name;
+
+    /** @var ?string Name of the reversed relation */
+    protected ?string $reverseName = null;
+
+    /** @var ?class-string<self> The class to reverse the relation  */
+    protected ?string $reverseClass = null;
 
     /** @var Model Source model */
     protected $source;
@@ -46,6 +53,10 @@ class Relation
 
     /** @var ?array<string, Model> Models additional JOIN conditions may reference, keyed by their alias */
     protected ?array $filterSubjects = null;
+
+    /** @var ?string The name of the relation prior reversal */
+    private ?string $forwardRelationName = null;
+
     /**
      * Get the default column name(s) in the source table used to match the foreign key
      *
@@ -111,6 +122,56 @@ class Relation
     public function setName(string $name): static
     {
         $this->name = $name;
+
+        return $this;
+    }
+
+    /**
+     * Get the reverse name of the relation
+     *
+     * @return ?string
+     */
+    public function getReverseName(): ?string
+    {
+        return $this->reverseName;
+    }
+
+    /**
+     * Set the reverse name of the relation
+     *
+     * The source's table alias is used by default.
+     *
+     * @param string $name
+     *
+     * @return $this
+     */
+    public function setReverseName(string $name): static
+    {
+        $this->reverseName = $name;
+
+        return $this;
+    }
+
+    /**
+     * Get the class to reverse the relation
+     *
+     * @return class-string<self>
+     */
+    public function getReverseClass(): string
+    {
+        return $this->reverseClass ?? static::class;
+    }
+
+    /**
+     * Set the class to reverse the relation
+     *
+     * @param class-string<self> $reverseClass
+     *
+     * @return $this
+     */
+    public function setReverseClass(string $reverseClass): static
+    {
+        $this->reverseClass = $reverseClass;
 
         return $this;
     }
@@ -398,6 +459,9 @@ class Relation
             $target->getTableAlias() => $target,
             $source->getTableAlias() => $source
         ];
+        if ($this->forwardRelationName !== null) {
+            $subjects[$this->forwardRelationName] = $source;
+        }
 
         $this->addFilterSubjects(...$subjects);
 
@@ -421,5 +485,79 @@ class Relation
         $source = $this->getSource();
 
         yield $this => [$source, $this->getTarget(), $this->determineKeys($source)];
+    }
+
+    /**
+     * Reverse the relation
+     *
+     * Uses the passed resolver to eagerly register missing relations on the reversed path.
+     *
+     * @param Resolver $resolver
+     *
+     * @return Generator<mixed, void, static, void>
+     * @phpstan-return Generator<void, static, mixed, void>
+     *
+     * @throws LogicException In case the relation is not bound yet (has no source) or has already been reversed
+     * @throws RuntimeException In case the model of the forward relation is incompatible with the reversed relation's
+     */
+    public function reverse(Resolver $resolver): Generator
+    {
+        if ($this->getSource() === null) {
+            throw new LogicException('Cannot reverse an unbound relation.');
+        } elseif (isset($this->forwardRelationName)) {
+            throw new LogicException('Cannot undo a reverse.');
+        }
+
+        $reverseName = $this->getReverseName() ?? $this->getSource()->getTableAlias();
+
+        $targetRelations = $resolver->getRelations($this->getTarget());
+        if ($targetRelations->has($reverseName)) {
+            // Explicit reverse relations must be properly set up with corresponding key pairs
+            $relation = $targetRelations->get($reverseName);
+
+            if (! $this->getSource() instanceof ($relation->getTargetClass())) {
+                throw new RuntimeException(sprintf(
+                    'The source model of the relation "%s" (%s) is not compatible'
+                    . ' with the target model of the inverse relation (%s)',
+                    $this->getName(),
+                    get_class($this->getSource()),
+                    $relation->getTargetClass()
+                ));
+            }
+        } else {
+            // Eagerly create the relation in case it's only necessary during reversal
+            $relation = $targetRelations->create(
+                $this->getReverseClass(),
+                $reverseName,
+                get_class($this->getSource())
+            );
+
+            // Pass on custom configuration
+            $relation->setCandidateKey($this->getForeignKey());
+            $relation->setForeignKey($this->getCandidateKey());
+            $relation->setJoinType($this->getJoinType());
+        }
+
+        // The previous relation name must be kept for reference as relation filters
+        // may require it but need to be resolved to the source model instead.
+        $relation->forwardRelationName = $this->getName();
+
+        $relation->setTarget($this->getSource()); // Propagates the same instance
+
+        if (! $this->getFilter()->isEmpty()) {
+            // Do not override set filters with an empty set, however, if the set is not empty
+            // the forward relation is expected to carry the same semantics as the inverse.
+            $relation->setFilter(clone $this->getFilter());
+        }
+
+        yield $relation;
+
+        if (! $targetRelations->has($relation->getName())) {
+            /**
+             * This is done after `yield` so that the backwards compatibility branch
+             * of {@see Query::createSubQuery()} is able to change the name.
+             */
+            $targetRelations->add($relation);
+        }
     }
 }
