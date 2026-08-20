@@ -10,6 +10,7 @@ use ipl\Orm\Resolver;
 use ipl\Stdlib\Filter;
 use ipl\Stdlib\Filter\Rule;
 use LogicException;
+use RuntimeException;
 
 /**
  * Many-to-many relationship
@@ -328,6 +329,41 @@ class BelongsToMany extends Relation
             ->setJoinType($this->getJoinType());
 
         yield from $toTarget->resolve();
+    }
+
+    public function reverse(Resolver $resolver): Generator
+    {
+        foreach (parent::reverse($resolver) as $relation) {
+            if ($relation->getThroughClass() !== null && $relation->getThroughClass() !== $this->getThroughClass()) {
+                throw new RuntimeException(sprintf(
+                    'The junction model of the relation "%s" (%s) is not compatible'
+                    . ' with the junction model of the inverse relation (%s != %s)',
+                    $this->getName(),
+                    get_class($relation->getSource()),
+                    $relation->getThroughClass(),
+                    $this->getThroughClass()
+                ));
+            }
+
+            $relation->through($this->getThroughClass());
+            $relation->setThrough($this->getThrough());
+            $relation->setThroughAlias($this->getThroughAlias());
+
+            if (! $this->getThroughFilter()->isEmpty()) {
+                $relation->setThroughFilter(clone $this->getThroughFilter());
+            }
+
+            yield $relation;
+
+            if (! $resolver->getRelations($this->getTarget())->has($relation->getName())) {
+                // The relation is eagerly set up and thus needs proper key pairs,
+                // but reversed as only the forward relation's pairs are known.
+                $relation->setCandidateKey($this->getTargetCandidateKey());
+                $relation->setForeignKey($this->getTargetForeignKey());
+                $relation->setTargetCandidateKey($this->getCandidateKey());
+                $relation->setTargetForeignKey($this->getForeignKey());
+            }
+        }
     }
 
     protected function extractKey(array $possibleKey): string|array|null

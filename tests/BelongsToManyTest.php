@@ -8,6 +8,7 @@ use ipl\Orm\Relations;
 use ipl\Orm\Resolver;
 use ipl\Sql\Test\SqlAssertions;
 use ipl\Stdlib\Filter;
+use ipl\Tests\Orm\Lib\Model\Book;
 
 class BelongsToManyTest extends \PHPUnit\Framework\TestCase
 {
@@ -189,5 +190,33 @@ SQL;
     public function testSetTargetCandidateKeyAcceptsNull()
     {
         $this->assertNull((new BelongsToMany())->setTargetCandidateKey(null)->getTargetCandidateKey());
+    }
+
+    public function testReverseYieldsAnInverseBelongsToManyPreservingTheJunctionAndSwappingTheKeys()
+    {
+        $source = new Book();
+        $resolver = (new Query())->setModel($source)->getResolver();
+        // Book->author: many-to-many through a plain junction with explicit keys; Author declares no inverse,
+        // so it is created eagerly during reversal (which is where the key pairs must be exchanged)
+        $forward = $resolver->getRelations($source)->get('author')->bindTo($source, 'book.author', $resolver);
+
+        $reversed = iterator_to_array($forward->reverse($resolver));
+
+        $this->assertCount(1, $reversed);
+        $inverse = $reversed[0];
+
+        $this->assertInstanceOf(BelongsToMany::class, $inverse);
+        $this->assertSame('book', $inverse->getName());
+        $this->assertSame($source, $inverse->getTarget());
+
+        // The junction is preserved ...
+        $this->assertSame($forward->getThroughClass(), $inverse->getThroughClass());
+        $this->assertSame($forward->getThroughAlias(), $inverse->getThroughAlias());
+
+        // ... and the source-side and target-side key pairs are exchanged as a whole
+        $this->assertSame($forward->getTargetCandidateKey(), $inverse->getCandidateKey());
+        $this->assertSame($forward->getTargetForeignKey(), $inverse->getForeignKey());
+        $this->assertSame($forward->getCandidateKey(), $inverse->getTargetCandidateKey());
+        $this->assertSame($forward->getForeignKey(), $inverse->getTargetForeignKey());
     }
 }
