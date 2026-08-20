@@ -6,6 +6,7 @@ use Generator;
 use ipl\Orm\Model;
 use ipl\Orm\Relation;
 use ipl\Orm\Relations;
+use ipl\Orm\Resolver;
 use ipl\Stdlib\Filter;
 use ipl\Stdlib\Filter\Rule;
 use LogicException;
@@ -37,6 +38,9 @@ class BelongsToMany extends Relation
 
     /** @var ?Filter\Chain Additional JOIN conditions for the join table */
     protected ?Filter\Chain $throughFilter = null;
+
+    /** @var ?array<string, Model> Models additional join table conditions may reference, keyed by their alias */
+    protected ?array $throughFilterSubjects = null;
 
     /**
      * Get the name of the join table or junction model class
@@ -211,6 +215,61 @@ class BelongsToMany extends Relation
         return $this;
     }
 
+    /**
+     * Get subjects the join table filter may reference
+     *
+     * @return array<string, Model>
+     */
+    public function getThroughFilterSubjects(): array
+    {
+        return $this->throughFilterSubjects ?? throw new LogicException(sprintf(
+            'Cannot get filter subjects of an unbound relation. Please call %s::bindTo() first.',
+            static::class
+        ));
+    }
+
+    /**
+     * Add subjects the join table filter may reference, while keeping existing ones
+     *
+     * @param array<string, Model> ...$subjects
+     *
+     * @return $this
+     */
+    public function addThroughFilterSubjects(Model ...$subjects): static
+    {
+        $this->throughFilterSubjects ??= [];
+        $this->throughFilterSubjects += $subjects;
+
+        return $this;
+    }
+
+    public function bindTo(Model $source, string $path, Resolver $resolver): static
+    {
+        // Allow to reference the join table in the second hop
+        $this->addFilterSubjects(...[$this->getThroughAlias() => $this->getThrough()]);
+
+        parent::bindTo($source, $path, $resolver);
+
+        $this->addThroughFilterSubjects(...[
+            $this->getSource()->getTableAlias() => $this->getSource(),
+            $this->getThrough()->getTableAlias() => $this->getThrough(),
+            $this->getThroughAlias() => $this->getThrough()
+        ]);
+
+        $resolver->resolveRelationFilter(
+            $this->getThroughFilter(),
+            $this->getThroughAlias(),
+            ...$this->getThroughFilterSubjects()
+        );
+
+        $resolver->setAlias($this->getThrough(), join('_', array_merge(
+            array_slice(explode('.', $path), 0, -1),
+            [$this->getThroughAlias()]
+        )));
+
+        return $this;
+    }
+
     public function resolve(): Generator
     {
         $source = $this->getSource();
@@ -250,6 +309,7 @@ class BelongsToMany extends Relation
             ->setSource($source)
             ->setTarget($junction)
             ->setFilter($this->getThroughFilter())
+            ->addFilterSubjects(...$this->getThroughFilterSubjects())
             ->setCandidateKey($this->extractKey($possibleCandidateKey))
             ->setForeignKey($this->extractKey($possibleForeignKey))
             ->setJoinType($this->getJoinType());
@@ -262,6 +322,7 @@ class BelongsToMany extends Relation
             ->setSource($junction)
             ->setTarget($target)
             ->setFilter($this->getFilter())
+            ->addFilterSubjects(...$this->getFilterSubjects())
             ->setCandidateKey($this->extractKey($possibleTargetCandidateKey))
             ->setForeignKey($this->extractKey($possibleTargetForeignKey))
             ->setJoinType($this->getJoinType());

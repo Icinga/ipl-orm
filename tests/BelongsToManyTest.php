@@ -5,6 +5,7 @@ namespace ipl\Tests\Orm;
 use ipl\Orm\Query;
 use ipl\Orm\Relation\BelongsToMany;
 use ipl\Orm\Relations;
+use ipl\Orm\Resolver;
 use ipl\Sql\Test\SqlAssertions;
 use ipl\Stdlib\Filter;
 
@@ -40,7 +41,7 @@ class BelongsToManyTest extends \PHPUnit\Framework\TestCase
         foreach (
             $relations
                 ->get('user')
-                ->setSource($model)
+                ->bindTo($model, 'car.user', $this->createStub(Resolver::class))
                 ->resolve() as [$from, $to, $keys]
         ) {
             reset($keys);
@@ -77,7 +78,7 @@ class BelongsToManyTest extends \PHPUnit\Framework\TestCase
         foreach (
             $relations
                 ->get('user_custom_keys')
-                ->setSource($model)
+                ->bindTo($model, 'car.user_custom_keys', $this->createStub(Resolver::class))
                 ->resolve() as [$from, $to, $keys]
         ) {
             reset($keys);
@@ -133,22 +134,17 @@ SQL;
 
     public function testResolveYieldsJunctionAndTargetRelationsWithTheirFiltersAndJoinType()
     {
-        $model = new Car();
-        $relations = new Relations();
-        $model->createRelations($relations);
+        $query = (new Query())->setModel(new Car());
+        $resolver = $query->getResolver();
 
-        $throughFilter = Filter::equal('user_id', 5);
-        $targetFilter = Filter::equal('username', 'root');
-
-        $relation = $relations
-            ->get('user')
-            ->setSource($model)
+        $resolver->getRelations($query->getModel())->get('user')
             ->setJoinType('LEFT')
-            ->setThroughFilter($throughFilter)
-            ->setFilter($targetFilter);
+            ->setThroughFilter(Filter::equal('user_id', 5))
+            ->setFilter(Filter::equal('username', 'root'))
+            ->bindTo($query->getModel(), 'car.user', $resolver);
 
         $resolved = [];
-        foreach ($relation->resolve() as $key => $_) {
+        foreach ($resolver->resolveRelation('car.user')->resolve() as $key => $_) {
             $resolved[] = $key;
         }
 
@@ -160,18 +156,28 @@ SQL;
         $this->assertSame('LEFT', $toJunction->getJoinType());
         $this->assertSame('LEFT', $toTarget->getJoinType());
 
+        // The junction sits between source and target
+        $this->assertSame('car', $toJunction->getSource()->getTableName());
+        $this->assertSame('car_user', $toJunction->getTarget()->getTableName());
+        $this->assertSame('car_user', $toTarget->getSource()->getTableName());
+        $this->assertSame('user', $toTarget->getTarget()->getTableName());
+
         // The junction join carries the through filter ...
+        $throughFilter = iterator_to_array($toJunction->getFilter()->yieldRules());
+        $this->assertNotEmpty($throughFilter, 'The junction join does not carry the through filter');
         $this->assertSame(
-            [$throughFilter],
-            iterator_to_array($toJunction->getFilter()),
-            'The junction join does not carry the through filter'
+            'car_user.user_id',
+            $throughFilter[0]->getColumn(),
+            'The through filter column is incorrectly resolved'
         );
 
         // ... and the target join carries the relation filter
+        $relationFilter = iterator_to_array($toTarget->getFilter()->yieldRules());
+        $this->assertNotEmpty($relationFilter, 'The target join does not carry the relation filter');
         $this->assertSame(
-            [$targetFilter],
-            iterator_to_array($toTarget->getFilter()),
-            'The target join does not carry the relation filter'
+            'user.username',
+            $relationFilter[0]->getColumn(),
+            'The relation filter column is incorrectly resolved'
         );
     }
 
