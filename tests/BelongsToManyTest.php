@@ -174,4 +174,14 @@ SQL;
             'The target join does not carry the relation filter'
         );
     }
+
+    public function testSetTargetForeignKeyAcceptsNull()
+    {
+        $this->assertNull((new BelongsToMany())->setTargetForeignKey(null)->getTargetForeignKey());
+    }
+
+    public function testSetTargetCandidateKeyAcceptsNull()
+    {
+        $this->assertNull((new BelongsToMany())->setTargetCandidateKey(null)->getTargetCandidateKey());
+    }
 }
