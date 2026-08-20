@@ -651,27 +651,38 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
             ->setDb($this->getDb())
             ->setModel($target);
 
-        $sourceParts = array_reverse(explode('.', $targetPath));
-        $sourceParts[0] = $target->getTableAlias();
-
         $subQueryResolver = $subQuery->getResolver();
-        $sourcePath = join('.', $sourceParts);
 
-        $originalRelations = iterator_to_array($this->getResolver()->resolveRelations($targetPath, $from), false);
-        foreach ($subQuery->getResolver()->resolveRelations($sourcePath) as $relation) {
-            $original = array_pop($originalRelations);
-
-            if ($relation instanceof BelongsToMany) {
-                $relation->setFilter($original->getThroughFilter());
-                $relation->setThroughFilter($original->getFilter());
-            } else {
-                $relation->setFilter($original->getFilter());
+        $sourceParts = [];
+        foreach ($this->getResolver()->resolveRelations($targetPath, $from) as $relationPath => $relation) {
+            $predecessor = array_slice(explode('.', $relationPath), -2, 1)[0];
+            foreach ($relation->reverse($subQueryResolver) as $oppositeRelation) {
+                if (
+                    $relation->getReverseName() === null
+                    && $predecessor !== $oppositeRelation->getName()
+                    && $oppositeRelation->getName() === $oppositeRelation->getTarget()->getTableAlias()
+                ) {
+                    trigger_error(sprintf(
+                        'Relation "%s" still uses the default table alias during reversal.'
+                        . ' Use `%s::setReverseName("%s")` to get rid of this deprecation notice.',
+                        $relationPath,
+                        $relation::class,
+                        $predecessor
+                    ), E_USER_DEPRECATED);
+                    $oppositeRelation->setName($predecessor);
+                    array_unshift($sourceParts, $predecessor);
+                } else {
+                    array_unshift($sourceParts, $oppositeRelation->getName());
+                }
             }
-
-            $subQueryTarget = $relation->getTarget();
         }
 
-        $subQuery->utilize($sourcePath); // TODO: Don't join if there's a matching foreign key
+        array_unshift($sourceParts, $target->getTableAlias());
+        $sourcePath = join('.', $sourceParts);
+        $subQueryTarget = $subQueryResolver->resolveRelation($sourcePath)->getTarget();
+
+        // Up until here only the required relations are eagerly registered but not used yet
+        $subQuery->utilize($sourcePath);
 
         if (! $link) {
             $subQuery->columns(array_map(function ($keyName) use ($sourcePath) {
