@@ -142,11 +142,11 @@ class BelongsToMany extends Relation
     /**
      * Set the column name(s) of the target model's foreign key found in the join table
      *
-     * @param string|array $targetForeignKey Array if the foreign key is compound, string otherwise
+     * @param string|array|null $targetForeignKey Array if the foreign key is compound, string otherwise
      *
      * @return $this
      */
-    public function setTargetForeignKey(string|array $targetForeignKey): static
+    public function setTargetForeignKey(string|array|null $targetForeignKey): static
     {
         $this->targetForeignKey = $targetForeignKey;
 
@@ -166,11 +166,11 @@ class BelongsToMany extends Relation
     /**
      * Set the candidate key column name(s) in the target table which references the target foreign key
      *
-     * @param string|array $targetCandidateKey Array if the foreign key is compound, string otherwise
+     * @param string|array|null $targetCandidateKey Array if the foreign key is compound, string otherwise
      *
      * @return $this
      */
-    public function setTargetCandidateKey(string|array $targetCandidateKey): static
+    public function setTargetCandidateKey(string|array|null $targetCandidateKey): static
     {
         $this->targetCandidateKey = $targetCandidateKey;
 
