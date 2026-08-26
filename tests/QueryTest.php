@@ -5,8 +5,11 @@ namespace ipl\Tests\Orm;
 use ipl\Orm\Exception\InvalidRelationException;
 use ipl\Orm\Query;
 use ipl\Orm\ResolvedExpression;
+use ipl\Sql\Connection;
 use ipl\Sql\Expression;
 use ipl\Sql\Test\TestCase;
+use ipl\Stdlib\Filter;
+use ipl\Tests\Orm\Lib\Model\Employee;
 
 class QueryTest extends TestCase
 {
@@ -605,6 +608,28 @@ SQL;
         $this->assertSql(
             'SELECT user.id, user.username, user.password, (1) FROM user',
             $query->assembleSelect()
+        );
+    }
+
+    public function testSubQueriesOverrideTheJoinType(): void
+    {
+        $query = (new Query())
+            ->setDb($this->createStub(Connection::class))
+            ->setModel(new Employee())
+            ->columns('name')
+            ->filter(Filter::equal('chair.vendor', 'Icinga'));
+
+        $this->assertSql(
+            <<<'SQL'
+SELECT employee.name FROM employee
+WHERE (employee.deleted = ?) AND (employee.id IN ((SELECT sub_chair_employee.id AS sub_chair_employee_id
+    FROM chair sub_chair
+    INNER JOIN employee sub_chair_employee
+        ON (sub_chair_employee.id = sub_chair.employee_id) AND (sub_chair_employee.deleted = ?)
+    WHERE sub_chair.vendor = ?)))
+SQL,
+            $query->assembleSelect(),
+            ['n', 'n', 'Icinga']
         );
     }
 }
