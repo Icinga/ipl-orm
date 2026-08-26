@@ -657,6 +657,10 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
         foreach ($this->getResolver()->resolveRelations($targetPath, $from) as $relationPath => $relation) {
             $predecessor = array_slice(explode('.', $relationPath), -2, 1)[0];
             foreach ($relation->reverse($subQueryResolver) as $oppositeRelation) {
+                // Always override the join type, as a sub-query that is unable
+                // to establish a link to the outer query is useless anyway.
+                $oppositeRelation->setJoinType('INNER');
+
                 if (
                     $relation->getReverseName() === null
                     && $predecessor !== $oppositeRelation->getName()
