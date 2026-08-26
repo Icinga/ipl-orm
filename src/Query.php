@@ -647,7 +647,8 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
         $query = $relation->getTargetClass()::on($this->getDb());
         $resolver = $query->getResolver();
 
-        $reversed = $relation->reverse($resolver);
+        $reversed = $relation->reverse($resolver)
+            ->setJoinType('INNER');
 
         // This will fail if the name ("self") is occupied, but that's fine…
         $resolver->getRelations($query->getModel())->add($reversed);
@@ -723,6 +724,10 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
                 ), E_USER_DEPRECATED);
                 $oppositeRelation->setName($predecessor);
             }
+
+            // Always override the join type, as a sub-query that is unable
+            // to establish a link to the outer query is useless anyway.
+            $oppositeRelation->setJoinType('INNER');
 
             $relations = new Relations();
             $relations->add($oppositeRelation);
