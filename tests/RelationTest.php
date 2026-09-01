@@ -8,14 +8,24 @@ use ipl\Orm\Relation\BelongsTo;
 use ipl\Orm\Relation\HasMany;
 use ipl\Orm\Relation\HasOne;
 use ipl\Orm\Resolver;
+use ipl\Sql\Connection;
+use ipl\Sql\Test\SqlAssertions;
 use ipl\Stdlib\Filter;
 use ipl\Tests\Orm\Lib\Model\Department;
+use ipl\Tests\Orm\Lib\Model\Loose;
 use ipl\Tests\Orm\Lib\Model\RestrictedUser;
 use LogicException;
 use RuntimeException;
 
 class RelationTest extends \PHPUnit\Framework\TestCase
 {
+    use SqlAssertions;
+
+    public function setUp(): void
+    {
+        $this->setUpSqlAssertions();
+    }
+
     public function testGetNameReturnsNullIfUnset()
     {
         $this->assertNull((new Relation())->getName());
@@ -274,6 +284,44 @@ class RelationTest extends \PHPUnit\Framework\TestCase
         $this->assertSame('office_id', $inverse->getCandidateKey());
         $this->assertSame('department', $inverse->getName());
         $this->assertSame($source, $inverse->getTarget());
+    }
+
+    public function testADeclaredInverseRelationCanBeReusedDuringReverse()
+    {
+        $connection = $this->createMock(Connection::class);
+        $connection->method('select')->willReturnCallback(function() {
+            $stmt = $this->createMock(\PDOStatement::class);
+            $stmt->expects($this->once())->method('setFetchMode')->with(\PDO::FETCH_ASSOC);
+            $stmt->method('getIterator')->willReturn(new \ArrayIterator([
+                ['id' => 1, 'coupler' => 'test']
+            ]));
+
+            return $stmt;
+        });
+
+        $loose = Loose::on($connection)
+            ->filter(Filter::equal('id', 1))
+            ->columns('id')
+            ->first();
+
+        $others = $loose->relationship->filter(Filter::unequal('loose.id', 1));
+
+        $this->assertSql(
+            <<<'SQL'
+            SELECT sub_relationship.id, sub_relationship.coupler
+            FROM relationship sub_relationship
+            LEFT JOIN loose sub_relationship_loose ON sub_relationship_loose.coupler = sub_relationship.coupler
+            WHERE (sub_relationship_loose.id = ?)
+              AND ((sub_relationship.id NOT IN ((SELECT sub_loose_relationship.id AS sub_loose_relationship_id
+                 FROM loose sub_loose
+                 LEFT JOIN relationship sub_loose_relationship ON sub_loose_relationship.coupler = sub_loose.coupler
+                 WHERE (sub_loose.id = ?) AND (sub_loose_relationship.id IS NOT NULL)
+                 GROUP BY sub_loose_relationship.id
+                 HAVING COUNT(DISTINCT sub_loose.id) >= ?)) OR sub_relationship.id IS NULL))
+            SQL,
+            $others->assembleSelect(),
+            [1, 1, 1]
+        );
     }
 
     public function testReverseCreatesAnInverseRelationWhenNoneIsDeclared()
