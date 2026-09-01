@@ -513,7 +513,7 @@ class Relation
         $targetRelations = $resolver->getRelations($this->getTarget());
         if ($targetRelations->has($reverseName)) {
             // Explicit reverse relations must be properly set up with corresponding key pairs
-            $relation = $targetRelations->get($reverseName);
+            $relation = clone $targetRelations->get($reverseName);
 
             if (! $this->getSource() instanceof ($relation->getTargetClass())) {
                 throw new RuntimeException(sprintf(

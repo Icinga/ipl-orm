@@ -339,7 +339,7 @@ class BelongsToMany extends Relation
                     'The junction model of the relation "%s" (%s) is not compatible'
                     . ' with the junction model of the inverse relation (%s != %s)',
                     $this->getName(),
-                    get_class($relation->getSource()),
+                    get_class($this->getSource()),
                     $relation->getThroughClass(),
                     $this->getThroughClass()
                 ));
@@ -348,6 +348,10 @@ class BelongsToMany extends Relation
             $relation->through($this->getThroughClass());
             $relation->setThrough($this->getThrough());
             $relation->setThroughAlias($this->getThroughAlias());
+
+            // The source table is allowed to reference in a join filter so this must ensure that this works on
+            // the way back as well. Since the source's instance is kept by parent::reverse() this should be safe.
+            $relation->addThroughFilterSubjects(...[$relation->getTarget()->getTableAlias() => $relation->getTarget()]);
 
             if (! $this->getThroughFilter()->isEmpty()) {
                 $relation->setThroughFilter(clone $this->getThroughFilter());

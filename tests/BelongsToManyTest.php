@@ -9,6 +9,7 @@ use ipl\Orm\Resolver;
 use ipl\Sql\Test\SqlAssertions;
 use ipl\Stdlib\Filter;
 use ipl\Tests\Orm\Lib\Model\Book;
+use RuntimeException;
 
 class BelongsToManyTest extends \PHPUnit\Framework\TestCase
 {
@@ -133,6 +134,44 @@ SQL;
         $this->assertSame([$condition], iterator_to_array($filter));
     }
 
+    public function testThroughFilterSupportsSourceAndJunctionReferencesAtAllTimes(): void
+    {
+        $resolver = new Resolver($this->createStub(Query::class));
+        $target = new User();
+        $source = new Car();
+
+        $relation = (new BelongsToMany())
+            ->setName('user')
+            ->setTarget($target)
+            ->through(CarUser::class)
+            ->setThroughAlias('my_through')
+            ->bindTo($source, 'car.user', $resolver);
+
+        $this->assertSame(
+            [
+                'car' => $source,
+                'car_user' => $relation->getThrough(),
+                'my_through' => $relation->getThrough()
+            ],
+            $relation->getThroughFilterSubjects()
+        );
+
+        $reversed = iterator_to_array($relation->reverse($resolver))[0];
+
+        $newSource = new User();
+        $reversed->bindTo($newSource, 'user.car', $resolver);
+
+        $this->assertSame(
+            [
+                'car' => $source,
+                'user' => $newSource,
+                'car_user' => $relation->getThrough(),
+                'my_through' => $relation->getThrough()
+            ],
+            $reversed->getThroughFilterSubjects()
+        );
+    }
+
     public function testResolveYieldsJunctionAndTargetRelationsWithTheirFiltersAndJoinType()
     {
         $query = (new Query())->setModel(new Car());
@@ -218,5 +257,27 @@ SQL;
         $this->assertSame($forward->getTargetForeignKey(), $inverse->getForeignKey());
         $this->assertSame($forward->getCandidateKey(), $inverse->getTargetCandidateKey());
         $this->assertSame($forward->getForeignKey(), $inverse->getTargetForeignKey());
+    }
+
+    public function testReverseThrowsInCaseTheThroughTableIsDifferent(): void
+    {
+        $resolver = new Resolver($this->createStub(Query::class));
+
+        $relation = (new BelongsToMany())
+            ->setName('user')
+            ->setTargetClass(User::class)
+            ->through('car_user')
+            ->bindTo(new Car(), 'car.user', $resolver);
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage(sprintf(
+            'The junction model of the relation "user" (%s) is not compatible'
+            . ' with the junction model of the inverse relation (%s != %s)',
+            Car::class,
+            CarUser::class,
+            'car_user'
+        ));
+
+        iterator_to_array($relation->reverse($resolver));
     }
 }
