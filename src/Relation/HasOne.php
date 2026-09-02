@@ -6,6 +6,10 @@ use ipl\Orm\Relation;
 
 /**
  * One-to-one relationship
+ *
+ * @template TReverse of Relation = BelongsTo
+ *
+ * @extends Relation<TReverse>
  */
 class HasOne extends Relation
 {

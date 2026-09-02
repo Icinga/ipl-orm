@@ -257,7 +257,7 @@ class RelationTest extends \PHPUnit\Framework\TestCase
         $this->expectException(LogicException::class);
         $this->expectExceptionMessage('Cannot reverse an unbound relation');
 
-        iterator_to_array((new HasMany())->reverse($this->createStub(Resolver::class)));
+        (new HasMany())->reverse($this->createStub(Resolver::class));
     }
 
     public function testReverseReusesADeclaredInverseRelation()
@@ -273,10 +273,7 @@ class RelationTest extends \PHPUnit\Framework\TestCase
             ->get('department')
             ->setCandidateKey('office_id'); // Silly, but must be retained
 
-        $reversed = iterator_to_array($forward->reverse($resolver));
-
-        $this->assertCount(1, $reversed);
-        $inverse = $reversed[0];
+        $inverse = $forward->reverse($resolver);
 
         // Employee declares a matching belongsTo 'department' (named after the source's table alias) which
         // is reused as the inverse and re-targeted at the very source instance
@@ -333,10 +330,7 @@ class RelationTest extends \PHPUnit\Framework\TestCase
             ->get('restricted_group')
             ->bindTo($source, 'restricted_user.restricted_group', $resolver);
 
-        $reversed = iterator_to_array($forward->reverse($resolver));
-
-        $this->assertCount(1, $reversed);
-        $inverse = $reversed[0];
+        $inverse = $forward->reverse($resolver);
 
         $this->assertInstanceOf(BelongsTo::class, $inverse);
         $this->assertSame('restricted_user', $inverse->getName());
@@ -355,6 +349,6 @@ class RelationTest extends \PHPUnit\Framework\TestCase
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('is not compatible with the target model of the inverse relation');
 
-        iterator_to_array($forward->reverse((new Query())->getResolver()));
+        $forward->reverse((new Query())->getResolver());
     }
 }

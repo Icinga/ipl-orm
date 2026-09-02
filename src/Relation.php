@@ -12,6 +12,8 @@ use UnexpectedValueException;
 /**
  * Relations represent the connection between models, i.e. the association between rows in one or more tables
  * on the basis of matching key columns. The relationships are defined using candidate key-foreign key constructs.
+ *
+ * @template TReverse of Relation = static
  */
 class Relation
 {
@@ -21,7 +23,7 @@ class Relation
     /** @var ?string Name of the reversed relation */
     protected ?string $reverseName = null;
 
-    /** @var ?class-string<self> The class to reverse the relation  */
+    /** @var ?class-string<TReverse> The class to reverse the relation  */
     protected ?string $reverseClass = null;
 
     /** @var Model Source model */
@@ -155,7 +157,7 @@ class Relation
     /**
      * Get the class to reverse the relation
      *
-     * @return class-string<self>
+     * @return class-string<TReverse>
      */
     public function getReverseClass(): string
     {
@@ -165,7 +167,7 @@ class Relation
     /**
      * Set the class to reverse the relation
      *
-     * @param class-string<self> $reverseClass
+     * @param class-string<TReverse> $reverseClass
      *
      * @return $this
      */
@@ -490,17 +492,17 @@ class Relation
     /**
      * Reverse the relation
      *
-     * Uses the passed resolver to eagerly register missing relations on the reversed path.
+     * Uses the passed resolver to eagerly create a relation on the reversed path. Either way,
+     * the result is still unknown to the given resolver and must be registered with it.
      *
      * @param Resolver $resolver
      *
-     * @return Generator<mixed, void, static, void>
-     * @phpstan-return Generator<void, static, mixed, void>
+     * @return TReverse The reversed relation
      *
      * @throws LogicException In case the relation is not bound yet (has no source) or has already been reversed
      * @throws RuntimeException In case the model of the forward relation is incompatible with the reversed relation's
      */
-    public function reverse(Resolver $resolver): Generator
+    public function reverse(Resolver $resolver): Relation
     {
         if ($this->getSource() === null) {
             throw new LogicException('Cannot reverse an unbound relation.');
@@ -550,14 +552,6 @@ class Relation
             $relation->setFilter(clone $this->getFilter());
         }
 
-        yield $relation;
-
-        if (! $targetRelations->has($relation->getName())) {
-            /**
-             * This is done after `yield` so that the backwards compatibility branch
-             * of {@see Query::createSubQuery()} is able to change the name.
-             */
-            $targetRelations->add($relation);
-        }
+        return $relation;
     }
 }

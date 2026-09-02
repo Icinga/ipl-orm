@@ -156,7 +156,7 @@ SQL;
             $relation->getThroughFilterSubjects()
         );
 
-        $reversed = iterator_to_array($relation->reverse($resolver))[0];
+        $reversed = $relation->reverse($resolver);
 
         $newSource = new User();
         $reversed->bindTo($newSource, 'user.car', $resolver);
@@ -239,10 +239,7 @@ SQL;
         // so it is created eagerly during reversal (which is where the key pairs must be exchanged)
         $forward = $resolver->getRelations($source)->get('author')->bindTo($source, 'book.author', $resolver);
 
-        $reversed = iterator_to_array($forward->reverse($resolver));
-
-        $this->assertCount(1, $reversed);
-        $inverse = $reversed[0];
+        $inverse = $forward->reverse($resolver);
 
         $this->assertInstanceOf(BelongsToMany::class, $inverse);
         $this->assertSame('book', $inverse->getName());
@@ -278,6 +275,6 @@ SQL;
             'car_user'
         ));
 
-        iterator_to_array($relation->reverse($resolver));
+        $relation->reverse($resolver);
     }
 }

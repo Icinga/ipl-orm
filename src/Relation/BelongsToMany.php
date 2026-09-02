@@ -331,43 +331,42 @@ class BelongsToMany extends Relation
         yield from $toTarget->resolve();
     }
 
-    public function reverse(Resolver $resolver): Generator
+    public function reverse(Resolver $resolver): Relation
     {
-        foreach (parent::reverse($resolver) as $relation) {
-            if ($relation->getThroughClass() !== null && $relation->getThroughClass() !== $this->getThroughClass()) {
-                throw new RuntimeException(sprintf(
-                    'The junction model of the relation "%s" (%s) is not compatible'
-                    . ' with the junction model of the inverse relation (%s != %s)',
-                    $this->getName(),
-                    get_class($this->getSource()),
-                    $relation->getThroughClass(),
-                    $this->getThroughClass()
-                ));
-            }
-
-            $relation->through($this->getThroughClass());
-            $relation->setThrough($this->getThrough());
-            $relation->setThroughAlias($this->getThroughAlias());
-
-            // The source table is allowed to reference in a join filter so this must ensure that this works on
-            // the way back as well. Since the source's instance is kept by parent::reverse() this should be safe.
-            $relation->addThroughFilterSubjects(...[$relation->getTarget()->getTableAlias() => $relation->getTarget()]);
-
-            if (! $this->getThroughFilter()->isEmpty()) {
-                $relation->setThroughFilter(clone $this->getThroughFilter());
-            }
-
-            yield $relation;
-
-            if (! $resolver->getRelations($this->getTarget())->has($relation->getName())) {
-                // The relation is eagerly set up and thus needs proper key pairs,
-                // but reversed as only the forward relation's pairs are known.
-                $relation->setCandidateKey($this->getTargetCandidateKey());
-                $relation->setForeignKey($this->getTargetForeignKey());
-                $relation->setTargetCandidateKey($this->getCandidateKey());
-                $relation->setTargetForeignKey($this->getForeignKey());
-            }
+        $relation = parent::reverse($resolver);
+        if ($relation->getThroughClass() !== null && $relation->getThroughClass() !== $this->getThroughClass()) {
+            throw new RuntimeException(sprintf(
+                'The junction model of the relation "%s" (%s) is not compatible'
+                . ' with the junction model of the inverse relation (%s != %s)',
+                $this->getName(),
+                get_class($this->getSource()),
+                $relation->getThroughClass(),
+                $this->getThroughClass()
+            ));
         }
+
+        $relation->through($this->getThroughClass());
+        $relation->setThrough($this->getThrough());
+        $relation->setThroughAlias($this->getThroughAlias());
+
+        // The source table is allowed to reference in a join filter so this must ensure that this works on
+        // the way back as well. Since the source's instance is kept by parent::reverse() this should be safe.
+        $relation->addThroughFilterSubjects(...[$relation->getTarget()->getTableAlias() => $relation->getTarget()]);
+
+        if (! $this->getThroughFilter()->isEmpty()) {
+            $relation->setThroughFilter(clone $this->getThroughFilter());
+        }
+
+        if (! $resolver->getRelations($this->getTarget())->has($relation->getName())) {
+            // The relation is eagerly set up and thus needs proper key pairs,
+            // but reversed as only the forward relation's pairs are known.
+            $relation->setCandidateKey($this->getTargetCandidateKey());
+            $relation->setForeignKey($this->getTargetForeignKey());
+            $relation->setTargetCandidateKey($this->getCandidateKey());
+            $relation->setTargetForeignKey($this->getForeignKey());
+        }
+
+        return $relation;
     }
 
     protected function extractKey(array $possibleKey): string|array|null
