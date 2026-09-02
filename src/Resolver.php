@@ -76,6 +76,21 @@ class Resolver
     }
 
     /**
+     * Override a model's default relations with the given ones
+     *
+     * @param Model $model
+     * @param Relations $relations
+     *
+     * @return $this
+     */
+    public function setRelations(Model $model, Relations $relations): static
+    {
+        $this->relations->offsetSet($model, $relations);
+
+        return $this;
+    }
+
+    /**
      * Get a model's relations
      *
      * @param Model $model

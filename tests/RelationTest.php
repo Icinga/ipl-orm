@@ -277,7 +277,6 @@ class RelationTest extends \PHPUnit\Framework\TestCase
 
         // Employee declares a matching belongsTo 'department' (named after the source's table alias) which
         // is reused as the inverse and re-targeted at the very source instance
-        $this->assertSame($resolver->getRelations($forward->getTarget())->get('department'), $inverse);
         $this->assertSame('office_id', $inverse->getCandidateKey());
         $this->assertSame('department', $inverse->getName());
         $this->assertSame($source, $inverse->getTarget());

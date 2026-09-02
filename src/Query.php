@@ -653,33 +653,37 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
 
         $subQueryResolver = $subQuery->getResolver();
 
-        $sourceParts = [];
-        foreach ($this->getResolver()->resolveRelations($targetPath, $from) as $relationPath => $relation) {
-            $predecessor = array_slice(explode('.', $relationPath), -2, 1)[0];
-            foreach ($relation->reverse($subQueryResolver) as $oppositeRelation) {
-                if (
-                    $relation->getReverseName() === null
-                    && $predecessor !== $oppositeRelation->getName()
-                    && $oppositeRelation->getName() === $oppositeRelation->getTarget()->getTableAlias()
-                ) {
-                    trigger_error(sprintf(
-                        'Relation "%s" still uses the default table alias during reversal.'
-                        . ' Use `%s::setReverseName("%s")` to get rid of this deprecation notice.',
-                        $relationPath,
-                        $relation::class,
-                        $predecessor
-                    ), E_USER_DEPRECATED);
-                    $oppositeRelation->setName($predecessor);
-                    array_unshift($sourceParts, $predecessor);
-                } else {
-                    array_unshift($sourceParts, $oppositeRelation->getName());
-                }
+        $forwardHops = array_slice(explode('.', $targetPath), 0, -1);
+        $forwardRelations = iterator_to_array($this->getResolver()->resolveRelations($targetPath, $from));
+
+        $sourceHops = [$target->getTableAlias()];
+        foreach (array_reverse($forwardRelations) as $forwardPath => $relation) {
+            $oppositeRelation = $relation->reverse($subQueryResolver);
+
+            $predecessor = array_pop($forwardHops);
+            if ($relation->getReverseName() === null && $predecessor !== $oppositeRelation->getName()) {
+                trigger_error(sprintf(
+                    'Relation "%s" still uses the default table alias during reversal.'
+                    . ' Use `%s::setReverseName("%s")` to get rid of this deprecation notice.',
+                    $forwardPath,
+                    $relation::class,
+                    $predecessor
+                ), E_USER_DEPRECATED);
+                $oppositeRelation->setName($predecessor);
             }
+
+            /**
+             * This reduces available relations on the reverse path to what is actually needed for the outer
+             * query join. This is fine right now, since {@see Compat\FilterProcessor::requireAndResolveFilterColumns}
+             * will utilize separate sub queries for individual relations at the moment.
+             */
+            $subQueryResolver->setRelations($relation->getTarget(), (new Relations())->add($oppositeRelation));
+
+            $target = $oppositeRelation->getTarget();
+            $sourceHops[] = $oppositeRelation->getName();
         }
 
-        array_unshift($sourceParts, $target->getTableAlias());
-        $sourcePath = join('.', $sourceParts);
-        $subQueryTarget = $subQueryResolver->resolveRelation($sourcePath)->getTarget();
+        $sourcePath = join('.', $sourceHops);
 
         // Up until here only the required relations are eagerly registered but not used yet
         $subQuery->utilize($sourcePath);
@@ -687,7 +691,7 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
         if (! $link) {
             $subQuery->columns(array_map(function ($keyName) use ($sourcePath) {
                 return "$sourcePath.$keyName";
-            }, (array) $subQueryTarget->getKeyName()));
+            }, (array) $target->getKeyName()));
 
             return $subQuery;
         }
@@ -698,7 +702,7 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
 
         $resolver = $this->getResolver();
         $baseAlias = $resolver->getAlias($this->getModel());
-        $sourceAlias = $subQueryResolver->getAlias($subQueryTarget);
+        $sourceAlias = $subQueryResolver->getAlias($target);
 
         $subQueryConditions = [];
         foreach ((array) $this->getModel()->getKeyName() as $column) {
