@@ -364,12 +364,12 @@ class VisibilityFilterTest extends TestCase
         $derived = $query->derive('employee', new Department(['id' => 1]));
 
         $this->assertSql(
-            'SELECT sub_employee.id, sub_employee.name, sub_employee.active, sub_employee.deleted,'
-            . ' sub_employee.role, sub_employee.department_id, sub_employee.office_id'
-            . ' FROM employee sub_employee'
-            . ' INNER JOIN department sub_employee_department'
-            . ' ON (sub_employee_department.id = sub_employee.department_id) AND (sub_employee.active = ?)'
-            . ' WHERE (sub_employee.deleted = ?) AND (sub_employee_department.id = ?)',
+            'SELECT employee.id, employee.name, employee.active, employee.deleted,'
+            . ' employee.role, employee.department_id, employee.office_id'
+            . ' FROM employee'
+            . ' INNER JOIN department employee_department'
+            . ' ON (employee_department.id = employee.department_id) AND (employee.active = ?)'
+            . ' WHERE (employee.deleted = ?) AND (employee_department.id = ?)',
             $derived->assembleSelect(),
             ['y', 'n', 1]
         );
@@ -386,13 +386,13 @@ class VisibilityFilterTest extends TestCase
         $derived = $query->derive('lead', new Department(['id' => 1]));
 
         $this->assertSql(
-            'SELECT sub_employee.id, sub_employee.name, sub_employee.active, sub_employee.deleted,'
-            . ' sub_employee.role, sub_employee.department_id, sub_employee.office_id'
-            . ' FROM employee sub_employee'
-            . ' INNER JOIN department sub_employee_department'
-            . ' ON (sub_employee_department.id = sub_employee.department_id)'
-            . ' AND ((sub_employee.role = ?) AND (sub_employee_department.name = ?))'
-            . ' WHERE (sub_employee.deleted = ?) AND (sub_employee_department.id = ?)',
+            'SELECT employee.id, employee.name, employee.active, employee.deleted,'
+            . ' employee.role, employee.department_id, employee.office_id'
+            . ' FROM employee'
+            . ' INNER JOIN department employee_department'
+            . ' ON (employee_department.id = employee.department_id)'
+            . ' AND ((employee.role = ?) AND (employee_department.name = ?))'
+            . ' WHERE (employee.deleted = ?) AND (employee_department.id = ?)',
             $derived->assembleSelect(),
             ['lead', 'Engineering', 'n', 1]
         );

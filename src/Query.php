@@ -22,6 +22,7 @@ use ipl\Stdlib\Filter;
 use ipl\Stdlib\Filters;
 use IteratorAggregate;
 use ReflectionClass;
+use RuntimeException;
 use SplObjectStorage;
 use Traversable;
 
@@ -622,15 +623,59 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
      * @return static<*>
      *
      * @throws InvalidArgumentException If the relation with the given name does not exist
+     * @throws RuntimeException If the reversed relation does not met the expected target
      */
     public function derive($relation, Model $source): static
     {
-        // TODO: Think of a way to merge derive() and createSubQuery()
-        return $this->createSubQuery(
-            $this->getResolver()->getRelations($source)->get($relation)->getTarget(),
+        $relation = $this->getResolver()->resolveRelation(
             $this->getResolver()->qualifyPath($relation, $source->getTableAlias()),
             $source
         );
+        $query = $relation->getTargetClass()::on($this->getDb());
+        $resolver = $query->getResolver();
+        $reversed = $relation->reverse($resolver);
+
+        $newRelations = new Relations();
+
+
+        // TODO: This is still the culprit why the test \ipl\Tests\Orm\RelationTest::testADeclaredInverseRelationCanBeReusedDuringReverse fails,
+        //       but it's required for other tests to succeed. See who's right…
+        $newRelations->add($reversed);
+
+
+        foreach ($resolver->getRelations($query->getModel()) as $sibling) {
+            if ($sibling->getName() !== $reversed->getName()) {
+                $newRelations->add($sibling);
+            }
+        }
+
+        $resolver->setRelations($query->getModel(), $newRelations);
+        $reversed->bindTo($query->getModel(), $reversed->getName(), $resolver);
+
+        $relatedKeys = null;
+        foreach ($reversed->resolve() as [$_, $target, $relatedKeys]) {
+            if ($target === $relation->getTarget()) {
+                break;
+            }
+        }
+
+        if ($relatedKeys === null) {
+            throw new RuntimeException(sprintf(
+                'Reversed relation "%s" (%s) does not resolve to the expected target: %s)',
+                $relation->getName(),
+                get_class($source),
+                $relation->getTargetClass()
+            ));
+        }
+
+        foreach ($relatedKeys as $fk => $_) {
+            $query->filter(Filter::equal(
+                sprintf('%s.%s', $reversed->getName(), $fk),
+                $source->$fk
+            ));
+        }
+
+        return $query;
     }
 
     /**

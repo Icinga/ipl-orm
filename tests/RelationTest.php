@@ -304,19 +304,18 @@ class RelationTest extends \PHPUnit\Framework\TestCase
 
         $this->assertSql(
             <<<'SQL'
-            SELECT sub_relationship.id, sub_relationship.coupler
-            FROM relationship sub_relationship
-            LEFT JOIN loose sub_relationship_loose ON sub_relationship_loose.coupler = sub_relationship.coupler
-            WHERE (sub_relationship_loose.id = ?)
-              AND ((sub_relationship.id NOT IN ((SELECT sub_loose_relationship.id AS sub_loose_relationship_id
+            SELECT relationship.id, relationship.coupler
+            FROM relationship
+            WHERE (relationship.coupler = ?)
+              AND ((relationship.id NOT IN ((SELECT sub_loose_relationship.id AS sub_loose_relationship_id
                  FROM loose sub_loose
                  LEFT JOIN relationship sub_loose_relationship ON sub_loose_relationship.coupler = sub_loose.coupler
                  WHERE (sub_loose.id = ?) AND (sub_loose_relationship.id IS NOT NULL)
                  GROUP BY sub_loose_relationship.id
-                 HAVING COUNT(DISTINCT sub_loose.id) >= ?)) OR sub_relationship.id IS NULL))
+                 HAVING COUNT(DISTINCT sub_loose.id) >= ?)) OR relationship.id IS NULL))
             SQL,
             $others->assembleSelect(),
-            [1, 1, 1]
+            ['test', 1, 1]
         );
     }
 
