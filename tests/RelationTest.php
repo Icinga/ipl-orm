@@ -306,7 +306,8 @@ class RelationTest extends \PHPUnit\Framework\TestCase
             <<<'SQL'
             SELECT relationship.id, relationship.coupler
             FROM relationship
-            WHERE (relationship.coupler = ?)
+            INNER JOIN loose relationship_self ON relationship_self.coupler = relationship.coupler
+            WHERE (relationship_self.coupler = ?)
               AND ((relationship.id NOT IN ((SELECT sub_loose_relationship.id AS sub_loose_relationship_id
                  FROM loose sub_loose
                  LEFT JOIN relationship sub_loose_relationship ON sub_loose_relationship.coupler = sub_loose.coupler

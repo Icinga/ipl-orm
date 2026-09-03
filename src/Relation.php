@@ -512,10 +512,10 @@ class Relation
 
         $reverseName = $this->getReverseName() ?? $this->getSource()->getTableAlias();
 
-        $targetRelations = $resolver->getRelations($this->getTarget());
-        if ($targetRelations->has($reverseName)) {
+        $relations = $resolver->getRelations($this->getTarget());
+        if ($relations->has($reverseName) && is_a($relations->get($reverseName), $this->getReverseClass())) {
             // Explicit reverse relations must be properly set up with corresponding key pairs
-            $relation = clone $targetRelations->get($reverseName);
+            $relation = clone $relations->get($reverseName);
 
             if (! $this->getSource() instanceof ($relation->getTargetClass())) {
                 throw new RuntimeException(sprintf(
@@ -528,7 +528,7 @@ class Relation
             }
         } else {
             // Eagerly create the relation in case it's only necessary during reversal
-            $relation = $targetRelations->create(
+            $relation = $relations->create(
                 $this->getReverseClass(),
                 $reverseName,
                 get_class($this->getSource())

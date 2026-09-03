@@ -7,7 +7,10 @@ use Generator;
 use InvalidArgumentException;
 use ipl\Orm\Common\SortUtil;
 use ipl\Orm\Compat\FilterProcessor;
+use ipl\Orm\Relation\BelongsTo;
 use ipl\Orm\Relation\BelongsToMany;
+use ipl\Orm\Relation\BelongsToOne;
+use ipl\Orm\Relation\HasOne;
 use ipl\Sql\Connection;
 use ipl\Sql\ExpressionInterface;
 use ipl\Sql\LimitOffset;
@@ -617,6 +620,8 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
     /**
      * Derive a new query to load the specified relation from a concrete model
      *
+     * The passed source can be referenced in filters using the `self` relation path.
+     *
      * @param string $relation
      * @param TRow $source
      *
@@ -627,29 +632,26 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
      */
     public function derive($relation, Model $source): static
     {
-        $relation = $this->getResolver()->resolveRelation(
+        $relation = clone $this->getResolver()->resolveRelation(
             $this->getResolver()->qualifyPath($relation, $source->getTableAlias()),
             $source
         );
+        $relation
+            ->setReverseName('self') // TODO: Add a test that uses this in a filter
+            ->setReverseClass(match (get_class($relation)) {
+                BelongsToMany::class, BelongsToOne::class => BelongsToOne::class,
+                BelongsTo::class => HasOne::class,
+                default => BelongsTo::class
+            });
+
         $query = $relation->getTargetClass()::on($this->getDb());
         $resolver = $query->getResolver();
-        $reversed = $relation->reverse($resolver);
 
-        $newRelations = new Relations();
+        $reversed = $relation->reverse($resolver)
+            ->setJoinType('INNER');
 
-
-        // TODO: This is still the culprit why the test \ipl\Tests\Orm\RelationTest::testADeclaredInverseRelationCanBeReusedDuringReverse fails,
-        //       but it's required for other tests to succeed. See who's right…
-        $newRelations->add($reversed);
-
-
-        foreach ($resolver->getRelations($query->getModel()) as $sibling) {
-            if ($sibling->getName() !== $reversed->getName()) {
-                $newRelations->add($sibling);
-            }
-        }
-
-        $resolver->setRelations($query->getModel(), $newRelations);
+        // This will fail if the name is occupied, but that's fine…
+        $resolver->getRelations($query->getModel())->add($reversed);
         $reversed->bindTo($query->getModel(), $reversed->getName(), $resolver);
 
         $relatedKeys = null;

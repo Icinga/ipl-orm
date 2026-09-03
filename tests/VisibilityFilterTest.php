@@ -367,9 +367,9 @@ class VisibilityFilterTest extends TestCase
             'SELECT employee.id, employee.name, employee.active, employee.deleted,'
             . ' employee.role, employee.department_id, employee.office_id'
             . ' FROM employee'
-            . ' INNER JOIN department employee_department'
-            . ' ON (employee_department.id = employee.department_id) AND (employee.active = ?)'
-            . ' WHERE (employee.deleted = ?) AND (employee_department.id = ?)',
+            . ' INNER JOIN department employee_self'
+            . ' ON (employee_self.id = employee.department_id) AND (employee.active = ?)'
+            . ' WHERE (employee.deleted = ?) AND (employee_self.id = ?)',
             $derived->assembleSelect(),
             ['y', 'n', 1]
         );
@@ -389,10 +389,10 @@ class VisibilityFilterTest extends TestCase
             'SELECT employee.id, employee.name, employee.active, employee.deleted,'
             . ' employee.role, employee.department_id, employee.office_id'
             . ' FROM employee'
-            . ' INNER JOIN department employee_department'
-            . ' ON (employee_department.id = employee.department_id)'
-            . ' AND ((employee.role = ?) AND (employee_department.name = ?))'
-            . ' WHERE (employee.deleted = ?) AND (employee_department.id = ?)',
+            . ' INNER JOIN department employee_self'
+            . ' ON (employee_self.id = employee.department_id)'
+            . ' AND ((employee.role = ?) AND (employee_self.name = ?))'
+            . ' WHERE (employee.deleted = ?) AND (employee_self.id = ?)',
             $derived->assembleSelect(),
             ['lead', 'Engineering', 'n', 1]
         );
