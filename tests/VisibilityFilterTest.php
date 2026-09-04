@@ -5,6 +5,7 @@ namespace ipl\Tests\Orm;
 use ipl\Orm\Query;
 use ipl\Sql\Test\SqlAssertions;
 use ipl\Stdlib\Filter;
+use ipl\Tests\Orm\Lib\Model\Book;
 use ipl\Tests\Orm\Lib\Model\Department;
 use ipl\Tests\Orm\Lib\Model\Node;
 use ipl\Tests\Orm\Lib\Model\RestrictedGroup;
@@ -108,6 +109,27 @@ class VisibilityFilterTest extends TestCase
         );
     }
 
+    public function testSelfReferencingRelationFilterCanBeFilteredByItsName()
+    {
+        $query = Node::on(new TestConnection())
+            ->columns('name')
+            ->filter(Filter::equal('child.name', 'John Doe'));
+
+        $this->assertSql(
+            <<<'SQL'
+        SELECT node.name
+        FROM node
+        WHERE (node.deleted = ?) AND (node.id IN ((SELECT sub_node_node.id AS sub_node_node_id
+        FROM node sub_node
+        INNER JOIN node sub_node_node ON (sub_node_node.id = sub_node.parent_id)
+        AND ((sub_node.name = ?) AND (sub_node_node.deleted = ?))
+        WHERE (sub_node.deleted = ?) AND (sub_node.name = ?))))
+        SQL,
+            $query->assembleSelect(),
+            ['n', 'foo', 'n', 'n', 'John Doe']
+        );
+    }
+
     public function testRelationFilterIsAppliedToJoinCondition()
     {
         $query = (new Query())
@@ -207,14 +229,54 @@ class VisibilityFilterTest extends TestCase
                  FROM car sub_car
                      INNER JOIN car_user sub_car_car_user
                          ON (sub_car_car_user.car_id = sub_car.id)
-                                AND (sub_car.manufacturer = ?)
+                                AND (sub_car_car_user.user_id = ?)
                      INNER JOIN restricted_user sub_car_restricted_user
                          ON (sub_car_restricted_user.id = sub_car_car_user.restricted_user_id)
-                                AND (sub_car_car_user.user_id = ?)
+                                AND (sub_car.manufacturer = ?)
                  WHERE sub_car.model_name = ?))
             SQL,
             $query->assembleSelect(),
-            ['Icinga', 5, 'volkswagen']
+            [5, 'Icinga', 'volkswagen']
+        );
+    }
+
+    public function testBelongsToManyWithMandatoryKeysJoinsCorrectly()
+    {
+        // Sanity anchor for the forward direction of the reversal regression below
+        $query = (new Query())
+            ->setModel(new Book())
+            ->columns('title')
+            ->utilize('author');
+
+        $this->assertSql(
+            'SELECT book.title FROM book'
+            . ' INNER JOIN authorship book_authorship ON book_authorship.authored_book = book.book_no'
+            . ' INNER JOIN author book_author ON book_author.author_ref = book_authorship.authoring',
+            $query->assembleSelect()
+        );
+    }
+
+    public function testBelongsToManyWithMandatoryKeysReversesThemCorrectlyInASubQuery()
+    {
+        // Book->author uses a plain junction and non-conventional keys that must be declared explicitly.
+        // When reversed for the sub-query there is no junction model or default to re-derive them from, so
+        // the source-side and target-side key pairs must be exchanged as a whole. Regression for the bug
+        // where BelongsToMany::reverse() only flipped candidate<->foreign within each side.
+        $query = (new Query())
+            ->setDb(new TestConnection())
+            ->setModel(new Book())
+            ->columns('title')
+            ->filter(Filter::equal('author.name', 'x'));
+
+        $this->assertSql(
+            'SELECT book.title FROM book WHERE book.book_no IN ((SELECT'
+            . ' sub_author_book.book_no AS sub_author_book_book_no FROM author sub_author'
+            . ' INNER JOIN authorship sub_author_authorship'
+            . ' ON sub_author_authorship.authoring = sub_author.author_ref'
+            . ' INNER JOIN book sub_author_book ON sub_author_book.book_no = sub_author_authorship.authored_book'
+            . ' WHERE sub_author.name = ?))',
+            $query->assembleSelect(),
+            ['x']
         );
     }
 
@@ -302,12 +364,12 @@ class VisibilityFilterTest extends TestCase
         $derived = $query->derive('employee', new Department(['id' => 1]));
 
         $this->assertSql(
-            'SELECT sub_employee.id, sub_employee.name, sub_employee.active, sub_employee.deleted,'
-            . ' sub_employee.role, sub_employee.department_id, sub_employee.office_id'
-            . ' FROM employee sub_employee'
-            . ' INNER JOIN department sub_employee_department'
-            . ' ON (sub_employee_department.id = sub_employee.department_id) AND (sub_employee.active = ?)'
-            . ' WHERE (sub_employee.deleted = ?) AND (sub_employee_department.id = ?)',
+            'SELECT employee.id, employee.name, employee.active, employee.deleted,'
+            . ' employee.role, employee.department_id, employee.office_id'
+            . ' FROM employee'
+            . ' INNER JOIN department employee_self'
+            . ' ON (employee_self.id = employee.department_id) AND (employee.active = ?)'
+            . ' WHERE (employee.deleted = ?) AND (employee_self.id = ?)',
             $derived->assembleSelect(),
             ['y', 'n', 1]
         );
@@ -324,15 +386,60 @@ class VisibilityFilterTest extends TestCase
         $derived = $query->derive('lead', new Department(['id' => 1]));
 
         $this->assertSql(
-            'SELECT sub_employee.id, sub_employee.name, sub_employee.active, sub_employee.deleted,'
-            . ' sub_employee.role, sub_employee.department_id, sub_employee.office_id'
-            . ' FROM employee sub_employee'
-            . ' INNER JOIN department sub_employee_department'
-            . ' ON (sub_employee_department.id = sub_employee.department_id)'
-            . ' AND ((sub_employee.role = ?) AND (sub_employee_department.name = ?))'
-            . ' WHERE (sub_employee.deleted = ?) AND (sub_employee_department.id = ?)',
+            'SELECT employee.id, employee.name, employee.active, employee.deleted,'
+            . ' employee.role, employee.department_id, employee.office_id'
+            . ' FROM employee'
+            . ' INNER JOIN department employee_self'
+            . ' ON (employee_self.id = employee.department_id)'
+            . ' AND ((employee.role = ?) AND (employee_self.name = ?))'
+            . ' WHERE (employee.deleted = ?) AND (employee_self.id = ?)',
             $derived->assembleSelect(),
             ['lead', 'Engineering', 'n', 1]
+        );
+    }
+
+    public function testSubQueryReversalEmitsADeprecationWhenARelationUsesTheDefaultReverseName()
+    {
+        // Filtering through "lead" (whose name differs from its target's table alias "employee") into the
+        // deeper to-many "ticket" reverses two hops. Reversing the ticket hop falls back to the source's
+        // table alias ("employee"), which differs from the path segment ("lead"), so a deprecation nudges
+        // towards setReverseName(). The produced SQL still uses the path segment for backwards compatibility.
+        $query = (new Query())
+            ->setDb(new TestConnection())
+            ->setModel(new Department())
+            ->columns('name')
+            ->filter(Filter::equal('lead.ticket.subject', 'x'));
+
+        $deprecations = [];
+        set_error_handler(function ($_, $message) use (&$deprecations) {
+            $deprecations[] = $message;
+
+            return true;
+        }, E_USER_DEPRECATED);
+
+        try {
+            $select = $query->assembleSelect();
+        } finally {
+            restore_error_handler();
+        }
+
+        $this->assertNotEmpty($deprecations, 'Reversal did not emit a deprecation');
+        $this->assertStringContainsString(
+            'Relation "department.lead.ticket" still uses the default table alias during reversal',
+            $deprecations[0]
+        );
+
+        $this->assertSql(
+            'SELECT department.name FROM department WHERE department.id IN ((SELECT'
+            . ' sub_ticket_lead_department.id AS sub_ticket_lead_department_id FROM ticket sub_ticket'
+            . ' INNER JOIN employee sub_ticket_lead ON (sub_ticket_lead.id = sub_ticket.employee_id)'
+            . ' AND ((sub_ticket.open = ?) AND (sub_ticket_lead.deleted = ?))'
+            . ' INNER JOIN department sub_ticket_lead_department'
+            . ' ON (sub_ticket_lead_department.id = sub_ticket_lead.department_id)'
+            . ' AND ((sub_ticket_lead.role = ?) AND (sub_ticket_lead_department.name = ?))'
+            . ' WHERE sub_ticket.subject = ?))',
+            $select,
+            ['y', 'n', 'lead', 'Engineering', 'x']
         );
     }
 

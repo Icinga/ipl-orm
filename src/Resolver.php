@@ -76,6 +76,21 @@ class Resolver
     }
 
     /**
+     * Override a model's default relations with the given ones
+     *
+     * @param Model $model
+     * @param Relations $relations
+     *
+     * @return $this
+     */
+    public function setRelations(Model $model, Relations $relations): static
+    {
+        $this->relations->offsetSet($model, $relations);
+
+        return $this;
+    }
+
+    /**
      * Get a model's relations
      *
      * @param Model $model
@@ -500,37 +515,32 @@ class Resolver
     /**
      * Resolve the given relation filter
      *
-     * Resolves each condition's column according to the referenced subject or, by default, the target.
-     * The target may also be referenced by the relation's name.
+     * Resolves each condition's column according to the referenced models or to the given default.
      *
      * @param Filter\Chain $filter
-     * @param string $name The name of the relation
-     * @param Model $source
-     * @param Model $target
+     * @param string $default Must be a valid subject
+     * @param array<string, Model> $subjects Models keyed by their name
      *
      * @throws InvalidArgumentException If a non-condition rule or invalid column is used in the filter
      */
-    public function resolveRelationFilter(Filter\Chain $filter, string $name, Model $source, Model $target): void
+    public function resolveRelationFilter(Filter\Chain $filter, string $default, Model ...$subjects): void
     {
-        $resolveColumn = function (string $column) use ($name, $source, $target): string {
+        $resolveColumn = function (string $column) use ($default, $subjects): string {
             // A column may reference the source or target table by its alias, defaulting to the target
             if (str_contains($column, '.')) {
                 [$alias, $column] = explode('.', $column, 2);
             } else {
-                $alias = $target->getTableAlias();
+                $alias = $default;
             }
 
-            $subject = match ($alias) {
-                $name => $target,
-                $source->getTableAlias() => $source,
-                $target->getTableAlias() => $target,
-                default => throw new InvalidArgumentException(sprintf(
-                    'Invalid relation alias "%s" for models "%s" and "%s"',
-                    $alias,
-                    get_class($source),
-                    get_class($target)
+            $subject = $subjects[$alias] ?? throw new InvalidArgumentException(sprintf(
+                'Invalid relation alias "%s". Available options are: %s',
+                $alias,
+                join(', ', array_map(
+                    fn($k) => sprintf('%s => %s', $k, get_class($subjects[$k])),
+                    array_keys($subjects)
                 ))
-            };
+            ));
 
             if (! $subject instanceof Junction && ! $this->hasSelectableColumn($subject, $column)) {
                 throw new InvalidArgumentException(sprintf(
@@ -546,8 +556,7 @@ class Resolver
         foreach ($filter->yieldRules() as $rule) {
             if (! $rule instanceof Filter\Condition) {
                 throw new InvalidArgumentException(sprintf(
-                    'Relation filter for model "%s" contains a non-condition rule of type "%s"',
-                    get_class($target),
+                    'Relation filter contains a non-condition rule of type "%s"',
                     get_class($rule)
                 ));
             }
@@ -566,42 +575,24 @@ class Resolver
      * Qualify the columns of the given filter
      *
      * @param Filter\Chain $filter
-     * @param Model|Relation $subject
+     * @param array<string, Model> $subjects Models keyed by their name
      *
      * @return Filter\Chain
      *
      * @throws InvalidArgumentException If a non-condition rule is used or an unknown model is referenced
      */
-    public function qualifyFilter(Filter\Chain $filter, Model|Relation $subject): Filter\Chain
+    public function qualifyFilter(Filter\Chain $filter, Model ...$subjects): Filter\Chain
     {
-        $qualifyColumn = function (string $column) use ($subject): string {
+        $qualifyColumn = function (string $column) use ($subjects): string {
             [$alias, $column] = explode('.', $column, 2);
 
-            if ($subject instanceof Model) {
-                if ($subject->getTableAlias() !== $alias) {
-                    throw new InvalidArgumentException(sprintf(
-                        'Unknown model alias "%s" for filter column "%s"',
-                        $alias,
-                        $column
-                    ));
-                }
+            $subject = $subjects[$alias] ?? throw new InvalidArgumentException(sprintf(
+                'Unknown model alias "%s" for filter column "%s"',
+                $alias,
+                $column
+            ));
 
-                return $this->qualifyColumn($column, $this->getAlias($subject));
-            }
-
-            return $this->qualifyColumn(
-                $column,
-                match ($alias) {
-                    $subject->getSource()->getTableAlias() => $this->getAlias($subject->getSource()),
-                    $subject->getTarget()->getTableAlias() => $this->getAlias($subject->getTarget()),
-                    $subject->getName() => $this->getAlias($subject->getTarget()),
-                    default => throw new InvalidArgumentException(sprintf(
-                        'Unknown model alias "%s" for filter column "%s"',
-                        $alias,
-                        $column
-                    ))
-                }
-            );
+            return $this->qualifyColumn($column, $this->getAlias($subject));
         };
 
         $filter = clone $filter; // Deep clone
@@ -670,7 +661,9 @@ class Resolver
      * @param string $path
      * @param ?Model $subject
      *
-     * @return Generator
+     * @return Generator<mixed, string, Relation, void>
+     * @phpstan-return Generator<string, Relation, mixed, void>
+     *
      * @throws InvalidArgumentException In case $path is not fully qualified
      * @throws InvalidRelationException In case a relation is unknown
      */
@@ -715,32 +708,10 @@ class Resolver
                     throw new InvalidRelationException($relationName, $target);
                 }
 
-                $relation = $targetRelations->get($relationName);
-                $relation->setSource($target);
-                $this->resolveRelationFilter(
-                    $relation->getFilter(),
-                    $relationName,
-                    $target,
-                    $relation->getTarget()
-                );
+                $relation = $targetRelations->get($relationName)
+                    ->bindTo($target, $relationPath, $this);
 
                 $resolvedRelations[$relationPath] = $relation;
-
-                if ($relation instanceof BelongsToMany) {
-                    $this->resolveRelationFilter(
-                        $relation->getThroughFilter(),
-                        $relationName,
-                        $target,
-                        $relation->getThrough()
-                    );
-
-                    $this->setAlias($relation->getThrough(), join('_', array_merge(
-                        array_slice($segments, 0, -1),
-                        [$relation->getThroughAlias()]
-                    )));
-                }
-
-                $this->setAlias($relation->getTarget(), join('_', $segments));
             }
 
             yield $relationPath => $relation;

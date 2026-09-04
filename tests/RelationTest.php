@@ -2,11 +2,30 @@
 
 namespace ipl\Tests\Orm;
 
+use ipl\Orm\Query;
 use ipl\Orm\Relation;
+use ipl\Orm\Relation\BelongsTo;
+use ipl\Orm\Relation\HasMany;
+use ipl\Orm\Relation\HasOne;
+use ipl\Orm\Resolver;
+use ipl\Sql\Connection;
+use ipl\Sql\Test\SqlAssertions;
 use ipl\Stdlib\Filter;
+use ipl\Tests\Orm\Lib\Model\Department;
+use ipl\Tests\Orm\Lib\Model\Loose;
+use ipl\Tests\Orm\Lib\Model\RestrictedUser;
+use LogicException;
+use RuntimeException;
 
 class RelationTest extends \PHPUnit\Framework\TestCase
 {
+    use SqlAssertions;
+
+    public function setUp(): void
+    {
+        $this->setUpSqlAssertions();
+    }
+
     public function testGetNameReturnsNullIfUnset()
     {
         $this->assertNull((new Relation())->getName());
@@ -205,5 +224,130 @@ class RelationTest extends \PHPUnit\Framework\TestCase
         }
 
         $this->assertSame([$relation], $keys);
+    }
+
+    public function testGetReverseNameReturnsNullByDefault()
+    {
+        $this->assertNull((new Relation())->getReverseName());
+    }
+
+    public function testSetReverseNameSetsTheReverseName()
+    {
+        $this->assertSame('foo', (new Relation())->setReverseName('foo')->getReverseName());
+    }
+
+    public function testGetReverseClassFallsBackToTheRelationsOwnClass()
+    {
+        $this->assertSame(Relation::class, (new Relation())->getReverseClass());
+        // Subclasses provide sensible defaults
+        $this->assertSame(BelongsTo::class, (new HasMany())->getReverseClass());
+        $this->assertSame(HasMany::class, (new BelongsTo())->getReverseClass());
+    }
+
+    public function testSetReverseClassOverridesTheDefault()
+    {
+        $this->assertSame(
+            HasOne::class,
+            (new BelongsTo())->setReverseClass(HasOne::class)->getReverseClass()
+        );
+    }
+
+    public function testReverseThrowsIfTheRelationIsUnbound()
+    {
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessage('Cannot reverse an unbound relation');
+
+        (new HasMany())->reverse($this->createStub(Resolver::class));
+    }
+
+    public function testReverseReusesADeclaredInverseRelation()
+    {
+        $source = new Department();
+        $resolver = (new Query())->setModel($source)->getResolver();
+        // Binding qualifies the filter and registers the target alias, as resolveRelations() would
+        $forward = $resolver->getRelations($source)
+            ->get('employee')
+            ->bindTo($source, 'department.employee', $resolver);
+
+        $resolver->getRelations($forward->getTarget())
+            ->get('department')
+            ->setCandidateKey('office_id'); // Silly, but must be retained
+
+        $inverse = $forward->reverse($resolver);
+
+        // Employee declares a matching belongsTo 'department' (named after the source's table alias) which
+        // is reused as the inverse and re-targeted at the very source instance
+        $this->assertSame('office_id', $inverse->getCandidateKey());
+        $this->assertSame('department', $inverse->getName());
+        $this->assertSame($source, $inverse->getTarget());
+    }
+
+    public function testADeclaredInverseRelationCanBeReusedDuringReverse()
+    {
+        $connection = $this->createMock(Connection::class);
+        $connection->method('select')->willReturnCallback(function () {
+            $stmt = $this->createMock(\PDOStatement::class);
+            $stmt->expects($this->once())->method('setFetchMode')->with(\PDO::FETCH_ASSOC);
+            $stmt->method('getIterator')->willReturn(new \ArrayIterator([
+                ['id' => 1, 'coupler' => 'test']
+            ]));
+
+            return $stmt;
+        });
+
+        $loose = Loose::on($connection)
+            ->filter(Filter::equal('id', 1))
+            ->columns('id')
+            ->first();
+
+        $others = $loose->relationship->filter(Filter::unequal('loose.id', 1));
+
+        $this->assertSql(
+            <<<'SQL'
+            SELECT relationship.id, relationship.coupler
+            FROM relationship
+            INNER JOIN loose relationship_self ON relationship_self.coupler = relationship.coupler
+            WHERE (relationship_self.coupler = ?)
+              AND ((relationship.id NOT IN ((SELECT sub_loose_relationship.id AS sub_loose_relationship_id
+                 FROM loose sub_loose
+                 LEFT JOIN relationship sub_loose_relationship ON sub_loose_relationship.coupler = sub_loose.coupler
+                 WHERE (sub_loose.id = ?) AND (sub_loose_relationship.id IS NOT NULL)
+                 GROUP BY sub_loose_relationship.id
+                 HAVING COUNT(DISTINCT sub_loose.id) >= ?)) OR relationship.id IS NULL))
+            SQL,
+            $others->assembleSelect(),
+            ['test', 1, 1]
+        );
+    }
+
+    public function testReverseCreatesAnInverseRelationWhenNoneIsDeclared()
+    {
+        $source = new RestrictedUser();
+        $resolver = (new Query())->setModel($source)->getResolver();
+        // RestrictedGroup declares no relations, so the inverse has to be created eagerly
+        $forward = $resolver->getRelations($source)
+            ->get('restricted_group')
+            ->bindTo($source, 'restricted_user.restricted_group', $resolver);
+
+        $inverse = $forward->reverse($resolver);
+
+        $this->assertInstanceOf(BelongsTo::class, $inverse);
+        $this->assertSame('restricted_user', $inverse->getName());
+        $this->assertSame($source, $inverse->getTarget());
+        $this->assertInstanceOf(RestrictedUser::class, $inverse->getTarget());
+    }
+
+    public function testReverseThrowsIfADeclaredInverseTargetsAnIncompatibleModel()
+    {
+        $source = new Department();
+        $forward = (new Query())->setModel($source)->getResolver()->getRelations($source)->get('employee')
+            ->setSource($source)
+            // Employee.office targets Office, but the source of this relation is a Department
+            ->setReverseName('office');
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('is not compatible with the target model of the inverse relation');
+
+        $forward->reverse((new Query())->getResolver());
     }
 }

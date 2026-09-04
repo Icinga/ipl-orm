@@ -6,9 +6,11 @@ use Generator;
 use ipl\Orm\Model;
 use ipl\Orm\Relation;
 use ipl\Orm\Relations;
+use ipl\Orm\Resolver;
 use ipl\Stdlib\Filter;
 use ipl\Stdlib\Filter\Rule;
 use LogicException;
+use RuntimeException;
 
 /**
  * Many-to-many relationship
@@ -37,6 +39,9 @@ class BelongsToMany extends Relation
 
     /** @var ?Filter\Chain Additional JOIN conditions for the join table */
     protected ?Filter\Chain $throughFilter = null;
+
+    /** @var ?array<string, Model> Models additional join table conditions may reference, keyed by their alias */
+    protected ?array $throughFilterSubjects = null;
 
     /**
      * Get the name of the join table or junction model class
@@ -142,11 +147,11 @@ class BelongsToMany extends Relation
     /**
      * Set the column name(s) of the target model's foreign key found in the join table
      *
-     * @param string|array $targetForeignKey Array if the foreign key is compound, string otherwise
+     * @param string|array|null $targetForeignKey Array if the foreign key is compound, string otherwise
      *
      * @return $this
      */
-    public function setTargetForeignKey(string|array $targetForeignKey): static
+    public function setTargetForeignKey(string|array|null $targetForeignKey): static
     {
         $this->targetForeignKey = $targetForeignKey;
 
@@ -166,11 +171,11 @@ class BelongsToMany extends Relation
     /**
      * Set the candidate key column name(s) in the target table which references the target foreign key
      *
-     * @param string|array $targetCandidateKey Array if the foreign key is compound, string otherwise
+     * @param string|array|null $targetCandidateKey Array if the foreign key is compound, string otherwise
      *
      * @return $this
      */
-    public function setTargetCandidateKey(string|array $targetCandidateKey): static
+    public function setTargetCandidateKey(string|array|null $targetCandidateKey): static
     {
         $this->targetCandidateKey = $targetCandidateKey;
 
@@ -207,6 +212,61 @@ class BelongsToMany extends Relation
         }
 
         $this->throughFilter = $filter;
+
+        return $this;
+    }
+
+    /**
+     * Get subjects the join table filter may reference
+     *
+     * @return array<string, Model>
+     */
+    public function getThroughFilterSubjects(): array
+    {
+        return $this->throughFilterSubjects ?? throw new LogicException(sprintf(
+            'Cannot get filter subjects of an unbound relation. Please call %s::bindTo() first.',
+            static::class
+        ));
+    }
+
+    /**
+     * Add subjects the join table filter may reference, while keeping existing ones
+     *
+     * @param array<string, Model> ...$subjects
+     *
+     * @return $this
+     */
+    public function addThroughFilterSubjects(Model ...$subjects): static
+    {
+        $this->throughFilterSubjects ??= [];
+        $this->throughFilterSubjects += $subjects;
+
+        return $this;
+    }
+
+    public function bindTo(Model $source, string $path, Resolver $resolver): static
+    {
+        // Allow to reference the join table in the second hop
+        $this->addFilterSubjects(...[$this->getThroughAlias() => $this->getThrough()]);
+
+        parent::bindTo($source, $path, $resolver);
+
+        $this->addThroughFilterSubjects(...[
+            $this->getSource()->getTableAlias() => $this->getSource(),
+            $this->getThrough()->getTableAlias() => $this->getThrough(),
+            $this->getThroughAlias() => $this->getThrough()
+        ]);
+
+        $resolver->resolveRelationFilter(
+            $this->getThroughFilter(),
+            $this->getThroughAlias(),
+            ...$this->getThroughFilterSubjects()
+        );
+
+        $resolver->setAlias($this->getThrough(), join('_', array_merge(
+            array_slice(explode('.', $path), 0, -1),
+            [$this->getThroughAlias()]
+        )));
 
         return $this;
     }
@@ -250,6 +310,7 @@ class BelongsToMany extends Relation
             ->setSource($source)
             ->setTarget($junction)
             ->setFilter($this->getThroughFilter())
+            ->addFilterSubjects(...$this->getThroughFilterSubjects())
             ->setCandidateKey($this->extractKey($possibleCandidateKey))
             ->setForeignKey($this->extractKey($possibleForeignKey))
             ->setJoinType($this->getJoinType());
@@ -262,11 +323,50 @@ class BelongsToMany extends Relation
             ->setSource($junction)
             ->setTarget($target)
             ->setFilter($this->getFilter())
+            ->addFilterSubjects(...$this->getFilterSubjects())
             ->setCandidateKey($this->extractKey($possibleTargetCandidateKey))
             ->setForeignKey($this->extractKey($possibleTargetForeignKey))
             ->setJoinType($this->getJoinType());
 
         yield from $toTarget->resolve();
+    }
+
+    public function reverse(Resolver $resolver): Relation
+    {
+        $relation = parent::reverse($resolver);
+        if ($relation->getThroughClass() !== null && $relation->getThroughClass() !== $this->getThroughClass()) {
+            throw new RuntimeException(sprintf(
+                'The junction model of the relation "%s" (%s) is not compatible'
+                . ' with the junction model of the inverse relation (%s != %s)',
+                $this->getName(),
+                get_class($this->getSource()),
+                $relation->getThroughClass(),
+                $this->getThroughClass()
+            ));
+        }
+
+        $relation->through($this->getThroughClass());
+        $relation->setThrough($this->getThrough());
+        $relation->setThroughAlias($this->getThroughAlias());
+
+        // The source table is allowed to reference in a join filter so this must ensure that this works on
+        // the way back as well. Since the source's instance is kept by parent::reverse() this should be safe.
+        $relation->addThroughFilterSubjects(...[$relation->getTarget()->getTableAlias() => $relation->getTarget()]);
+
+        if (! $this->getThroughFilter()->isEmpty()) {
+            $relation->setThroughFilter(clone $this->getThroughFilter());
+        }
+
+        if (! $resolver->getRelations($this->getTarget())->has($relation->getName())) {
+            // The relation is eagerly set up and thus needs proper key pairs,
+            // but reversed as only the forward relation's pairs are known.
+            $relation->setCandidateKey($this->getTargetCandidateKey());
+            $relation->setForeignKey($this->getTargetForeignKey());
+            $relation->setTargetCandidateKey($this->getCandidateKey());
+            $relation->setTargetForeignKey($this->getForeignKey());
+        }
+
+        return $relation;
     }
 
     protected function extractKey(array $possibleKey): string|array|null
