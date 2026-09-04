@@ -607,4 +607,16 @@ SQL;
             $query->assembleSelect()
         );
     }
+
+    /**
+     * This test asserts that passing an unreferenced target model to {@see \ipl\Orm\Query::createSubQuery}
+     * works without an error, to ensure that path reversal keeps model references intact.
+     */
+    public function testUnreferencedTargetCanBePassedToCreateSubQuery(): void
+    {
+        $query = Profile::on(new TestConnection())
+            ->createSubQuery(new User(), 'profile.user');
+
+        $this->assertInstanceOf(Query::class, $query);
+    }
 }

@@ -703,6 +703,7 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
         $forwardHops = array_slice(explode('.', $targetPath), 0, -1);
         $forwardRelations = iterator_to_array($this->getResolver()->resolveRelations($targetPath, $from));
 
+        $previousHop = $target;
         $sourceHops = [$target->getTableAlias()];
         foreach (array_reverse($forwardRelations) as $forwardPath => $relation) {
             $oppositeRelation = $relation->reverse($subQueryResolver);
@@ -724,21 +725,22 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
              * query join. This is fine right now, since {@see Compat\FilterProcessor::requireAndResolveFilterColumns}
              * will utilize separate sub queries for individual relations at the moment.
              */
-            $subQueryResolver->setRelations($relation->getTarget(), (new Relations())->add($oppositeRelation));
+            $subQueryResolver->setRelations($previousHop, (new Relations())->add($oppositeRelation));
 
-            $target = $oppositeRelation->getTarget();
             $sourceHops[] = $oppositeRelation->getName();
+            $previousHop = $oppositeRelation->getTarget();
         }
 
+        unset($previousHop);
         $sourcePath = join('.', $sourceHops);
 
         // Up until here only the required relations are eagerly registered but not used yet
-        $subQuery->utilize($sourcePath);
+        $subQueryTarget = $subQuery->utilize($sourcePath)->getResolver()->resolveRelation($sourcePath)->getTarget();
 
         if (! $link) {
             $subQuery->columns(array_map(function ($keyName) use ($sourcePath) {
                 return "$sourcePath.$keyName";
-            }, (array) $target->getKeyName()));
+            }, (array) $subQueryTarget->getKeyName()));
 
             return $subQuery;
         }
@@ -749,7 +751,7 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
 
         $resolver = $this->getResolver();
         $baseAlias = $resolver->getAlias($this->getModel());
-        $sourceAlias = $subQueryResolver->getAlias($target);
+        $sourceAlias = $subQueryResolver->getAlias($subQueryTarget);
 
         $subQueryConditions = [];
         foreach ((array) $this->getModel()->getKeyName() as $column) {
