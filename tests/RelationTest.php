@@ -285,7 +285,7 @@ class RelationTest extends \PHPUnit\Framework\TestCase
     public function testADeclaredInverseRelationCanBeReusedDuringReverse()
     {
         $connection = $this->createMock(Connection::class);
-        $connection->method('select')->willReturnCallback(function() {
+        $connection->method('select')->willReturnCallback(function () {
             $stmt = $this->createMock(\PDOStatement::class);
             $stmt->expects($this->once())->method('setFetchMode')->with(\PDO::FETCH_ASSOC);
             $stmt->method('getIterator')->willReturn(new \ArrayIterator([
