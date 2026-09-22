@@ -3,6 +3,7 @@
 namespace ipl\Tests\Orm;
 
 use ipl\Orm\Exception\InvalidRelationException;
+use ipl\Orm\NoopQuery;
 use ipl\Orm\Query;
 use ipl\Orm\ResolvedExpression;
 use ipl\Sql\Expression;
@@ -638,5 +639,17 @@ SQL,
             [1, 'test'],
             'The base model should be referenced as "self" in filters when deriving a query'
         );
+    }
+
+    public function testDeriveReturnsAValidButEmptyQueryIfNoLinkIsPossible(): void
+    {
+        $user = new User(['username' => 'test']); // Deliberately has no id
+        $profile = (new Query())->setDb(new TestConnection())->derive('profile', $user);
+        // Deliberately used as if it is a usual query
+        $profile->filter(Filter::equal('self.username', 'test'));
+
+        $this->assertInstanceOf(NoopQuery::class, $profile);
+        $this->assertEmpty(iterator_to_array($profile));
+        $this->assertNull($profile->first());
     }
 }

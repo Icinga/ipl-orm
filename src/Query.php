@@ -670,6 +670,10 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
         }
 
         foreach ($relatedKeys as $fk => $_) {
+            if (! isset($source->$fk)) {
+                return new NoopQuery();
+            }
+
             $query->filter(Filter::equal(
                 sprintf('%s.%s', $reversed->getName(), $fk),
                 $source->$fk
