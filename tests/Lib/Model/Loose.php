@@ -5,29 +5,28 @@ namespace ipl\Tests\Orm\Lib\Model;
 use ipl\Orm\Model;
 use ipl\Orm\Relations;
 
-class Chair extends Model
+class Loose extends Model
 {
     public function getTableName()
     {
-        return 'chair';
+        return 'loose';
     }
 
     public function getKeyName()
     {
-        return ['department_id', 'employee_id'];
+        return 'id';
     }
 
     public function getColumns()
     {
-        return [
-            'department_id',
-            'employee_id',
-            'vendor'
-        ];
+        return ['coupler'];
     }
 
     public function createRelations(Relations $relations)
     {
-        $relations->hasOne('employee', Employee::class);
+        $relations->hasMany('relationship', Relationship::class)
+            ->setForeignKey('coupler')
+            ->setCandidateKey('coupler')
+            ->setJoinType('LEFT');
     }
 }

@@ -226,10 +226,14 @@ class ResolverTest extends TestCase
         $resolver = (new Query())->setModel(new Department())->getResolver();
 
         $filter = Filter::all(Filter::equal('active', 'y'), Filter::equal('employee.role', 'lead'));
-        $resolver->resolveRelationFilter($filter, 'relation', new Department(), new Employee());
+        $resolver->resolveRelationFilter($filter, 'relation', ...[
+            'relation' => new Employee(),
+            'employee' => new Employee(),
+            'department' => new Department()
+        ]);
 
         $columns = array_map(fn ($rule) => $rule->getColumn(), iterator_to_array($filter->yieldRules()));
-        $this->assertSame(['employee.active', 'employee.role'], $columns);
+        $this->assertSame(['relation.active', 'employee.role'], $columns);
     }
 
     public function testResolveRelationFilterQualifiesSourceColumns()
@@ -237,7 +241,11 @@ class ResolverTest extends TestCase
         $resolver = (new Query())->setModel(new Department())->getResolver();
 
         $filter = Filter::all(Filter::equal('department.name', 'Engineering'));
-        $resolver->resolveRelationFilter($filter, 'relation', new Department(), new Employee());
+        $resolver->resolveRelationFilter($filter, 'relation', ...[
+            'relation' => new Employee(),
+            'employee' => new Employee(),
+            'department' => new Department()
+        ]);
 
         $this->assertSame('department.name', iterator_to_array($filter->yieldRules())[0]->getColumn());
     }
@@ -247,7 +255,10 @@ class ResolverTest extends TestCase
         $resolver = (new Query())->setModel(new Department())->getResolver();
 
         $filter = Filter::all(Filter::equal('supplementary.name', 'Q/A'));
-        $resolver->resolveRelationFilter($filter, 'supplementary', new Department(), new Department());
+        $resolver->resolveRelationFilter($filter, 'supplementary', ...[
+            'supplementary' => new Department(),
+            'department' => new Department()
+        ]);
 
         $this->assertSame('supplementary.name', iterator_to_array($filter->yieldRules())[0]->getColumn());
     }
@@ -262,8 +273,11 @@ class ResolverTest extends TestCase
         $resolver->resolveRelationFilter(
             Filter::all(Filter::equal('office.city', 'London')),
             'relation',
-            new Department(),
-            new Employee()
+            ...[
+                'relation' => new Employee(),
+                'employee' => new Employee(),
+                'department' => new Department()
+            ]
         );
     }
 
@@ -277,8 +291,11 @@ class ResolverTest extends TestCase
         $resolver->resolveRelationFilter(
             Filter::all(Filter::equal('unknown', 'x')),
             'relation',
-            new Department(),
-            new Employee()
+            ...[
+                'relation' => new Employee(),
+                'employee' => new Employee(),
+                'department' => new Department()
+            ]
         );
     }
 
@@ -288,7 +305,11 @@ class ResolverTest extends TestCase
         $junction = (new Junction())->setTableName('membership');
 
         $filter = Filter::all(Filter::equal('membership.since', '2020'));
-        $resolver->resolveRelationFilter($filter, 'relation', new Department(), $junction);
+        $resolver->resolveRelationFilter($filter, 'relation', ...[
+            'relation' => $junction,
+            'membership' => $junction,
+            'department' => new Department()
+        ]);
 
         $this->assertSame('membership.since', iterator_to_array($filter->yieldRules())[0]->getColumn());
     }
@@ -302,7 +323,7 @@ class ResolverTest extends TestCase
 
         $query->getResolver()->qualifyFilter(
             Filter::all(Filter::equal('employee.active', 'y')),
-            $query->getModel()
+            ...[$query->getModel()->getTableAlias() => $query->getModel()]
         );
     }
 
@@ -311,7 +332,9 @@ class ResolverTest extends TestCase
         $query = (new Query())->setModel(new Department());
 
         $original = Filter::all(Filter::equal('department.name', 'Engineering'));
-        $qualified = $query->getResolver()->qualifyFilter($original, $query->getModel());
+        $qualified = $query->getResolver()->qualifyFilter($original, ...[
+            $query->getModel()->getTableAlias() => $query->getModel()
+        ]);
 
         // The chain is deep cloned, hence the original is left untouched
         $this->assertNotSame($original, $qualified, 'The given filter has not been cloned');
