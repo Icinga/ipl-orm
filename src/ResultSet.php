@@ -89,6 +89,7 @@ class ResultSet implements Iterator, Countable
     public function current()
     {
         if ($this->position === null) {
+            $this->count = 0;
             $this->advance();
         }
 
@@ -102,10 +103,6 @@ class ResultSet implements Iterator, Countable
         }
 
         if ($this->isCacheDisabled || ! $this->cache->valid()) {
-            // Raise count during the first loop only after each iteration, so
-            // that it is synchronized with how many times a loop has been run.
-            $this->count += 1;
-
             $this->generator->next();
             $this->advance();
         } else {
@@ -116,6 +113,7 @@ class ResultSet implements Iterator, Countable
     public function key(): int
     {
         if ($this->position === null) {
+            $this->count = 0;
             $this->advance();
         }
 
@@ -138,8 +136,8 @@ class ResultSet implements Iterator, Countable
         }
 
         if ($this->position === null) {
-            $this->advance();
             $this->count = 0;
+            $this->advance();
         } else {
             $this->position = 0;
         }
@@ -175,6 +173,12 @@ class ResultSet implements Iterator, Countable
             $this->position = 0;
         } else {
             $this->position += 1;
+        }
+
+        if ($this->limit === null || $this->position < $this->limit) {
+            // Raise count during the first loop only after each iteration, so
+            // that it is synchronized with how many times a loop has been run.
+            $this->count += 1;
         }
     }
 
