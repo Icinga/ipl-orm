@@ -201,6 +201,7 @@ class ResultSetTest extends TestCase
         }
 
         $this->assertSame(['a', 'b', 'c'], $result);
+        $this->assertSame(3, $set->count(), 'Count must not change due to iteration');
     }
 
     public function testLimitedCountWithCacheBeforeIteration(): void
