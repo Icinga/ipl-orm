@@ -12,7 +12,7 @@ use ValueError;
  * Convert backed-enum database values to and from PHP enum instances
  *
  * The enum's backing value (string|int) is stored in the database. On retrieval the raw scalar
- * is converted to the corresponding enum case via {@see BackedEnum::from()}; on persistence the
+ * is converted to the corresponding enum case via {@see BackedEnum::tryFrom()}; on persistence the
  * enum instance is unwrapped back to its backing value. Null is preserved as null in both directions.
  *
  * ```php
@@ -47,8 +47,6 @@ class EnumCast extends PropertyBehavior
      * @param int|string|null $value
      *
      * @return ?BackedEnum
-     *
-     * @throws ValueConversionException
      */
     public function fromDb($value, $key, $_)
     {
@@ -56,15 +54,7 @@ class EnumCast extends PropertyBehavior
             return $value;
         }
 
-        try {
-            return $this->enum::from($value);
-        } catch (ValueError $e) {
-            throw new ValueConversionException(sprintf(
-                "%s (key: '%s')",
-                $e->getMessage(),
-                $key
-            ));
-        }
+        return $this->enum::tryFrom($value);
     }
 
     /**

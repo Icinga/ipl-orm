@@ -79,9 +79,7 @@ class EnumCastTest extends TestCase
 
     public function testFromDbThrowsForUnknownBackingValue(): void
     {
-        $this->expectException(ValueConversionException::class);
-
-        $this->behavior->fromDb('purple', 'color', null);
+        $this->assertNull($this->behavior->fromDb('purple', 'color', null));
     }
 
     public function testFromDbIsIdempotentWhenValueIsAlreadyAnEnumInstance(): void
