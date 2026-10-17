@@ -208,7 +208,13 @@ class Resolver
             ));
         }
 
-        return $this->aliasPrefix . $this->aliases[$model];
+        $alias = ($this->aliasPrefix ?? '') . $this->aliases[$model];
+
+        if (strlen($alias) > 63) {
+            $alias = $this->query->getDb()->getAdapter()->quoteIdentifier('x' . hash('xxh3', $alias));
+        }
+
+        return $alias;
     }
 
     /**
