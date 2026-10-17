@@ -6,6 +6,7 @@ use ipl\Orm\Behavior\Binary;
 use ipl\Orm\Exception\ValueConversionException;
 use ipl\Orm\Query;
 use ipl\Sql\Connection;
+use ipl\Sql\Expression;
 use ipl\Stdlib\Filter\Equal;
 use UnexpectedValueException;
 
@@ -105,6 +106,27 @@ class BinaryTest extends \PHPUnit\Framework\TestCase
     {
         $this->expectException(UnexpectedValueException::class);
         $this->behavior(true)->rewriteCondition($this->condition(fopen('php://temp', 'r')));
+    }
+
+    public function testPersistPropertyReturnsExpressionValuesAsIsIfAdapterIsPostgreSQL(): void
+    {
+        // Expression values (e.g. from relation filters) must not be hex-encoded but passed through as-is
+        $expression = new Expression('NOW()');
+
+        $this->assertSame(
+            $expression,
+            $this->behavior(true)->persistProperty($expression, static::TEST_COLUMN)
+        );
+    }
+
+    public function testRewriteConditionLeavesExpressionValuesUnchanged(): void
+    {
+        $expression = new Expression('other_column');
+        $condition = $this->condition($expression);
+
+        $this->behavior(true)->rewriteCondition($condition);
+
+        $this->assertSame($expression, $condition->getValue());
     }
 
     protected function behavior(bool $postgres = false): Binary

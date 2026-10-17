@@ -8,6 +8,7 @@ use ipl\Orm\Contract\RewriteFilterBehavior;
 use ipl\Orm\Exception\ValueConversionException;
 use ipl\Orm\Query;
 use ipl\Sql\Adapter\Pgsql;
+use ipl\Sql\Expression;
 use ipl\Stdlib\Filter\Condition;
 use UnexpectedValueException;
 
@@ -44,7 +45,7 @@ class Binary extends PropertyBehavior implements QueryAwareBehavior, RewriteFilt
      */
     public function toDb($value, $key, $_)
     {
-        if (! $this->isPostgres) {
+        if (! $this->isPostgres || $value instanceof Expression) {
             return $value;
         }
 
@@ -82,6 +83,8 @@ class Binary extends PropertyBehavior implements QueryAwareBehavior, RewriteFilt
 
             if ($this->isPostgres && is_resource($value)) {
                 throw new UnexpectedValueException(sprintf('Unexpected resource for %s', $column));
+            } elseif ($value instanceof Expression) {
+                return;
             }
 
             // ctype_xdigit expects strings.
