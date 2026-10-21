@@ -38,6 +38,22 @@ class UUIDTest extends TestCase
         );
     }
 
+    public function testRetrievePropertyCanBeAppliedRepeatedly(): void
+    {
+        $behavior = $this->behavior();
+        $uuid = $behavior->retrieveProperty(
+            RamseyUuid::fromString(static::TEST_UUID_VALUE)->getBytes(),
+            static::TEST_COLUMN
+        );
+
+        $this->assertSame($uuid, $behavior->retrieveProperty($uuid, static::TEST_COLUMN));
+
+        $behavior = $this->behavior(true);
+        $uuid = $behavior->retrieveProperty(static::TEST_UUID_VALUE, static::TEST_COLUMN);
+
+        $this->assertSame($uuid, $behavior->retrieveProperty($uuid, static::TEST_COLUMN));
+    }
+
     public function testPersistPropertyReturnsNullWhenValueIsNull(): void
     {
         $this->assertNull($this->behavior()->persistProperty(null, static::TEST_COLUMN));

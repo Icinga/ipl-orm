@@ -20,8 +20,8 @@ class UUID extends PropertyBehavior implements QueryAwareBehavior
 
     public function fromDb($value, $key, $_)
     {
-        if ($value === null) {
-            return null;
+        if ($value === null || $value instanceof UuidInterface) {
+            return $value;
         }
 
         if (! is_string($value)) {
