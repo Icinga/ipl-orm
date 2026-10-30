@@ -622,6 +622,31 @@ SQL;
         $this->assertInstanceOf(Query::class, $query);
     }
 
+    public function testCreateSubQueryAcceptsRelativeTargetPaths(): void
+    {
+        $deprecations = [];
+        set_error_handler(function ($_, $message) use (&$deprecations) {
+            $deprecations[] = $message;
+
+            return true;
+        }, E_USER_DEPRECATED);
+
+        try {
+            $query = Profile::on(new TestConnection())
+                ->createSubQuery(new User(), 'user');
+        } finally {
+            restore_error_handler();
+        }
+
+        $this->assertNotEmpty($deprecations, 'createSubQuery did not emit a deprecation');
+        $this->assertStringContainsString(
+            'Target path "user" does not start with the source model\'s table alias "profile".',
+            $deprecations[0]
+        );
+
+        $this->assertInstanceOf(Query::class, $query);
+    }
+
     public function testDeriveLetsTheBaseModelBeReferencedAsSelfInFilters(): void
     {
         $user = new User(['id' => 1, 'username' => 'test']);
