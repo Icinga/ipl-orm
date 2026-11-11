@@ -367,7 +367,7 @@ class VisibilityFilterTest extends TestCase
             'SELECT employee.id, employee.name, employee.active, employee.deleted,'
             . ' employee.role, employee.department_id, employee.office_id'
             . ' FROM employee'
-            . ' LEFT JOIN department employee_self'
+            . ' INNER JOIN department employee_self'
             . ' ON (employee_self.id = employee.department_id) AND (employee.active = ?)'
             . ' WHERE (employee.deleted = ?) AND (employee_self.id = ?)',
             $derived->assembleSelect(),
