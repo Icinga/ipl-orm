@@ -233,6 +233,15 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
                         // occurrence. This is because `$generalRules` apply to all comparisons of such a column and
                         // need to be applied to all sub queries.
                         continue;
+                    } elseif (isset($comparisons[Filter\Like::class])) {
+                        // A like comparison with a value of '*' is a special case. It is used to filter for non-NULL
+                        // values and so is semantically equivalent to a negation, not a positive comparison. Upon
+                        // a single occurrence, all other comparisons are handled the same as for any other negation.
+                        foreach ($comparisons[Filter\Like::class] as $rule) {
+                            if ($rule->getValue() === '*') {
+                                continue 2;
+                            }
+                        }
                     }
 
                     // Single occurring columns don't need their own sub query
@@ -253,12 +262,35 @@ class FilterProcessor extends \ipl\Sql\Compat\FilterProcessor
                 $subQueryFilters = [];
                 foreach ($columns as $column => $comparisons) {
                     foreach ($comparisons as $conditionClass => $rules) {
-                        if ($conditionClass === Filter\Unequal::class || $conditionClass === Filter\Unlike::class) {
+                        if ($conditionClass === Filter\Unequal::class) {
                             // Unequal comparisons are always put into their own sub query
                             $subQueryFilters[] = [$rules, count($rules), true];
-                        } elseif (count($rules) > $count) {
-                            // If there are multiple columns used multiple times in the same relation, we have to decide
-                            // which to use as the primary comparison. That is the column that is used most often.
+
+                            continue;
+                        }
+
+                        if ($conditionClass === Filter\Unlike::class) {
+                            // An unlike comparison with a value of '*' is a special case. It is used to filter for NULL
+                            // values and so is semantically equivalent to a positive comparison, not a negation.
+                            $positive = [];
+                            foreach ($comparisons[Filter\Unlike::class] as $rule) {
+                                if ($rule->getValue() === '*') {
+                                    $positive[] = $rule;
+                                }
+                            }
+
+                            $rules = array_udiff($rules, $positive, fn($a, $b) => $a === $b ? 0 : -1);
+                            $subQueryFilters[] = [$rules, count($rules), true];
+
+                            $rules = $positive;
+                            if (empty($rules)) {
+                                continue;
+                            }
+                        }
+
+                        if (count($rules) > $count) {
+                            // If there are multiple comparisons used many times in the same relation, we have to decide
+                            // which to use as the primary comparison. That is the comparisons that is used most often.
                             if (! empty($baseFilters)) {
                                 array_push($generalRules, ...$baseFilters);
                             }
