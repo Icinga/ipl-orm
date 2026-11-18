@@ -34,6 +34,7 @@ class Employee extends Model
     {
         $relations->belongsTo('department', Department::class);
         $relations->belongsTo('office', Office::class)
+            ->setFilter(Filter::equal('city', 'Nuremberg'))
             ->setJoinType('LEFT');
         $relations->hasMany('chair', Chair::class);
         $relations->hasMany('ticket', Ticket::class)
