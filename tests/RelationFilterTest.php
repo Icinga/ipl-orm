@@ -1900,22 +1900,92 @@ class RelationFilterTest extends TestCase
     protected function createOfficesAndEmployees(Connection $db)
     {
         $db->insert('office', ['id' => 1, 'city' => 'London']); // Two
-        $db->insert('employee', ['id' => 1, 'office_id' => 1, 'name' => 'Donald', 'role' => 'Accountant']);
-        $db->insert('employee', ['id' => 2, 'office_id' => 1, 'name' => 'Huey', 'role' => 'Manager']);
+        $db->insert('employee', [
+            'id' => 1,
+            'office_id' => 1,
+            'name' => 'Donald',
+            'role' => 'Accountant',
+            'active' => 'y',
+            'deleted' => 'n'
+        ]);
+        $db->insert('employee', [
+            'id' => 2,
+            'office_id' => 1,
+            'name' => 'Huey',
+            'role' => 'Manager',
+            'active' => 'y',
+            'deleted' => 'n'
+        ]);
         $db->insert('office', ['id' => 2, 'city' => 'Amsterdam']); // One of the two
-        $db->insert('employee', ['id' => 3, 'office_id' => 2, 'name' => 'Donald', 'role' => 'Salesperson']);
+        $db->insert('employee', [
+            'id' => 3,
+            'office_id' => 2,
+            'name' => 'Donald',
+            'role' => 'Salesperson',
+            'active' => 'y',
+            'deleted' => 'n'
+        ]);
         $db->insert('office', ['id' => 3, 'city' => 'New York']); // None of the two
-        $db->insert('employee', ['id' => 4, 'office_id' => 3, 'name' => 'Dewey', 'role' => 'Manager']);
+        $db->insert('employee', [
+            'id' => 4,
+            'office_id' => 3,
+            'name' => 'Dewey',
+            'role' => 'Manager',
+            'active' => 'y',
+            'deleted' => 'n'
+        ]);
         $db->insert('office', ['id' => 4, 'city' => 'Berlin']); // The two plus another one
-        $db->insert('employee', ['id' => 5, 'office_id' => 4, 'name' => 'Donald', 'role' => 'Accountant']);
-        $db->insert('employee', ['id' => 6, 'office_id' => 4, 'name' => 'Huey', 'role' => 'Manager']);
-        $db->insert('employee', ['id' => 7, 'office_id' => 4, 'name' => 'Louie', 'role' => 'Cook']);
+        $db->insert('employee', [
+            'id' => 5,
+            'office_id' => 4,
+            'name' => 'Donald',
+            'role' => 'Accountant',
+            'active' => 'y',
+            'deleted' => 'n'
+        ]);
+        $db->insert('employee', [
+            'id' => 6,
+            'office_id' => 4,
+            'name' => 'Huey',
+            'role' => 'Manager',
+            'active' => 'y',
+            'deleted' => 'n'
+        ]);
+        $db->insert('employee', [
+            'id' => 7,
+            'office_id' => 4,
+            'name' => 'Louie',
+            'role' => 'Cook',
+            'active' => 'y',
+            'deleted' => 'n'
+        ]);
         $db->insert('office', ['id' => 5, 'city' => 'Cuxhaven']); // None
         $db->insert('office', ['id' => 6, 'city' => 'Sydney']); // The other one of the two
-        $db->insert('employee', ['id' => 8, 'office_id' => 6, 'name' => 'Huey', 'role' => 'Assistant']);
+        $db->insert('employee', [
+            'id' => 8,
+            'office_id' => 6,
+            'name' => 'Huey',
+            'role' => 'Assistant',
+            'active' => 'y',
+            'deleted' => 'n'
+        ]);
         $db->insert('office', ['id' => 7, 'city' => 'Baghdad']); // The two with switched roles
-        $db->insert('employee', ['id' => 9, 'office_id' => 7, 'name' => 'Donald', 'role' => 'Manager']);
-        $db->insert('employee', ['id' => 10, 'office_id' => 7, 'name' => 'Huey', 'role' => 'Accountant']);
+        $db->insert('employee', [
+            'id' => 9,
+            'office_id' => 7,
+            'name' => 'Donald',
+            'role' => 'Manager',
+            'active' => 'y',
+            'deleted' => 'n'
+        ]);
+        $db->insert('employee', [
+            'id' => 10,
+            'office_id' => 7,
+            'name' => 'Huey',
+            'role' => 'Accountant',
+            'active' => 'y',
+            'deleted' => 'n'
+        ]);
     }
 
     /**
@@ -1988,8 +2058,9 @@ class RelationFilterTest extends TestCase
         $db->exec('CREATE TABLE office (id INT PRIMARY KEY, city VARCHAR(255))');
         $db->exec('CREATE TABLE department (id INT PRIMARY KEY, name VARCHAR(255))');
         $db->exec(
-            'CREATE TABLE employee (id INT PRIMARY KEY, department_id INT,'
-            . ' office_id INT, name VARCHAR(255), role VARCHAR(255))'
+            'CREATE TABLE employee (id INT PRIMARY KEY, department_id INT'
+            . ', office_id INT, name VARCHAR(255), role VARCHAR(255)'
+            . ', active VARCHAR(1), deleted VARCHAR(1))'
         );
     }
 
