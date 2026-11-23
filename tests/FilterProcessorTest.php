@@ -4,8 +4,10 @@ namespace ipl\Tests\Orm;
 
 use ipl\Orm\Compat\FilterProcessor;
 use ipl\Orm\Query;
+use ipl\Sql\Adapter\Pgsql;
 use ipl\Sql\Connection;
 use ipl\Sql\Test\Databases;
+use ipl\Sql\Test\SqlAssertions;
 use ipl\Stdlib\Filter;
 use ipl\Tests\Orm\Lib\Model\Employee;
 use ipl\Tests\Orm\Lib\Model\Office;
@@ -14,6 +16,13 @@ use PHPUnit\Framework\Attributes\DataProvider;
 class FilterProcessorTest extends \PHPUnit\Framework\TestCase
 {
     use Databases;
+    use SqlAssertions;
+
+    protected function setUp(): void
+    {
+        $this->setUpSqlAssertions();
+        $this->setUpDatabases();
+    }
 
     public function testUnequalDoesNotOverrideUnlike()
     {
@@ -138,6 +147,368 @@ class FilterProcessorTest extends \PHPUnit\Framework\TestCase
 
         $this->assertCount(1, $results);
         $this->assertSame('Goofy', $results[0]->name);
+    }
+
+    #[DataProvider('databases')]
+    public function testLikeWithASingleWildcardTargetingAToManyRelation(Connection $db): void
+    {
+        $this->insertEmployeesWithChairs($db);
+
+        $employees = Employee::on($db)
+            ->columns('employee.name')
+            ->orderBy('employee.id')
+            ->filter(Filter::like('chair.vendor', '*'));
+
+        $results = iterator_to_array($employees);
+
+        $this->assertCount(4, $results);
+        $this->assertSame('Minnie', $results[0]->name);
+        $this->assertSame('Goofy', $results[1]->name);
+        $this->assertSame('Mickey', $results[2]->name);
+        $this->assertSame('Scrooge', $results[3]->name);
+
+        $sql = <<<SQL
+SELECT employee.name
+FROM employee
+WHERE (employee.deleted = ?) AND (employee.id IN
+    ((SELECT sub_chair_employee.id AS sub_chair_employee_id
+    FROM chair sub_chair
+    INNER JOIN employee sub_chair_employee
+        ON (sub_chair_employee.id = sub_chair.employee_id) AND (sub_chair_employee.deleted = ?)
+    WHERE sub_chair.vendor IS NOT NULL)))
+ORDER BY employee.id
+SQL;
+
+        $this->assertSql(
+            $sql,
+            $employees->assembleSelect(),
+            ['n', 'n']
+        );
+    }
+
+    #[DataProvider('databases')]
+    public function testUnlikeWithASingleWildcardTargetingAToManyRelation(Connection $db): void
+    {
+        $this->insertEmployeesWithChairs($db);
+
+        $employees = Employee::on($db)
+            ->columns('employee.name')
+            ->orderBy('employee.id')
+            ->filter(Filter::unlike('chair.vendor', '*'));
+
+        $results = iterator_to_array($employees);
+
+        $this->assertCount(2, $results);
+        $this->assertSame('Pluto', $results[0]->name);
+        $this->assertSame('Donald', $results[1]->name);
+
+        if ($db->getAdapter() instanceof Pgsql) {
+            $sql = <<<SQL
+SELECT employee.name
+FROM employee
+WHERE (employee.deleted = ?) AND ((employee.id NOT IN
+    ((SELECT sub_chair_employee.id AS sub_chair_employee_id
+    FROM chair sub_chair
+    INNER JOIN employee sub_chair_employee
+        ON (sub_chair_employee.id = sub_chair.employee_id) AND (sub_chair_employee.deleted = ?)
+    WHERE (sub_chair.vendor IS NOT NULL) AND (sub_chair_employee.id IS NOT NULL)
+    GROUP BY sub_chair_employee.id
+    HAVING COUNT(DISTINCT (sub_chair.department_id, sub_chair.employee_id)) >= ?))
+  OR employee.id IS NULL))
+ORDER BY employee.id
+SQL;
+        } else {
+            $sql = <<<SQL
+SELECT employee.name
+FROM employee
+WHERE (employee.deleted = ?) AND ((employee.id NOT IN
+    ((SELECT sub_chair_employee.id AS sub_chair_employee_id
+    FROM chair sub_chair
+    INNER JOIN employee sub_chair_employee
+        ON (sub_chair_employee.id = sub_chair.employee_id) AND (sub_chair_employee.deleted = ?)
+    WHERE (sub_chair.vendor IS NOT NULL) AND (sub_chair_employee.id IS NOT NULL)
+    GROUP BY sub_chair_employee.id
+    HAVING COUNT(DISTINCT sub_chair.department_id, sub_chair.employee_id) >= ?))
+  OR employee.id IS NULL))
+ORDER BY employee.id
+SQL;
+        }
+
+        $this->assertSql(
+            $sql,
+            $employees->assembleSelect(),
+            ['n', 'n', 1]
+        );
+    }
+
+    #[DataProvider('databases')]
+    public function testUnlikeWithASingleWildcardCombinedWithAPositiveComparisonWorksAsBefore(Connection $db): void
+    {
+        $this->insertEmployeesWithChairs($db);
+
+        $employees = Employee::on($db)
+            ->columns('employee.name')
+            ->orderBy('employee.id')
+            ->filter(Filter::all(
+                Filter::unlike('chair.vendor', '*'),
+                Filter::equal('chair.department_id', 1)
+            ));
+
+        $results = iterator_to_array($employees);
+
+        $this->assertCount(1, $results);
+        $this->assertSame('Minnie', $results[0]->name);
+
+        if ($db->getAdapter() instanceof Pgsql) {
+            $sql = <<<SQL
+SELECT employee.name
+FROM employee
+WHERE (employee.deleted = ?) AND (((employee.id NOT IN
+    ((SELECT sub_chair_employee.id AS sub_chair_employee_id
+      FROM chair sub_chair
+      INNER JOIN employee sub_chair_employee ON (sub_chair_employee.id = sub_chair.employee_id)
+        AND (sub_chair_employee.deleted = ?)
+      WHERE ((sub_chair.vendor IS NOT NULL) AND (sub_chair.department_id = ?)) AND (sub_chair_employee.id IS NOT NULL)
+      GROUP BY sub_chair_employee.id
+      HAVING COUNT(DISTINCT (sub_chair.department_id, sub_chair.employee_id)) >= ?))
+    OR employee.id IS NULL)) AND (employee.id IN
+      ((SELECT sub_chair_employee.id AS sub_chair_employee_id
+        FROM chair sub_chair
+        INNER JOIN employee sub_chair_employee ON (sub_chair_employee.id = sub_chair.employee_id)
+          AND (sub_chair_employee.deleted = ?)
+        WHERE sub_chair.department_id = ?))))
+ORDER BY employee.id
+SQL;
+        } else {
+            $sql = <<<SQL
+SELECT employee.name
+FROM employee
+WHERE (employee.deleted = ?) AND (((employee.id NOT IN
+    ((SELECT sub_chair_employee.id AS sub_chair_employee_id
+      FROM chair sub_chair
+      INNER JOIN employee sub_chair_employee ON (sub_chair_employee.id = sub_chair.employee_id)
+        AND (sub_chair_employee.deleted = ?)
+      WHERE ((sub_chair.vendor IS NOT NULL) AND (sub_chair.department_id = ?)) AND (sub_chair_employee.id IS NOT NULL)
+      GROUP BY sub_chair_employee.id
+      HAVING COUNT(DISTINCT sub_chair.department_id, sub_chair.employee_id) >= ?))
+    OR employee.id IS NULL)) AND (employee.id IN
+      ((SELECT sub_chair_employee.id AS sub_chair_employee_id
+        FROM chair sub_chair
+        INNER JOIN employee sub_chair_employee ON (sub_chair_employee.id = sub_chair.employee_id)
+          AND (sub_chair_employee.deleted = ?)
+        WHERE sub_chair.department_id = ?))))
+ORDER BY employee.id
+SQL;
+        }
+
+        $this->assertSql(
+            $sql,
+            $employees->assembleSelect(),
+            ['n', 'n', 1, 1, 'n', 1]
+        );
+    }
+
+    #[DataProvider('databases')]
+    public function testLikeWithASingleWildcardIsAppliedToNegatedSubQueries(Connection $db): void
+    {
+        $this->insertEmployeesWithChairs($db);
+
+        $employees = Employee::on($db)
+            ->columns('employee.name')
+            ->orderBy('employee.id')
+            ->filter(Filter::all(
+                Filter::like('chair.vendor', '*'),
+                Filter::unequal('chair.department_id', 1)
+            ));
+
+        $results = iterator_to_array($employees);
+
+        $this->assertCount(1, $results);
+        $this->assertSame('Minnie', $results[0]->name);
+
+        if ($db->getAdapter() instanceof Pgsql) {
+            $sql = <<<SQL
+SELECT employee.name
+FROM employee
+WHERE (employee.deleted = ?) AND (((employee.id NOT IN
+    ((SELECT sub_chair_employee.id AS sub_chair_employee_id
+    FROM chair sub_chair
+    INNER JOIN employee sub_chair_employee
+        ON (sub_chair_employee.id = sub_chair.employee_id) AND (sub_chair_employee.deleted = ?)
+    WHERE ((sub_chair.department_id = ?) AND (sub_chair.vendor IS NOT NULL)) AND (sub_chair_employee.id IS NOT NULL)
+    GROUP BY sub_chair_employee.id
+    HAVING COUNT(DISTINCT (sub_chair.department_id, sub_chair.employee_id)) >= ?))
+  OR employee.id IS NULL)) AND (employee.id IN
+    ((SELECT sub_chair_employee.id AS sub_chair_employee_id
+    FROM chair sub_chair
+    INNER JOIN employee sub_chair_employee
+        ON (sub_chair_employee.id = sub_chair.employee_id) AND (sub_chair_employee.deleted = ?)
+    WHERE sub_chair.vendor IS NOT NULL))))
+ORDER BY employee.id
+SQL;
+        } else {
+            $sql = <<<SQL
+SELECT employee.name
+FROM employee
+WHERE (employee.deleted = ?) AND (((employee.id NOT IN
+    ((SELECT sub_chair_employee.id AS sub_chair_employee_id
+    FROM chair sub_chair
+    INNER JOIN employee sub_chair_employee
+        ON (sub_chair_employee.id = sub_chair.employee_id) AND (sub_chair_employee.deleted = ?)
+    WHERE ((sub_chair.department_id = ?) AND (sub_chair.vendor IS NOT NULL)) AND (sub_chair_employee.id IS NOT NULL)
+    GROUP BY sub_chair_employee.id
+    HAVING COUNT(DISTINCT sub_chair.department_id, sub_chair.employee_id) >= ?))
+  OR employee.id IS NULL)) AND (employee.id IN
+    ((SELECT sub_chair_employee.id AS sub_chair_employee_id
+    FROM chair sub_chair
+    INNER JOIN employee sub_chair_employee
+        ON (sub_chair_employee.id = sub_chair.employee_id) AND (sub_chair_employee.deleted = ?)
+    WHERE sub_chair.vendor IS NOT NULL))))
+ORDER BY employee.id
+SQL;
+        }
+
+        $this->assertSql(
+            $sql,
+            $employees->assembleSelect(),
+            ['n', 'n', 1, 1, 'n']
+        );
+    }
+
+    #[DataProvider('databases')]
+    public function testLikeWithASingleWildcardIsAppliedToOtherPositiveComparisons(Connection $db): void
+    {
+        $this->insertEmployeesWithChairs($db);
+
+        $employees = Employee::on($db)
+            ->columns('employee.name')
+            ->orderBy('employee.id')
+            ->filter(Filter::all(
+                Filter::like('chair.vendor', '*'),
+                Filter::equal('chair.department_id', 1)
+            ));
+
+        $results = iterator_to_array($employees);
+
+        $this->assertCount(3, $results);
+        $this->assertSame('Goofy', $results[0]->name);
+        $this->assertSame('Mickey', $results[1]->name);
+        $this->assertSame('Scrooge', $results[2]->name);
+
+        $sql = <<<SQL
+SELECT employee.name
+FROM employee
+WHERE (employee.deleted = ?) AND (employee.id IN
+    ((SELECT sub_chair_employee.id AS sub_chair_employee_id
+    FROM chair sub_chair
+    INNER JOIN employee sub_chair_employee
+        ON (sub_chair_employee.id = sub_chair.employee_id) AND (sub_chair_employee.deleted = ?)
+    WHERE (sub_chair.vendor IS NOT NULL) AND (sub_chair.department_id = ?))))
+ORDER BY employee.id
+SQL;
+
+        $this->assertSql(
+            $sql,
+            $employees->assembleSelect(),
+            ['n', 'n', 1]
+        );
+    }
+
+    #[DataProvider('databases')]
+    public function testUnlikeWithASingleWildcardIsAppliedToOtherNegativeComparisons(Connection $db): void
+    {
+        $this->insertEmployeesWithChairs($db);
+
+        $employees = Employee::on($db)
+            ->columns('employee.name')
+            ->orderBy('employee.id')
+            ->filter(Filter::all(
+                Filter::unlike('chair.vendor', '*'),
+                Filter::unequal('chair.department_id', 1)
+            ));
+
+        $results = iterator_to_array($employees);
+
+        $this->assertCount(2, $results);
+        $this->assertSame('Pluto', $results[0]->name);
+        $this->assertSame('Donald', $results[1]->name);
+
+
+        if ($db->getAdapter() instanceof Pgsql) {
+            $sql = <<<SQL
+SELECT employee.name
+FROM employee
+WHERE (employee.deleted = ?) AND (((employee.id NOT IN
+    ((SELECT sub_chair_employee.id AS sub_chair_employee_id
+    FROM chair sub_chair
+    INNER JOIN employee sub_chair_employee
+        ON (sub_chair_employee.id = sub_chair.employee_id) AND (sub_chair_employee.deleted = ?)
+    WHERE (sub_chair.vendor IS NOT NULL) AND (sub_chair_employee.id IS NOT NULL)
+    GROUP BY sub_chair_employee.id
+    HAVING COUNT(DISTINCT (sub_chair.department_id, sub_chair.employee_id)) >= ?))
+  OR employee.id IS NULL)) AND ((employee.id NOT IN
+    ((SELECT sub_chair_employee.id AS sub_chair_employee_id
+    FROM chair sub_chair
+    INNER JOIN employee sub_chair_employee
+        ON (sub_chair_employee.id = sub_chair.employee_id) AND (sub_chair_employee.deleted = ?)
+    WHERE (sub_chair.department_id = ?) AND (sub_chair_employee.id IS NOT NULL)
+    GROUP BY sub_chair_employee.id
+    HAVING COUNT(DISTINCT (sub_chair.department_id, sub_chair.employee_id)) >= ?))
+  OR employee.id IS NULL)))
+ORDER BY employee.id
+SQL;
+        } else {
+            $sql = <<<SQL
+SELECT employee.name
+FROM employee
+WHERE (employee.deleted = ?) AND (((employee.id NOT IN
+    ((SELECT sub_chair_employee.id AS sub_chair_employee_id
+    FROM chair sub_chair
+    INNER JOIN employee sub_chair_employee
+        ON (sub_chair_employee.id = sub_chair.employee_id) AND (sub_chair_employee.deleted = ?)
+    WHERE (sub_chair.vendor IS NOT NULL) AND (sub_chair_employee.id IS NOT NULL)
+    GROUP BY sub_chair_employee.id
+    HAVING COUNT(DISTINCT sub_chair.department_id, sub_chair.employee_id) >= ?))
+  OR employee.id IS NULL)) AND ((employee.id NOT IN
+    ((SELECT sub_chair_employee.id AS sub_chair_employee_id
+    FROM chair sub_chair
+    INNER JOIN employee sub_chair_employee
+        ON (sub_chair_employee.id = sub_chair.employee_id) AND (sub_chair_employee.deleted = ?)
+    WHERE (sub_chair.department_id = ?) AND (sub_chair_employee.id IS NOT NULL)
+    GROUP BY sub_chair_employee.id
+    HAVING COUNT(DISTINCT sub_chair.department_id, sub_chair.employee_id) >= ?))
+  OR employee.id IS NULL)))
+ORDER BY employee.id
+SQL;
+        }
+
+        $this->assertSql(
+            $sql,
+            $employees->assembleSelect(),
+            ['n', 'n', 1, 'n', 1, 1]
+        );
+    }
+
+    protected function insertEmployeesWithChairs(Connection $db): void
+    {
+        foreach (['Minnie', 'Goofy', 'Pluto', 'Donald', 'Mickey', 'Scrooge'] as $i => $name) {
+            $db->insert(
+                'employee',
+                ['id' => $i + 1, 'department_id' => 1, 'name' => $name, 'role' => 'Developer', 'deleted' => 'n']
+            );
+        }
+
+        // Minnie has a chair without vendor in department 1 and one with vendor in department 2, Goofy one with vendor
+        // in department 1, Pluto none, Donald one without vendor in department 2, Mickey ones with vendor in both and
+        // Scrooge one with vendor and one without in the same department
+        $db->insert('chair', ['department_id' => 1, 'employee_id' => 1, 'vendor' => null]);
+        $db->insert('chair', ['department_id' => 2, 'employee_id' => 1, 'vendor' => 'Acme Chairs']);
+        $db->insert('chair', ['department_id' => 1, 'employee_id' => 2, 'vendor' => 'Bcme Chairs']);
+        $db->insert('chair', ['department_id' => 2, 'employee_id' => 4, 'vendor' => null]);
+        $db->insert('chair', ['department_id' => 1, 'employee_id' => 5, 'vendor' => 'Ccme Chairs']);
+        $db->insert('chair', ['department_id' => 2, 'employee_id' => 5, 'vendor' => 'Dcme Chairs']);
+        $db->insert('chair', ['department_id' => 1, 'employee_id' => 6, 'vendor' => 'Ecme Chairs']);
+        $db->insert('chair', ['department_id' => 1, 'employee_id' => 6, 'vendor' => null]);
     }
 
     protected function createSchema(Connection $db, string $driver): void
