@@ -309,6 +309,47 @@ SQL;
     }
 
     #[DataProvider('databases')]
+    public function testUnlikeCanBeTreatedAsPositiveComparison(Connection $db): void
+    {
+        $this->insertEmployeesWithChairs($db);
+
+        $specialUnlike = Filter::unlike('chair.vendor', '*');
+        $specialUnlike->metaData()->set('treat-positively', true);
+
+        $employees = Employee::on($db)
+            ->columns('employee.name')
+            ->orderBy('employee.id')
+            ->filter(Filter::all(
+                $specialUnlike,
+                Filter::equal('chair.department_id', 1)
+            ));
+
+        $results = iterator_to_array($employees);
+
+        $this->assertCount(2, $results);
+        $this->assertSame('Minnie', $results[0]->name);
+        $this->assertSame('Scrooge', $results[1]->name);
+
+        $sql = <<<SQL
+SELECT employee.name
+FROM employee
+WHERE (employee.deleted = ?) AND (employee.id IN
+      ((SELECT sub_chair_employee.id AS sub_chair_employee_id
+        FROM chair sub_chair
+        INNER JOIN employee sub_chair_employee ON (sub_chair_employee.id = sub_chair.employee_id)
+          AND (sub_chair_employee.deleted = ?)
+        WHERE (sub_chair.department_id = ?) AND (sub_chair.vendor IS NULL))))
+ORDER BY employee.id
+SQL;
+
+        $this->assertSql(
+            $sql,
+            $employees->assembleSelect(),
+            ['n', 'n', 1]
+        );
+    }
+
+    #[DataProvider('databases')]
     public function testLikeWithASingleWildcardIsAppliedToNegatedSubQueries(Connection $db): void
     {
         $this->insertEmployeesWithChairs($db);
