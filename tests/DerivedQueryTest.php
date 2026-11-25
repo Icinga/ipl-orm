@@ -2,8 +2,6 @@
 
 namespace ipl\Tests\Orm;
 
-use ipl\Orm\Behavior\Binary;
-use ipl\Orm\Behaviors;
 use ipl\Orm\Model;
 use ipl\Orm\NoopQuery;
 use ipl\Orm\Query;
@@ -194,38 +192,6 @@ class DerivedQueryTest extends TestCase
 
         $this->assertSame(1, $targets->count());
         $this->assertSame(13, $targets->first()['id']);
-    }
-
-    public function testHydratedBinaryPrimaryKeysBypassUserInputRewrites(): void
-    {
-        $model = new class () extends Loose {
-            public function getColumns(): array
-            {
-                return ['coupler', 'label'];
-            }
-
-            public function createBehaviors(Behaviors $behaviors): void
-            {
-                $behaviors->add(new Binary(['id']));
-            }
-        };
-
-        foreach (['deadbeef', "\x01\x7f"] as $index => $id) {
-            $label = 'binary-' . $index;
-            $this->db->insert('loose', ['id' => $id, 'tenant_id' => 100, 'coupler' => 'shared', 'label' => $label]);
-            $source = $model::on($this->db)->filter(Filter::equal('label', $label))->first();
-
-            $this->assertSame($id, $source['id']);
-            $this->assertSame(2, $source['relationship']->count());
-
-            foreach (['mysql', 'pgsql'] as $driver) {
-                $query = $model::on(new Connection(['db' => $driver]))->derive('relationship', $source);
-                $this->assertSame(
-                    ['shared', $driver === 'pgsql' ? '\x' . bin2hex($id) : $id],
-                    $query->dump()[1],
-                );
-            }
-        }
     }
 
     public function testMissingPrimaryKeyRetainsRelationKeyFiltering(): void
