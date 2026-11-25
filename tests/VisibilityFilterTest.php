@@ -252,9 +252,12 @@ class VisibilityFilterTest extends TestCase
 
         $this->assertSql(
             'SELECT book.title FROM book'
-            . ' INNER JOIN authorship book_authorship ON book_authorship.authored_book = book.book_no'
-            . ' INNER JOIN author book_author ON book_author.author_ref = book_authorship.authoring',
-            $query->assembleSelect()
+            . ' LEFT JOIN authorship book_authorship ON (book_authorship.authored_book = book.book_no)'
+            . '   AND (book.title = ?)'
+            . ' LEFT JOIN author book_author ON (book_author.author_ref = book_authorship.authoring)'
+            . '   AND (book_author.name = ?)',
+            $query->assembleSelect(),
+            ['test', 'test']
         );
     }
 
@@ -273,12 +276,13 @@ class VisibilityFilterTest extends TestCase
         $this->assertSql(
             'SELECT book.title FROM book WHERE book.book_no IN ((SELECT'
             . ' sub_author_book.book_no AS sub_author_book_book_no FROM author sub_author'
-            . ' INNER JOIN authorship sub_author_authorship'
-            . ' ON sub_author_authorship.authoring = sub_author.author_ref'
-            . ' INNER JOIN book sub_author_book ON sub_author_book.book_no = sub_author_authorship.authored_book'
+            . ' LEFT JOIN authorship sub_author_authorship'
+            . ' ON (sub_author_authorship.authoring = sub_author.author_ref) AND (sub_author_book.title = ?)'
+            . ' LEFT JOIN book sub_author_book'
+            . ' ON (sub_author_book.book_no = sub_author_authorship.authored_book) AND (sub_author.name = ?)'
             . ' WHERE sub_author.name = ?))',
             $query->assembleSelect(),
-            ['x']
+            ['test', 'test', 'x']
         );
     }
 

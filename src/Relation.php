@@ -497,7 +497,7 @@ class Relation
      *
      * @return Relation The reversed relation
      *
-     * @throws LogicException In case the relation is not bound yet (has no source) or has already been reversed
+     * @throws LogicException In case the relation is not bound yet (has no source)
      * @throws RuntimeException In case the model of the forward relation is incompatible with the reversed relation's
      */
     public function reverse(Resolver $resolver): Relation
@@ -505,7 +505,7 @@ class Relation
         if ($this->getSource() === null) {
             throw new LogicException('Cannot reverse an unbound relation.');
         } elseif (isset($this->forwardRelationName)) {
-            throw new LogicException('Cannot undo a reverse.');
+            $this->setReverseName($this->forwardRelationName);
         }
 
         $reverseName = $this->getReverseName() ?? $this->getSource()->getTableAlias();

@@ -9,6 +9,10 @@ use ipl\Orm\ResolvedExpression;
 use ipl\Sql\Expression;
 use ipl\Sql\Test\TestCase;
 use ipl\Stdlib\Filter;
+use ipl\Tests\Orm\Lib\Model\Author;
+use ipl\Tests\Orm\Lib\Model\Book;
+use ipl\Tests\Orm\Lib\Model\Department;
+use ipl\Tests\Orm\Lib\Model\Employee;
 
 class QueryTest extends TestCase
 {
@@ -645,6 +649,71 @@ SQL;
         );
 
         $this->assertInstanceOf(Query::class, $query);
+    }
+
+    public function testNestedSubQueryCanFilterThroughAnAlreadyReversedRelation(): void
+    {
+        // The outer sub query reverses the many-to-many relation book->author and registers author->book in its
+        // resolver. Filtering on this relation creates a second sub query, which attempts to call `Relation::reverse()`
+        // on the already reversed relation again.
+        $query = Book::on(new TestConnection())
+            ->createSubQuery(new Author(), 'book.author')
+            ->columns('name')
+            ->filter(Filter::equal('author.book.title', 'x'));
+
+        $this->assertSql(
+            'SELECT sub_author.name FROM author sub_author'
+            . ' LEFT JOIN authorship sub_author_authorship'
+            . '   ON (sub_author_authorship.authoring = sub_author.author_ref) AND (sub_author_book.title = ?)'
+            . ' LEFT JOIN book sub_author_book'
+            . '   ON (sub_author_book.book_no = sub_author_authorship.authored_book) AND (sub_author.name = ?)'
+            . ' WHERE (sub_author_book.book_no = book.book_no) AND (sub_author.author_ref IN ((SELECT'
+            . ' sub_book_author.author_ref AS sub_book_author_author_ref FROM book sub_book'
+            . ' LEFT JOIN authorship sub_book_authorship'
+            . '   ON (sub_book_authorship.authored_book = sub_book.book_no) AND (sub_book.title = ?)'
+            . ' LEFT JOIN author sub_book_author'
+            . '   ON (sub_book_author.author_ref = sub_book_authorship.authoring) AND (sub_book_author.name = ?)'
+            . ' WHERE sub_book.title = ?)))',
+            $query->assembleSelect(),
+            ['test', 'test', 'test', 'test', 'x']
+        );
+    }
+
+    public function testNestedSubQueryKeepsTheRelationFilterOfTheUndoneRelation(): void
+    {
+        // The outer sub query reverses department->lead, the nested one undoes this reversal and must use the
+        // declared "lead" relation with its filter. Since the name is explicitly declared in this direction,
+        // there should be no deprecation warning.
+        $subQuery = Department::on(new TestConnection())
+            ->createSubQuery(new Employee(), 'department.lead');
+
+        $deprecations = [];
+        set_error_handler(function ($_, $message) use (&$deprecations) {
+            $deprecations[] = $message;
+
+            return true;
+        }, E_USER_DEPRECATED);
+
+        try {
+            $query = $subQuery
+                ->createSubQuery(new Department(), 'employee.department')
+                ->columns('name');
+        } finally {
+            restore_error_handler();
+        }
+
+        $this->assertEmpty($deprecations, 'Undoing a reversal emitted a deprecation');
+
+        $this->assertSql(
+            'SELECT sub_department.name FROM department sub_department'
+            . ' INNER JOIN employee sub_department_lead'
+            . ' ON (sub_department_lead.department_id = sub_department.id)'
+            . ' AND (((sub_department_lead.role = ?) AND (sub_department.name = ?))'
+            . ' AND (sub_department_lead.deleted = ?))'
+            . ' WHERE sub_department_lead.id = sub_employee.id',
+            $query->assembleSelect(),
+            ['lead', 'Engineering', 'n']
+        );
     }
 
     public function testDeriveLetsTheBaseModelBeReferencedAsSelfInFilters(): void

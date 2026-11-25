@@ -11,6 +11,8 @@ use ipl\Orm\Resolver;
 use ipl\Sql\Connection;
 use ipl\Sql\Test\SqlAssertions;
 use ipl\Stdlib\Filter;
+use ipl\Tests\Orm\Lib\Model\Author;
+use ipl\Tests\Orm\Lib\Model\Book;
 use ipl\Tests\Orm\Lib\Model\Department;
 use ipl\Tests\Orm\Lib\Model\Employee;
 use ipl\Tests\Orm\Lib\Model\Loose;
@@ -377,5 +379,46 @@ class RelationTest extends \PHPUnit\Framework\TestCase
         );
 
         $this->assertInstanceOf(BelongsTo::class, $reversed);
+    }
+
+    public function testReverseCanBeUndone()
+    {
+        $source = new Book();
+        $sourceResolver = (new Query())->setModel($source)->getResolver();
+        $forward = $sourceResolver->getRelations($source)
+            ->get('author')
+            ->bindTo($source, 'book.author', $sourceResolver);
+
+        $inverse = $forward->reverse($sourceResolver);
+
+        $target = new Author();
+        $targetResolver = (new Query())->setModel($target)->getResolver();
+        $inverse->bindTo($target, 'author.book', $targetResolver);
+
+        $undone = $inverse->reverse($targetResolver);
+
+        // The book model defines for the author relation all options explicitly, though
+        // the assertions here use literals nonetheless to ensure that this is kept in sync.
+
+        $this->assertSame('author', $undone->getName());
+        $this->assertSame('book_no', $undone->getCandidateKey());
+        $this->assertSame('authored_book', $undone->getForeignKey());
+        $this->assertSame('LEFT', $undone->getJoinType());
+        $this->assertSame('book', $undone->getReverseName());
+        $this->assertSame(Relation\BelongsToMany::class, $undone->getReverseClass());
+        $this->assertSame(Author::class, $undone->getTargetClass());
+        $this->assertInstanceOf(get_class($forward->getTarget()), $undone->getTarget());
+
+        $undoneFilters = iterator_to_array($undone->getFilter());
+        $this->assertCount(1, $undoneFilters);
+        $this->assertInstanceOf(Filter\Equal::class, $undoneFilters[0]);
+        $this->assertSame('author.name', $undoneFilters[0]->getColumn());
+        $this->assertSame('test', $undoneFilters[0]->getValue());
+
+        $undoneThroughFilters = iterator_to_array($undone->getThroughFilter());
+        $this->assertCount(1, $undoneThroughFilters);
+        $this->assertInstanceOf(Filter\Equal::class, $undoneThroughFilters[0]);
+        $this->assertSame('book.title', $undoneThroughFilters[0]->getColumn());
+        $this->assertSame('test', $undoneThroughFilters[0]->getValue());
     }
 }
