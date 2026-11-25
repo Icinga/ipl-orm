@@ -7,7 +7,9 @@ use ipl\Sql\Test\SqlAssertions;
 use ipl\Stdlib\Filter;
 use ipl\Tests\Orm\Lib\Model\Book;
 use ipl\Tests\Orm\Lib\Model\Department;
+use ipl\Tests\Orm\Lib\Model\Employee;
 use ipl\Tests\Orm\Lib\Model\Node;
+use ipl\Tests\Orm\Lib\Model\Office;
 use ipl\Tests\Orm\Lib\Model\RestrictedGroup;
 use ipl\Tests\Orm\Lib\Model\RestrictedUser;
 use PHPUnit\Framework\TestCase;
@@ -323,6 +325,29 @@ class VisibilityFilterTest extends TestCase
             . ' WHERE (sub_employee.deleted = ?) AND (sub_employee.name = ?)))',
             $query->assembleSelect(),
             ['y', 'n', 'x']
+        );
+    }
+
+    public function testRelationFiltersAreOverriddenByEmptyRulesInReversedSubQueries()
+    {
+        // Filtering on a to-many relation is turned into a reversed sub query by the FilterProcessor.
+        // The sub query's base (employee) must carry its own visibility filter (deleted = n) but not
+        // the relation filter declared on the inverse relation (city = Nuremberg) because the forward
+        // relation has no filter.
+        $query = (new Query())
+            ->setDb(new TestConnection())
+            ->setModel(new Office())
+            ->columns('city')
+            ->filter(Filter::equal('employee.name', 'John Doe'));
+
+        $this->assertSql(
+            'SELECT office.city FROM office WHERE office.id IN ((SELECT'
+            . ' sub_employee_office.id AS sub_employee_office_id FROM employee sub_employee'
+            . ' LEFT JOIN office sub_employee_office'
+            . ' ON sub_employee_office.id = sub_employee.office_id'
+            . ' WHERE (sub_employee.deleted = ?) AND (sub_employee.name = ?)))',
+            $query->assembleSelect(),
+            ['n', 'John Doe']
         );
     }
 
