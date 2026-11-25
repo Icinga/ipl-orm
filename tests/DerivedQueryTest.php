@@ -101,8 +101,8 @@ class DerivedQueryTest extends TestCase
             CREATE TABLE book (id INTEGER PRIMARY KEY, book_no TEXT, title TEXT);
             CREATE TABLE author (author_ref INTEGER PRIMARY KEY, name TEXT);
             CREATE TABLE authorship (authored_book TEXT, authoring INTEGER);
-            INSERT INTO book VALUES (1, 'shared', 'First'), (2, 'shared', 'Second');
-            INSERT INTO author VALUES (10, 'First author'), (11, 'Second author');
+            INSERT INTO book VALUES (1, 'shared', 'test'), (2, 'shared', 'test');
+            INSERT INTO author VALUES (10, 'test'), (11, 'test');
             INSERT INTO authorship VALUES ('shared', 10), ('shared', 11);
             SQL);
         $source = new class (['id' => 1, 'book_no' => 'shared']) extends Book {
