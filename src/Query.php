@@ -621,6 +621,8 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
      * Derive a new query to load the specified relation from a concrete model
      *
      * The passed source can be referenced in filters using the `self` relation path.
+     * A fully loaded, non-null primary key restricts `self` to that source row.
+     * Otherwise, the source is restricted by the relation keys alone.
      *
      * @param string $relation
      * @param TRow $source
@@ -669,14 +671,32 @@ class Query implements Filterable, LimitOffsetInterface, OrderByInterface, Pagin
             ));
         }
 
-        foreach ($relatedKeys as $fk => $_) {
-            if (! isset($source->$fk)) {
+        $columns = array_keys($relatedKeys);
+        foreach ($columns as $column) {
+            if (! isset($source->$column)) {
                 return new NoopQuery();
             }
+        }
 
+        // A nonunique relation key can join targets to other source rows. Restrict
+        // self to the concrete source when its complete primary key is available.
+        $primaryKey = (array) $source->getKeyName();
+        $hasPrimaryKey = true;
+        foreach ($primaryKey as $column) {
+            if (! isset($source->$column)) {
+                $hasPrimaryKey = false;
+                break;
+            }
+        }
+
+        if ($hasPrimaryKey) {
+            $columns = array_unique(array_merge($columns, $primaryKey));
+        }
+
+        foreach ($columns as $column) {
             $query->filter(Filter::equal(
-                sprintf('%s.%s', $reversed->getName(), $fk),
-                $source->$fk
+                sprintf('%s.%s', $reversed->getName(), $column),
+                $source->$column
             ));
         }
 
