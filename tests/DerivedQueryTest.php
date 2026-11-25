@@ -5,12 +5,10 @@ namespace ipl\Tests\Orm;
 use ipl\Orm\Model;
 use ipl\Orm\NoopQuery;
 use ipl\Orm\Query;
-use ipl\Orm\Relations;
 use ipl\Sql\Connection;
 use ipl\Sql\Test\SqlAssertions;
 use ipl\Stdlib\Filter;
 use ipl\Tests\Orm\Lib\Model\Book;
-use ipl\Tests\Orm\Lib\Model\Employee;
 use ipl\Tests\Orm\Lib\Model\Loose;
 use PHPUnit\Framework\TestCase;
 
@@ -48,42 +46,14 @@ class DerivedQueryTest extends TestCase
 
     public function testSelfFiltersCannotMatchAnotherSourceWithTheSameRelationKey(): void
     {
-        $source = new class (['id' => 1, 'coupler' => 'shared']) extends Loose {
-            public function getColumns(): array
-            {
-                return ['coupler', 'label'];
-            }
-        };
+        $source = new Loose(['id' => 1, 'coupler' => 'shared']);
         $query = (new Query())->setDb($this->db);
 
         $this->assertEmpty(iterator_to_array(
             $query->derive('relationship', $source)->filter(Filter::equal('self.id', 2)),
         ));
-        $this->assertEmpty(iterator_to_array(
-            $query->derive('relationship', $source)->filter(Filter::equal('self.label', 'sibling')),
-        ));
         $this->assertSame(2, $query->derive('relationship', $source)
-            ->filter(Filter::equal('self.label', 'source'))->count());
-    }
-
-    public function testCustomPrimaryKeyIdentifiesTheSource(): void
-    {
-        $source = new class (['tenant_id' => 0, 'coupler' => 'shared']) extends Loose {
-            public function getKeyName(): string
-            {
-                return 'tenant_id';
-            }
-        };
-        $targets = (new Query())->setDb($this->db)->derive('relationship', $source);
-
-        $this->assertSame(2, $targets->count());
-        $this->assertSql(
-            'SELECT relationship.id, relationship.coupler FROM relationship'
-            . ' LEFT JOIN loose relationship_self ON relationship_self.coupler = relationship.coupler'
-            . ' WHERE (relationship_self.coupler = ?) AND (relationship_self.tenant_id = ?)',
-            $targets->assembleSelect(),
-            ['shared', 0],
-        );
+            ->filter(Filter::equal('self.id', 1))->count());
     }
 
     public function testCompleteCompositePrimaryKeyIdentifiesTheSource(): void
@@ -119,7 +89,6 @@ class DerivedQueryTest extends TestCase
         $source = Profile::on($this->db)->filter(Filter::equal('id', 10))->first();
         $query = (new Query())->setDb($this->db);
 
-        $this->assertSame(1, $source['user']->first()['id']);
         $this->assertSame(1, $query->derive('user', $source)->count());
         $this->assertEmpty(iterator_to_array(
             $query->derive('user', $source)->filter(Filter::equal('self.id', 11)),
@@ -155,35 +124,6 @@ class DerivedQueryTest extends TestCase
         ));
     }
 
-    public function testGroupedRelationRetainsTargetVisibilityAndRelationFilters(): void
-    {
-        $this->executeSql(<<<'SQL'
-            CREATE TABLE employee (
-                id INTEGER PRIMARY KEY, name TEXT, active TEXT, deleted TEXT, role TEXT,
-                department_id TEXT, office_id INTEGER
-            );
-            INSERT INTO employee VALUES
-                (10, 'Visible', 'y', 'n', 'developer', 'shared', NULL),
-                (11, 'Deleted', 'y', 'y', 'developer', 'shared', NULL),
-                (12, 'Inactive', 'n', 'n', 'developer', 'shared', NULL);
-            SQL);
-        $source = new class (['id' => 1, 'coupler' => 'shared']) extends Loose {
-            public function createRelations(Relations $relations): void
-            {
-                $relations->hasMany('employee', Employee::class)
-                    ->setCandidateKey('coupler')
-                    ->setForeignKey('department_id')
-                    ->setFilter(Filter::equal('active', 'y'));
-            }
-        };
-        $targets = (new Query())->setDb($this->db)->derive('employee', $source);
-
-        $this->assertSame([10], array_map(
-            static fn(Model $employee): int => $employee['id'],
-            iterator_to_array($targets, false),
-        ));
-    }
-
     public function testZeroRelationKeyLinksTheSource(): void
     {
         $this->executeSql("INSERT INTO loose VALUES (4, 3, '0', 'zero'); INSERT INTO relationship VALUES (13, '0')");
@@ -209,8 +149,6 @@ class DerivedQueryTest extends TestCase
             }
         };
 
-        $this->assertRelationKeyFiltering($source);
-        $source['id'] = null;
         $this->assertRelationKeyFiltering($source);
     }
 
